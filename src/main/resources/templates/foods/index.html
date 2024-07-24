@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const params = new URLSearchParams(window.location.search);
+            const tyNmList = params.getAll('tyNmList').join(',');
+            const nationNmList = params.getAll('nationNmList').join(',');
+            const irdntCodeList = params.getAll('irdntCodeList').join(',');
+
+
+            document.querySelectorAll('.pagination .page-link').forEach(link => {
+                const url = new URL(link.href, window.location.href);
+                url.searchParams.set('tyNmList', tyNmList);
+                url.searchParams.set('nationNmList', nationNmList);
+                url.searchParams.set('irdntCodeList', irdntCodeList);
+                link.href = url.toString();
+            });
+
+            document.querySelectorAll('.filter-link').forEach(link => {
+                link.addEventListener('click', function (event) {
+                    const tyList = this.getAttribute('data-tyList');
+                    const newParams = new URLSearchParams();
+                    newParams.set('tyNmList', tyList);
+                    newParams.set('page', 0);  // reset page number to 0
+
+                    // Preserve other query parameters
+                    const existingParams = new URLSearchParams(window.location.search);
+                    existingParams.delete('page'); // Remove page param if present
+                    existingParams.forEach((value, key) => {
+                        if (key !== 'tyNmList') {
+                            newParams.set(key, value);
+                        }
+                    });
+
+                    window.location.href = `${window.location.pathname}?${newParams.toString()}`;
+                    event.preventDefault();
+                });
+            });
+        });
+    </script>
+
+<body>
+
+
+<div th:insert="~{fragments/header}"></div>
+<div class="container px-4 py-5" id="featured-3">
+    <div class="my-3 p-3 bg-body rounded shadow-sm">
+        <h3 class="border-bottom pb-2 mb-0" th:text="카테고리">카테고리입니다/</h3>
+
+        <h4>
+
+        <div class="d-flex text-body-secondary pt-3">
+            <div class="pb-3 mb-0 small lh-sm border-bottom w-100">
+                <div class="d-flex justify-content-between">
+                    <small class="d-inline-flex mb-3 px-2 py-1 fw-semibold text-success-emphasis bg-success-subtle border border-success-subtle rounded-2">음식별</small>
+                </div>
+                <span th:each="nMList : ${allNationNmList}">
+                    <a th:name="category" th:value="${nMList}" th:href="@{/foods(nationNmList=${nMList})}" class="badge bg-warning text-dark rounded-pill" style="text-decoration-line: none">
+                        <span th:text="${nMList}">카테고리1</span>
+                    </a>
+                </span>
+            </div>
+        </div>
+
+
+        <div class="d-flex text-body-secondary pt-3">
+            <div class="pb-3 mb-0 small lh-sm border-bottom w-100">
+                <div class="d-flex justify-content-between">
+                    <small class="d-inline-flex mb-3 px-2 py-1 fw-semibold text-success-emphasis bg-success-subtle border border-success-subtle rounded-2">재료별</small>
+                </div>
+                <span th:each="irdntList : ${allIrdntCodeList}">
+                    <!-- 리스트를 쿼리 파라미터로 전달 -->
+                    <a th:name="category" th:value="${irdntList}" th:href="@{/foods(irdntCodeList=${irdntList})}" class="badge bg-warning text-dark rounded-pill" style="text-decoration-line: none">
+                        <span th:text="${irdntList}">카테고리2</span>
+                    </a>
+                </span>
+            </div>
+        </div>
+
+        <div class="d-flex text-body-secondary pt-3">
+            <div class="pb-3 mb-0 small lh-sm border-bottom w-100">
+                <div class="d-flex justify-content-between">
+                    <small class="d-inline-flex mb-3 px-2 py-1 fw-semibold text-success-emphasis bg-info border border-secondary rounded-2">분류별</small>
+                </div>
+                <span th:each="tyList : ${allTyNmList}">
+                    <a th:name="category" th:value="${tyList}" th:href="@{/foods(tyNmList=${tyList})}" class="badge bg-warning text-dark rounded-pill"  style="text-decoration-line: none">
+                        <span th:text="${tyList}">카테고리3</span>
+                    </a>
+                </span>
+            </div>
+        </div>
+
+
+        </h4>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+        <div class="col"  th:each="list : ${infoResponseDto}">
+            <div class="card shadow-sm">
+                <a th:action th:href="@{/foods/{id}(id=${list.getRecipeID()})}" class="icon-link">
+                    <svg class="bd-placeholder-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#FFFFE0"></rect></svg>
+                </a>
+                <div class="card-body">
+                    <p th:text="${list.getRecipeNMKO()}" class="card-text">요리 제목입니다.</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p th:text="${list.getSumry()}">요리 소개글입니다.</p>
+                      <small class="text-muted" th:text="${list.getCalorie()}">칼로리</small>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="b-example-divider"></div>
+
+    <div class="d-flex gap-2 justify-content-center py-5">
+
+
+
+
+        <nav aria-label="...">
+            <ul class="pagination">
+                <!-- Previous group button -->
+                <li class="page-item" th:classappend="${hasPreviousGroup} ? '' : 'disabled'">
+                    <a class="page-link" th:href="@{/foods(page=${startPage - 10})}" aria-disabled="${!hasPreviousGroup}">Previous</a>
+                </li>
+                <!-- Page numbers -->
+                <li th:each="pageNum : ${#numbers.sequence(startPage, endPage)}" class="page-item" th:classappend="${pageNum == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/foods(page=${pageNum})}" th:text="${pageNum + 1}">1</a>
+                </li>
+                <!-- Next group button -->
+                <li class="page-item" th:classappend="${hasNextGroup} ? '' : 'disabled'">
+                    <a class="page-link" th:href="@{/foods(page=${endPage + 1})}" aria-disabled="${!hasNextGroup}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+</div>
+
+
+
+
+
+<div th:insert="~{fragments/footer}"></div>
+</body>
+</html>

@@ -12,11 +12,13 @@
     <main>
         <h1 class="text-body-emphasis" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목입니다.</h1>
 
-        <button type="button" th:if="${isBookmarked}" th:onclick="|location.href='@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|" sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
+        <button type="button" th:if="${isBookmarked}" th:onclick="|location.href='@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
+                sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
             북마크 해제하기
         </button>
 
-        <button type="button" th:if="${!isBookmarked}" th:onclick="|location.href='@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|" sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
+        <button type="button" th:if="${!isBookmarked}" th:onclick="|location.href='@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
+                sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
             북마크 추가
         </button>
 
