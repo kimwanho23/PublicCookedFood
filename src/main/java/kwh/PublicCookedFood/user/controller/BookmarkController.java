@@ -2,9 +2,7 @@ package kwh.PublicCookedFood.user.controller;
 
 import jakarta.servlet.http.HttpSession;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
-import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.food.service.RecipeService;
-import kwh.PublicCookedFood.user.domain.Bookmark;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.BookMarkDto;
 import kwh.PublicCookedFood.user.service.BookmarkService;
@@ -16,7 +14,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,8 +22,6 @@ import java.util.Optional;
 public class BookmarkController {
 
     private final BookmarkService bookmarkService;
-
-    private final UserService userService;
 
     private final RecipeService recipeService;
 

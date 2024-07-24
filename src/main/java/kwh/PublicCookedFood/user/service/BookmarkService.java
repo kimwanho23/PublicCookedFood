@@ -2,7 +2,6 @@ package kwh.PublicCookedFood.user.service;
 
 import jakarta.transaction.Transactional;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
-import kwh.PublicCookedFood.food.entity.Recipe_IRDNT;
 import kwh.PublicCookedFood.user.domain.Bookmark;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.BookMarkDto;

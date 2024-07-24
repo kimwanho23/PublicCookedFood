@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.food.entity;
 
 import jakarta.persistence.*;
-import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,18 +1,12 @@
 package kwh.PublicCookedFood.food.controller;
 
-import jakarta.servlet.http.HttpSession;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.service.RecipeService;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.UserSaveDto;
-import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,7 +1,5 @@
 package kwh.PublicCookedFood.food.controller;
 
-
-import kwh.PublicCookedFood.common.GlobalControllerAdvice;
 import kwh.PublicCookedFood.food.dto.recipe_crse.Recipe_CRSE_ResponseDto;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
@@ -9,7 +7,6 @@ import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
 import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.service.BookmarkService;
-import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

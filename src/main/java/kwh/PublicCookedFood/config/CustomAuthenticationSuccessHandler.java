@@ -4,16 +4,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import kwh.PublicCookedFood.user.service.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.security.web.savedrequest.RequestCache;
-import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,18 +40,10 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         redirectStrategy.sendRedirect(request, response, uri);
     }
 
-
     private String determineRedirectUri(String prevPage) {
         if (prevPage != null && !prevPage.isEmpty() && !prevPage.contains(LOGIN_PAGE_URI) && !prevPage.contains(REGISTER_PAGE_URI)) {
             return prevPage;
         }
         return "/";
-    }
-
-    protected void clearSession(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
-        }
     }
 }

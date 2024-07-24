@@ -1,6 +1,5 @@
 package kwh.PublicCookedFood.food.service;
 
-import kwh.PublicCookedFood.food.entity.Recipe_CRSE;
 import kwh.PublicCookedFood.food.repository.Recipe_CRSE_Repository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +11,6 @@ import org.springframework.web.client.RestClient;
 @Service
 @RequiredArgsConstructor
 public class RcpServTest {
-
-    private final Recipe_CRSE_Repository recipe_CRSE_Repository;
 
     private final RestClient restClient;
 

@@ -29,13 +29,4 @@ public class UserSaveDto {
         this.name = name;
         this.email = email;
     }
-
-    public Users toEntity(){
-        return Users.builder()
-                .loginId(loginId)
-                .password(password)
-                .name(name)
-                .email(email)
-                .build();
-    }
 }
