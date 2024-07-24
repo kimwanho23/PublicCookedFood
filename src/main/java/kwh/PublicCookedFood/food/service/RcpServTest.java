@@ -29,16 +29,27 @@ public class RcpServTest {
     @Value("${VIEW_TN_RECIPE_IRDNT}")
     private String irdnt;
 
-    public Recipe_CRSE recipe_CRSE_Info() {
 
+    public String getRecipe_CRSE(int startRow, int endRow) {
         return restClient.get()
-                .uri(crse)
+                .uri(crse + "/" +startRow + "/" +endRow)
                 .retrieve()
-                .body(Recipe_CRSE.class);
+                .body(String.class);
     }
 
-/*    public String recipe_CRSE_Save(){
-    }*/
+    public String getRecipe_INFO(int startRow, int endRow) {
+        return restClient.get()
+                .uri(info + "/" +startRow + "/" +endRow)
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String getRecipe_IRDNT(int startRow, int endRow) {
+        return restClient.get()
+                .uri(irdnt + "/" +startRow + "/" +endRow)
+                .retrieve()
+                .body(String.class);
+    }
 
 
 }

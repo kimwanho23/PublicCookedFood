@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <link th:href="@{/css/bootstrap.min.css}"
+          href="../css/bootstrap.min.css" rel="stylesheet">
+
+    <title>Title</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/foods">Top navbar</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/bookmark/bookmarkList">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Link</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" aria-disabled="true">Disabled</a>
+                </li>
+            </ul>
+            <form class="d-flex" role="search">
+                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+
+
+            <a sec:authorize="!isAuthenticated()" id="loginButton" th:href="@{/u/login}" style="display: inline;">
+<!--                <img th:src="@{../img/person.svg}" alt="유저"  style="width: 30px; height: 30px;" />-->
+                <button type="button" class="btn btn-dark" style="margin-right: 20px;">로그인 안됨</button>
+            </a>
+
+            <form sec:authorize="isAuthenticated()" th:action="@{/u/logout}" style="display: inline;">
+                <img th:src="@{../img/person.svg}" alt="유저" style="width: 30px; height: 30px;" />
+                <button type="submit" class="btn btn-dark" style="margin-right: 20px;" th:text="${user.name}">Logout</button>
+            </form>
+
+
+
+
+        </div>
+    </div>
+</nav>
+</body>
+</html>

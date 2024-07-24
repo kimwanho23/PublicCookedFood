@@ -1,40 +1,43 @@
-package kwh.PublicCookedFood.food.dto.recipe_irdnt;
+package kwh.PublicCookedFood.food.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import kwh.PublicCookedFood.food.entity.Recipe_IRDNT;
+import jakarta.persistence.*;
+import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
+import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
 
-@NoArgsConstructor
+@Entity
 @Getter
-@ToString
-public class Recipe_IRDNT_ResponseDto {
+@Table(name = "Recipe_IRDNT")
+public class Recipe_IRDNT {
 
-    @JsonProperty("ROW_NUM")
+    @Id @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "row_NUM")
     private Long rowNUM;           // ID
 
-    @JsonProperty("RECIPE_ID")
+    @Column(name = "recipe_ID")
     private Long recipeID;         // 레시피 코드
 
-    @JsonProperty("IRDNT_SN")
+    @Column(name = "irdnt_SN")
     private String irdntSN;	    // 재료순번
 
-    @JsonProperty("IRDNT_NM")
+    @Column(name = "irdnt_NM")
     private String irdntNM;	    // 재료명
 
-    @JsonProperty("IRDNT_CPCTY")
+    @Column(name = "irdnt_CPCTY")
     private String irdntCPCTY;	    // 재료용량
 
-    @JsonProperty("IRDNT_TY_CODE")
+    @Column(name = "irdnt_TY_CODE")
     private String irdntTYCODE;	// 재료타입 코드
 
-    @JsonProperty("IRDNT_TY_NM")
+    @Column(name = "irdnt_TY_NM")
     private String irdntTYNM;	    // 재료타입명
 
+    public Recipe_IRDNT() {
+    }
+
     @Builder
-    public Recipe_IRDNT_ResponseDto(Long rowNUM, Long recipeID, String irdntSN, String irdntNM, String irdntCPCTY, String irdntTYCODE, String irdntTYNM) {
+    public Recipe_IRDNT(Long rowNUM, Long recipeID, String irdntSN, String irdntNM, String irdntCPCTY, String irdntTYCODE, String irdntTYNM) {
         this.rowNUM = rowNUM;
         this.recipeID = recipeID;
         this.irdntSN = irdntSN;
@@ -44,8 +47,8 @@ public class Recipe_IRDNT_ResponseDto {
         this.irdntTYNM = irdntTYNM;
     }
 
-    public Recipe_IRDNT toEntity() {
-        return Recipe_IRDNT.builder()
+    public Recipe_IRDNT_ResponseDto toResponseDto(){
+        return Recipe_IRDNT_ResponseDto.builder()
                 .rowNUM(rowNUM)
                 .recipeID(recipeID)
                 .irdntSN(irdntSN)

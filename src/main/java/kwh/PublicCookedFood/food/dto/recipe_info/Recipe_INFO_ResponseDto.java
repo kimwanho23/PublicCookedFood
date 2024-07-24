@@ -1,46 +1,98 @@
 package kwh.PublicCookedFood.food.dto.recipe_info;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import lombok.Builder;
-
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
-@Data
+
+@Getter
 @NoArgsConstructor
+@ToString
 public class Recipe_INFO_ResponseDto {
-    private Long ROW_NUM;
-    private Long RECIPE_ID;	// 레시피 코드 (SEQ_RECIPE)
-    private String RECIPE_NM_KO;	// 레시피 이름(한글)
-    private String SUMRY;	// 간략(요약) 소개
-    private String NATION_CODE;	// 유형코드
-    private String NATION_NM;	// 유형분류
-    private String TY_CODE;	// 음식분류코드
-    private String TY_NM;	// 음식분류
-    private String COOKING_TIME;	// 조리시간
-    private String CALORIE;	// 칼로리
-    private String QNT;	// 분량
-    private String LEVEL_NM;	// 난이도
-    private String IRDNT_CODE;	// 재료별 분류명
-    private String PC_NM;	// 가격별 분류
+
+    @JsonProperty("ROW_NUM")
+    private Long rowNUM;
+
+    @JsonProperty("RECIPE_ID")
+    private Long recipeID; // 레시피 코드 (SEQ_RECIPE)
+
+    @JsonProperty("RECIPE_NM_KO")
+    private String recipeNMKO; // 레시피 이름(한글)
+
+    @JsonProperty("SUMRY")
+    private String sumry; // 간략(요약) 소개
+
+    @JsonProperty("NATION_CODE")
+    private String nationCODE; // 유형코드
+
+    @JsonProperty("NATION_NM")
+    private String nationNM; // 유형분류
+
+    @JsonProperty("TY_CODE")
+    private String tyCODE; // 음식분류코드
+
+    @JsonProperty("TY_NM")
+    private String tyNM; // 음식분류
+
+    @JsonProperty("COOKING_TIME")
+    private String cookingTIME; // 조리시간
+
+    @JsonProperty("CALORIE")
+    private String calorie; // 칼로리
+
+    @JsonProperty("QNT")
+    private String qnt; // 분량
+
+    @JsonProperty("LEVEL_NM")
+    private String levelNM; // 난이도
+
+    @JsonProperty("IRDNT_CODE")
+    private String irdntCODE; // 재료별 분류명
+
+    @JsonProperty("PC_NM")
+    private String pcNM; // 가격별 분류
 
     @Builder
-    public Recipe_INFO_ResponseDto(Long ROW_NUM, Long RECIPE_ID, String RECIPE_NM_KO, String SUMRY,
-                                   String NATION_CODE, String NATION_NM, String TY_CODE, String TY_NM,
-                                   String COOKING_TIME, String CALORIE, String QNT, String LEVEL_NM,
-                                   String IRDNT_CODE, String PC_NM) {
-        this.ROW_NUM = ROW_NUM;
-        this.RECIPE_ID = RECIPE_ID;
-        this.RECIPE_NM_KO = RECIPE_NM_KO;
-        this.SUMRY = SUMRY;
-        this.NATION_CODE = NATION_CODE;
-        this.NATION_NM = NATION_NM;
-        this.TY_CODE = TY_CODE;
-        this.TY_NM = TY_NM;
-        this.COOKING_TIME = COOKING_TIME;
-        this.CALORIE = CALORIE;
-        this.QNT = QNT;
-        this.LEVEL_NM = LEVEL_NM;
-        this.IRDNT_CODE = IRDNT_CODE;
-        this.PC_NM = PC_NM;
+    public Recipe_INFO_ResponseDto(Long rowNUM, Long recipeID, String recipeNMKO, String sumry, String nationCODE,
+                                   String nationNM, String tyCODE, String tyNM, String cookingTIME, String calorie,
+                                   String qnt, String levelNM, String irdntCODE, String pcNM) {
+        this.rowNUM = rowNUM;
+        this.recipeID = recipeID;
+        this.recipeNMKO = recipeNMKO;
+        this.sumry = sumry;
+        this.nationCODE = nationCODE;
+        this.nationNM = nationNM;
+        this.tyCODE = tyCODE;
+        this.tyNM = tyNM;
+        this.cookingTIME = cookingTIME;
+        this.calorie = calorie;
+        this.qnt = qnt;
+        this.levelNM = levelNM;
+        this.irdntCODE = irdntCODE;
+        this.pcNM = pcNM;
+    }
+
+
+    public Recipe_INFO toEntity() {
+        return Recipe_INFO.builder()
+                .rowNUM(rowNUM)
+                .recipeID(recipeID)
+                .recipeNMKO(recipeNMKO)
+                .sumry(sumry)
+                .nationCODE(nationCODE)
+                .nationNM(nationNM)
+                .tyCODE(tyCODE)
+                .tyNM(tyNM)
+                .cookingTIME(cookingTIME)
+                .calorie(calorie)
+                .qnt(qnt)
+                .levelNM(levelNM)
+                .irdntCODE(irdntCODE)
+                .pcNM(pcNM)
+                .build();
     }
 }
+

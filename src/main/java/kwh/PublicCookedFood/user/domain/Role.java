@@ -1,4 +1,6 @@
 package kwh.PublicCookedFood.user.domain;
 
-public class User {
+
+public enum Role {
+    USER, ADMIN
 }

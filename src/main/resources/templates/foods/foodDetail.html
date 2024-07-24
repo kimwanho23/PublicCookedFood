@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<div th:insert="~{fragments/header}"></div>
+
+<div class="container col-lg-8 mx-auto p-4 py-md-5">
+    <main>
+        <h1 class="text-body-emphasis" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목입니다.</h1>
+
+        <button type="button" th:if="${isBookmarked}" th:onclick="|location.href='@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|" sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
+            북마크 해제하기
+        </button>
+
+        <button type="button" th:if="${!isBookmarked}" th:onclick="|location.href='@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|" sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
+            북마크 추가
+        </button>
+
+        <p class="fs-5 col-md-8" th:text="${infoResponseDto.getSumry()}">요리 설명</p>
+
+        <div class="mb-5">
+            <a href="/docs/5.3/examples/" class="btn btn-primary btn-lg px-4">Download examples</a>
+        </div>
+
+        <hr class="col-3 col-md-2 mb-5">
+
+        <div class="row g-5">
+            <div class="col-md-6">
+                <h2 class="text-body-emphasis">재료 목록</h2>
+                <ul class="list-unstyled ps-0" th:each="irdnts : ${irdntResponseDto}">
+                    <li>
+                        <p th:text="${irdnts.getIrdntTYNM()} + ' ' + ${irdnts.getIrdntNM()} + ' ' + ${irdnts.getIrdntCPCTY()}"></p>
+                    </li>
+
+                </ul>
+            </div>
+
+            <div class="col-md-6">
+                <h2 class="text-body-emphasis">조리법</h2>
+                <ul class="list-unstyled ps-0" th:each="crse : ${crseResponseDto}">
+                    <li>
+                        <p th:text="${crse.getCookingNO()} + '. ' + ${crse.getCookingDC()}"></p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+</div>
+
+
+<div th:insert="~{fragments/footer}"></div>
+</body>
+</html>

@@ -1,95 +1,63 @@
 package kwh.PublicCookedFood.food.controller;
 
-import kwh.PublicCookedFood.food.entity.Recipe_CRSE;
-import kwh.PublicCookedFood.food.service.RcpServTest;
+
+import kwh.PublicCookedFood.common.GlobalControllerAdvice;
+import kwh.PublicCookedFood.food.dto.recipe_crse.Recipe_CRSE_ResponseDto;
+import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
+import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
+
+import kwh.PublicCookedFood.food.service.RecipeService;
+import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.user.service.BookmarkService;
+import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.List;
 
-@RestController
-@Slf4j
+@Controller
 @RequiredArgsConstructor
+@RequestMapping("/foods")
+@Slf4j
 public class RecipeController {
 
-    private final RcpServTest rcpServTest;
+    private final RecipeService recipeService;
 
-    @Value("${recipe-api-key}")
-    private String apiKey;
-
-    @Value("${VIEW_TN_RECIPE_IRDNT}")
-    private String VIEW_TN_RECIPE_IRDNT;
-
-    @Value("${VIEW_TN_RECIPE_INFO}")
-    private String VIEW_TN_RECIPE_INFO;
-
-    @Value("${VIEW_TN_RECIPE_CRSE}")
-    private String VIEW_TN_RECIPE_CRSE;
+    private final BookmarkService bookmarkService;
 
 
-    @GetMapping("/sample")
-    public String call_Sample_View_Tn_Recipe_IRDNT() throws IOException {
-        StringBuilder result = new StringBuilder();
-        String urlStr = "http://211.237.50.150:7080/" +
-                "openapi/" +
-                "sample/" +
-                "json/" +
-                "Grid_20150827000000000226_1/" +
-                "1/" +
-                "3";
-        URL url = new URL(urlStr);
+    @GetMapping("/{id}")
+    public String foodDetail(@PathVariable Long id, Model model){
+        Recipe_INFO_ResponseDto infoResponseDto =
+                recipeService.getRecipe_INFO(id);
 
-        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        List<Recipe_IRDNT_ResponseDto> irdntResponseDto =
+                recipeService.getRecipe_IRDNT(id);
 
-        urlConnection.setRequestMethod("GET");
+        List<Recipe_CRSE_ResponseDto> crseResponseDto =
+                recipeService.getRecipe_CRSE(id);
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+        Users user = (Users) model.getAttribute("user");
+        boolean isLoggedIn = user != null;
 
-        String returnLine;
-
-        while ((returnLine = br.readLine()) != null) {
-            result.append(returnLine).append("\n\r");
+        if (isLoggedIn) {
+            // 북마크 여부 확인
+            boolean isBookmarked = bookmarkService.isBookmarked(user, infoResponseDto.toEntity());
+            model.addAttribute("isBookmarked", isBookmarked);
+            log.info(isBookmarked ? "is bookmarked" : "is unbookmarked");
         }
 
-        urlConnection.disconnect();
 
-        return result.toString();
+        model.addAttribute("infoResponseDto", infoResponseDto);
+        model.addAttribute("irdntResponseDto", irdntResponseDto);
+        model.addAttribute("crseResponseDto", crseResponseDto);
+        return "foods/foodDetail";
     }
-
-    @GetMapping(value = "/json")
-    public Recipe_CRSE getRecipeCRSE(){
-        return rcpServTest.recipe_CRSE_Info();
-
-
-/*        String data = rcpServTest.recipe_CRSE_Info();
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            JsonNode rootNode = objectMapper.readTree(data);
-            JsonNode gridDataNode = rootNode.path("Grid_20150827000000000228_1");
-
-            // "row" 배열을 추출
-            JsonNode rowNode = gridDataNode.path("row");
-
-            // 이를 리스트에 담아 반환
-            List<Recipe_CRSE_ResponseDto> rows = objectMapper
-                    .convertValue(rowNode, objectMapper.getTypeFactory().constructCollectionType(List.class,
-                            Recipe_CRSE_ResponseDto.class));
-            for (Recipe_CRSE_ResponseDto row : rows) {
-                log.info(row.toString());
-            }
-            return ResponseEntity.ok(rows);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
-        }*/
-    }
-
 
 }
