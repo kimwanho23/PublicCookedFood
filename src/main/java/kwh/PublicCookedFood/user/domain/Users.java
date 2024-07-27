@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.io.Serializable;
-
 @Entity
 @Getter
 @Table(name = "user")

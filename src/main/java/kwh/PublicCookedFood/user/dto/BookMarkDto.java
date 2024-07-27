@@ -7,10 +7,12 @@ import kwh.PublicCookedFood.user.domain.Bookmark;
 import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Getter
 @ToString
+@NoArgsConstructor
 public class BookMarkDto {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -21,8 +23,6 @@ public class BookMarkDto {
     @JoinColumn(name="recipe_ID")
     private Recipe_INFO recipeID;
 
-    public BookMarkDto() {
-    }
 
     @Builder
     public BookMarkDto(Users user, Recipe_INFO recipeID) {

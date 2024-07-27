@@ -2,7 +2,6 @@ package kwh.PublicCookedFood.user.service;
 
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.UserSaveDto;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

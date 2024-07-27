@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.food.controller;
 
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
-import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.food.service.RecipeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,8 +1,6 @@
 package kwh.PublicCookedFood.food.repository;
 
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
