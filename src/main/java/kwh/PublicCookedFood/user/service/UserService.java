@@ -30,16 +30,16 @@ public class UserService implements UserDetailsService {
         return userRepository.save(users);
     }
 
-    public Users findUser(String loginId){
-        return userRepository.findByLoginId(loginId);
+    public Users findUser(String email){
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     @Override
-    public UserDetails loadUserByUsername(String loginId) throws UsernameNotFoundException {
-       Users users = userRepository.findByLoginId(loginId);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+       Users users = userRepository.findByEmail(email).orElse(null);
 
         if (users == null) {
-            throw new UsernameNotFoundException(loginId);
+            throw new UsernameNotFoundException(email);
         }
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority(users.getAuthority().name()));

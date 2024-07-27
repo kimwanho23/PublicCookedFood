@@ -1,6 +1,7 @@
 package kwh.PublicCookedFood.food.controller;
 
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
+import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.food.service.RecipeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,8 @@ public class MainController {
                                                         List<String> irdntCodeList) {
         if ((tyNmList == null || tyNmList.isEmpty()) &&
                 (nationNmList == null || nationNmList.isEmpty()) &&
-                (irdntCodeList == null || irdntCodeList.isEmpty())) {
+                (irdntCodeList == null || irdntCodeList.isEmpty())
+        ) {
             return recipeService.getAllRecipe_INFO(pageable);
         } else {
             return recipeService.getFilteredRecipeList(tyNmList, nationNmList, irdntCodeList, pageable);

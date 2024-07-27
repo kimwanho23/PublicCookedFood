@@ -47,6 +47,13 @@ public class RecipeService {
                 .toList(); //레시피 재료정보
     }
 
+    public List<Recipe_INFO_ResponseDto> Searched_Recipes(String keyword){
+        return infoRepository.findByRecipeNMKOContaining(keyword)
+                .stream()
+                .map(Recipe_INFO::toResponseDto)
+                .toList();
+    }
+
 
     /////////////////   카테고리명   ////////////////////////
     public List<String> getRecipeNation_NM(){

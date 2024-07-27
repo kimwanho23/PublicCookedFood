@@ -29,19 +29,21 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        // 이전 페이지 가져오기
-        String prevPage = (String) request.getSession().getAttribute(PREV_PAGE_ATTRIBUTE);
+        String prevPage = (String) request.getSession().getAttribute(PREV_PAGE_ATTRIBUTE); // 이전 페이지를 가져온다.
         if (prevPage != null) {
             request.getSession().removeAttribute(PREV_PAGE_ATTRIBUTE);
         }
 
         // 기본 URI
-        String uri = determineRedirectUri(prevPage);
-        redirectStrategy.sendRedirect(request, response, uri);
+        String uri = redirectUri(prevPage);
+        redirectStrategy.sendRedirect(request, response, uri); //로그인 시 이전 url로 리다이렉트
     }
 
-    private String determineRedirectUri(String prevPage) {
-        if (prevPage != null && !prevPage.isEmpty() && !prevPage.contains(LOGIN_PAGE_URI) && !prevPage.contains(REGISTER_PAGE_URI)) {
+    private String redirectUri(String prevPage) {
+        if (prevPage != null
+                && !prevPage.isEmpty()
+                && !prevPage.contains(LOGIN_PAGE_URI)
+                && !prevPage.contains(REGISTER_PAGE_URI)) {
             return prevPage;
         }
         return "/";

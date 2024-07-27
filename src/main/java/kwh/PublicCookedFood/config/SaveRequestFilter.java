@@ -30,15 +30,6 @@ public class SaveRequestFilter extends OncePerRequestFilter {
                 return;
             }
         }
-/*        if (request.getMethod().equalsIgnoreCase("GET") &&
-                !new AntPathRequestMatcher(LOGIN_PAGE_URI).matches(request) &&
-                !new AntPathRequestMatcher(REGISTER_PAGE_URI).matches(request)) {
-            String referrer = request.getHeader("Referer");
-
-            if (referrer != null && !referrer.contains(LOGIN_PAGE_URI) && !referrer.contains(REGISTER_PAGE_URI)) {
-                request.getSession().setAttribute(PREV_PAGE_ATTRIBUTE, referrer);
-            }
-        }*/
         filterChain.doFilter(request, response);
     }
 }

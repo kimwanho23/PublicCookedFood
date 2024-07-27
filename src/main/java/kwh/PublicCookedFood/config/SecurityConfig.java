@@ -1,5 +1,6 @@
 package kwh.PublicCookedFood.config;
 
+import kwh.PublicCookedFood.config.oauth2.CustomOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,10 +23,13 @@ public class SecurityConfig {
 
     private final SaveRequestFilter saveRequestFilter;
 
-    public SecurityConfig(CustomLogoutSuccessHandler customLogoutSuccessHandler, CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler, SaveRequestFilter saveRequestFilter) {
+    private final CustomOAuth2UserService customOAuth2UserService;
+
+    public SecurityConfig(CustomLogoutSuccessHandler customLogoutSuccessHandler, CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler, SaveRequestFilter saveRequestFilter, CustomOAuth2UserService customOAuth2UserService) {
         this.customLogoutSuccessHandler = customLogoutSuccessHandler;
         this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
         this.saveRequestFilter = saveRequestFilter;
+        this.customOAuth2UserService = customOAuth2UserService;
     }
 
     @Bean
@@ -44,7 +48,7 @@ public class SecurityConfig {
                 .formLogin(formLogin -> formLogin
                         .loginPage("/u/login")
                         .defaultSuccessUrl("/",true)
-                        .usernameParameter("loginId")
+                        .usernameParameter("email")
                         .passwordParameter("password")
                         .loginProcessingUrl("/u/login")
                         .successHandler(customAuthenticationSuccessHandler)
@@ -53,8 +57,13 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutRequestMatcher(new AntPathRequestMatcher("/u/logout"))
                         .logoutSuccessHandler(customLogoutSuccessHandler)
-                ).
-                authorizeHttpRequests((authorizeRequests) -> authorizeRequests
+                )
+                .oauth2Login((oauth2) -> oauth2
+                .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
+                        .userService(customOAuth2UserService))
+                .defaultSuccessUrl("/foods", true))
+
+                .authorizeHttpRequests((authorizeRequests) -> authorizeRequests
                         .requestMatchers("/u/login", "/u/signup").not().fullyAuthenticated()
                         .requestMatchers("/css/**", "/js/**", "/img/**", "/foods/**", "/fragments/**").permitAll()
                         .requestMatchers("/", "/**", "/u/**", "/foods/**", "/error/**").permitAll()

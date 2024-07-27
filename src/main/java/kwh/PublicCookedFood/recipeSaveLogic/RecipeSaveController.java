@@ -12,7 +12,6 @@ import kwh.PublicCookedFood.food.entity.Recipe_IRDNT;
 import kwh.PublicCookedFood.food.repository.Recipe_CRSE_Repository;
 import kwh.PublicCookedFood.food.repository.Recipe_INFO_Repository;
 import kwh.PublicCookedFood.food.repository.Recipe_IRDNT_Repository;
-import kwh.PublicCookedFood.food.service.RcpServTest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

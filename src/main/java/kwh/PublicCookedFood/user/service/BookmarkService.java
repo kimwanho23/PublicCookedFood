@@ -24,8 +24,8 @@ public class BookmarkService {
                 .toList();
     }
 
-    public boolean isBookmarked(Users userId, Recipe_INFO recipeId) {
-        return bookmarkRepository.existsByUserAndRecipeID(userId, recipeId);
+    public boolean isBookmarked(Users email, Recipe_INFO recipeId) {
+        return bookmarkRepository.existsByUserAndRecipeID(email, recipeId);
     }
 
    @Transactional
@@ -34,8 +34,8 @@ public class BookmarkService {
     }
 
     @Transactional
-    public void delete(Users userId, Recipe_INFO recipeID){
-        bookmarkRepository.deleteByUserAndRecipeID(userId, recipeID);
+    public void delete(Users email, Recipe_INFO recipeID){
+        bookmarkRepository.deleteByUserAndRecipeID(email, recipeID);
     }
 
 

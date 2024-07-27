@@ -21,4 +21,6 @@ public interface Recipe_INFO_Repository extends JpaRepository<Recipe_INFO, Long>
     @Query("SELECT DISTINCT r.nationNM FROM Recipe_INFO r")
     List<String> findDistinctNationNM(); // 유형별 카테고리
 
+    List<Recipe_INFO> findByRecipeNMKOContaining(String keyword);
+
 }

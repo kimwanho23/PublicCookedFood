@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.io.Serializable;
+
 @Entity
 @Getter
 @Table(name = "user")
@@ -15,41 +17,51 @@ public class Users {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String loginId; //아이디
+    private String email; //이메일
 
-    @Column(nullable = false)
+    @Column
     private String password; //비밀번호
 
     @Column(nullable = false)
     private String name; //별명
 
-    @Column(nullable = false, unique = true)
-    private String email; //이메일
-
     @Enumerated(EnumType.STRING)
     private Role authority; // 권한
+
+    @Column(nullable = false)
+    private String loginMethod;
 
     public Users() {
     }
 
     @Builder
-    public Users(Long id, String loginId, String password, String name, String email, Role authority) {
+    public Users(Long id, String email, String password, String name, Role authority, String loginMethod) {
         this.id = id;
-        this.loginId = loginId;
+        this.email = email;
         this.password = password;
         this.name = name;
-        this.email = email;
         this.authority = authority;
+        this.loginMethod = loginMethod;
+    }
+
+    public Users update(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getRoleKey() {
+        return this.authority.getKey();
     }
 
     public static Users createUser(UserSaveDto userSaveDto,
                                    PasswordEncoder passwordEncoder) {
         return Users.builder()
-                .loginId(userSaveDto.getLoginId())
                 .name(userSaveDto.getName())
                 .email(userSaveDto.getEmail())
                 .password(passwordEncoder.encode(userSaveDto.getPassword()))
-                .authority(Role.USER).build();
+                .authority(Role.USER)
+                .loginMethod("Current")
+                .build();
     }
 
 }

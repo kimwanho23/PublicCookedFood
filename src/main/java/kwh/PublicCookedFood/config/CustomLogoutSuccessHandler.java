@@ -17,6 +17,6 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
                                 Authentication authentication) throws IOException, ServletException {
         String referer = request.getHeader("Referer");
         String redirectUrl = (referer != null) ? referer : "/";
-        response.sendRedirect(redirectUrl);
+        response.sendRedirect(redirectUrl); // 로그아웃 시에도 현재 페이지 유지
     }
 }

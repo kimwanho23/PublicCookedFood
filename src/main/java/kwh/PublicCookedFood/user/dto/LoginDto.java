@@ -8,14 +8,14 @@ import lombok.Getter;
 public class LoginDto {
 
     @NotEmpty
-    private String loginId;
+    private String email;
 
     @NotEmpty
     private String password;
 
     @Builder
-    public LoginDto(String loginId, String password) {
-        this.loginId = loginId;
+    public LoginDto(String email, String password) {
+        this.email = email;
         this.password = password;
     }
 }

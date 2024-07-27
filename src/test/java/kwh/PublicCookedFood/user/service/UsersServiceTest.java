@@ -31,9 +31,8 @@ class UsersServiceTest {
 
     public Users createUser() {
         UserSaveDto userDto = UserSaveDto.builder()
-                .loginId("test12")
-                .name("홍길동")
                 .email("test@email.com")
+                .name("홍길동")
                 .password("12345678")
                 .build();
         return Users.createUser(userDto, passwordEncoder);

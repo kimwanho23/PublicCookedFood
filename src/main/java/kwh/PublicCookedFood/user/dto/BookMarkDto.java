@@ -14,7 +14,7 @@ import lombok.ToString;
 public class BookMarkDto {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "email")
     private Users user;
 
     @ManyToOne

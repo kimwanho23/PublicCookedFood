@@ -14,12 +14,10 @@ import java.util.List;
 public class CustomUserDetails extends User implements UserDetails {
 
     private final String name;
-    private final String email;
 
     public CustomUserDetails(Users users, List<GrantedAuthority> authorities) {
-        super(users.getLoginId(),users.getPassword(), authorities);
+        super(users.getEmail(),users.getPassword(), authorities);
         this.name = users.getName();
-        this.email = users.getEmail();
     }
 
 }

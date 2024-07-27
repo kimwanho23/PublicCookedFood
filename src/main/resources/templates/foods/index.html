@@ -10,6 +10,7 @@
             const tyNmList = params.getAll('tyNmList').join(',');
             const nationNmList = params.getAll('nationNmList').join(',');
             const irdntCodeList = params.getAll('irdntCodeList').join(',');
+            const keyword = params.getAll('keyword').join(',');
 
 
             document.querySelectorAll('.pagination .page-link').forEach(link => {
@@ -17,6 +18,7 @@
                 url.searchParams.set('tyNmList', tyNmList);
                 url.searchParams.set('nationNmList', nationNmList);
                 url.searchParams.set('irdntCodeList', irdntCodeList);
+                url.searchParams.set('keyword', keyword);
                 link.href = url.toString();
             });
 

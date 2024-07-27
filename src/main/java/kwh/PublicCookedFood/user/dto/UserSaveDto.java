@@ -1,32 +1,31 @@
 package kwh.PublicCookedFood.user.dto;
 
 import jakarta.validation.constraints.*;
-import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Builder;
 import lombok.Getter;
+import org.hibernate.validator.constraints.UniqueElements;
 
 
 @Getter
 public class UserSaveDto {
 
-    @NotEmpty(message = "아이디를 입력하세요")
-    private String loginId;
+    @Email(message = "올바른 이메일 주소를 입력해주세요")
+    @NotEmpty(message = "이메일을 입력하세요")
+    private String email;
 
-    @NotEmpty(message = "비밀번호를 입력하세요")
     private String password;
 
     @NotEmpty(message = "별명을 입력하세요")
     private String name;
 
-    @Email(message = "올바른 이메일 주소를 입력해주세요")
-    @NotEmpty(message = "이메일을 입력하세요")
-    private String email;
+    private String loginMethod;
+
 
     @Builder
-    public UserSaveDto(String loginId, String password, String name, String email) {
-        this.loginId = loginId;
+    public UserSaveDto(String email, String password, String name,  String loginMethod) {
+        this.email = email;
         this.password = password;
         this.name = name;
-        this.email = email;
+        this.loginMethod = loginMethod;
     }
 }
