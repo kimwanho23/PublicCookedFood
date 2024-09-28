@@ -4,15 +4,16 @@ import jakarta.servlet.http.HttpSession;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.context.request.WebRequest;
 
 @ControllerAdvice
 @RequiredArgsConstructor
+@Slf4j
 public class GlobalControllerAdvice {
 
     private final UserService userService;
@@ -20,22 +21,17 @@ public class GlobalControllerAdvice {
     private final HttpSession httpSession;
 
     @ModelAttribute
-    public void addUserToModel(@AuthenticationPrincipal OAuth2User oAuth2User, WebRequest request, Model model) {
-        Users user = userService.getUserFromSession(httpSession); // 사용자 정보를 세션에 설정
-        if (user == null && oAuth2User != null) {
-            user = convertToUsers(oAuth2User);
+    public void addUserToModel(Model model) { // 현재 유저를 세션에 등록, 헤더 때문에 필요
+        Users user = (Users) httpSession.getAttribute("user");
+
+        if (user == null) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                String email = authentication.getName();
+                user = userService.findUserByEmail(email);
+                httpSession.setAttribute("user", user);
+            }
         }
         model.addAttribute("user", user);
-        request.setAttribute("user", user, WebRequest.SCOPE_REQUEST);
-
     }
-
-    private Users convertToUsers(OAuth2User oAuth2User) {
-        return Users.builder()
-                .email(oAuth2User.getAttribute("email"))
-                .name(oAuth2User.getAttribute("name"))
-                .build();
-    }
-
-
 }

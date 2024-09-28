@@ -12,25 +12,18 @@ import lombok.ToString;
 @ToString
 public class Recipe_IRDNT_ResponseDto {
 
-    @JsonProperty("ROW_NUM")
     private Long rowNUM;           // ID
 
-    @JsonProperty("RECIPE_ID")
     private Long recipeID;         // 레시피 코드
 
-    @JsonProperty("IRDNT_SN")
     private String irdntSN;	    // 재료순번
 
-    @JsonProperty("IRDNT_NM")
     private String irdntNM;	    // 재료명
 
-    @JsonProperty("IRDNT_CPCTY")
     private String irdntCPCTY;	    // 재료용량
 
-    @JsonProperty("IRDNT_TY_CODE")
     private String irdntTYCODE;	// 재료타입 코드
 
-    @JsonProperty("IRDNT_TY_NM")
     private String irdntTYNM;	    // 재료타입명
 
     @Builder

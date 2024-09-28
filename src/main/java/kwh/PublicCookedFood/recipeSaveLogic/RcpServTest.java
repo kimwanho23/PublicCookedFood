@@ -30,7 +30,7 @@ public class RcpServTest {
         return restClient.get()
                 .uri(crse + "/" +startRow + "/" +endRow)
                 .retrieve()
-                .body(String.class);
+                .body(String.class); //String 형태로 Json 데이터를 받아옴
     }
 
     public String getRecipe_INFO(int startRow, int endRow) {

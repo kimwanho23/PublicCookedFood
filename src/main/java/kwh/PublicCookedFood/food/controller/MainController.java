@@ -1,5 +1,7 @@
 package kwh.PublicCookedFood.food.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import kwh.PublicCookedFood.common.Paging;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.service.RecipeService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +14,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -23,69 +27,44 @@ public class MainController {
 
     @GetMapping(value = "/foods")
     public String index(@PageableDefault(size = 15) Pageable pageable,
-                        @RequestParam(required = false) List<String> tyNmList,
-                        @RequestParam(required = false) List<String> nationNmList,
-                        @RequestParam(required = false) List<String> irdntCodeList,
-                        Model model){
+                        @RequestParam(required = false) String keyword,
+                        @RequestParam(required = false) String search,
+                        Model model,HttpServletRequest request){
 
-        Page<Recipe_INFO_ResponseDto> infoResponseDto = getRecipeInfo(pageable, tyNmList, nationNmList, irdntCodeList);
-        addPagingAttributes(model, infoResponseDto, pageable);
+        if ((keyword != null && keyword.trim().isEmpty()) || (search != null && search.trim().isEmpty())) {
+            return Paging.handleEmptyParamsRedirect(request, keyword, search);
+        }
 
+        Page<Recipe_INFO_ResponseDto> infoResponseDto = getRecipeInfo(pageable, keyword, search); //레시피 필터링
+        Paging.addPagingAttributes(model, infoResponseDto, pageable); //페이징 알고리즘
+        List<Map<String, Object>> categories = createCategories(); //카테고리 목록
+
+        model.addAttribute("categories", categories);
+        model.addAttribute("infoResponseDto", infoResponseDto);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("search", search);
+
+        return "/foods/index";
+    }
+
+
+    private Page<Recipe_INFO_ResponseDto> getRecipeInfo(Pageable pageable, String keyword, String search) {
+        if ((keyword == null || keyword.isEmpty()) && (search == null || search.isEmpty())) {
+            return recipeService.getAllRecipe_INFO(pageable);
+        }else {
+            return recipeService.getFilteredRecipeList(keyword, search, pageable);
+        }
+    }
+
+    private List<Map<String, Object>> createCategories() {
         List<String> allTyNmList = recipeService.getRecipeTy_NM();
         List<String> allNationNmList = recipeService.getRecipeNation_NM();
         List<String> allIrdntCodeList = recipeService.getRecipeIrdntCODE();
 
-        model.addAttribute("infoResponseDto", infoResponseDto);
-        model.addAttribute("allNationNmList", allNationNmList);
-        model.addAttribute("allIrdntCodeList", allIrdntCodeList);
-        model.addAttribute("allTyNmList", allTyNmList);
-
-        return "foods/index";
+        return List.of(
+                Map.of("title", "음식별", "items", allNationNmList),
+                Map.of("title", "재료별", "items", allIrdntCodeList),
+                Map.of("title", "분류별", "items", allTyNmList)
+        );
     }
-
-    private Page<Recipe_INFO_ResponseDto> getRecipeInfo(Pageable pageable,
-                                                        List<String> tyNmList,
-                                                        List<String> nationNmList,
-                                                        List<String> irdntCodeList) {
-        if ((tyNmList == null || tyNmList.isEmpty()) &&
-                (nationNmList == null || nationNmList.isEmpty()) &&
-                (irdntCodeList == null || irdntCodeList.isEmpty())
-        ) {
-            return recipeService.getAllRecipe_INFO(pageable);
-        } else {
-            return recipeService.getFilteredRecipeList(tyNmList, nationNmList, irdntCodeList, pageable);
-        }
-    }
-
-    private void addPagingAttributes(Model model, Page<Recipe_INFO_ResponseDto> infoResponseDto, Pageable pageable) {
-        int totalPages = infoResponseDto.getTotalPages();
-        int currentPage = pageable.getPageNumber();
-
-        int currentGroup = currentPage / 10;
-        int startPage = currentGroup * 10;
-        int endPage = Math.min(startPage + 9, totalPages - 1);
-
-        boolean hasPreviousGroup = startPage > 0;
-        boolean hasNextGroup = endPage < totalPages - 1;
-
-        model.addAttribute("currentPage", currentPage);
-        model.addAttribute("totalPages", totalPages);
-        model.addAttribute("startPage", startPage);
-        model.addAttribute("endPage", endPage);
-        model.addAttribute("hasPreviousGroup", hasPreviousGroup);
-        model.addAttribute("hasNextGroup", hasNextGroup);
-    }
-
-    @GetMapping("header")
-    public String header(){
-        return "fragments/header";
-    }
-
-    @GetMapping("footer")
-    public String footer(){
-        return "fragments/footer";
-    }
-
-
-
 }

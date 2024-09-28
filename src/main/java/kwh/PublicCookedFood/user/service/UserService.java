@@ -29,9 +29,14 @@ public class UserService implements UserDetailsService {
         return userRepository.save(users);
     }
 
-    public Users findUser(String email){
+    public Users findUserByEmail(String email){
         return userRepository.findByEmail(email).orElse(null);
     }
+
+    public Users findUserById(Long id){
+        return userRepository.findById(id).orElse(null);
+    }
+
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -39,29 +44,9 @@ public class UserService implements UserDetailsService {
 
         if (users == null) {
             throw new UsernameNotFoundException(email);
+        } else {
+            return new CustomUserDetails(users);
         }
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority(users.getAuthority().name()));
-
-        return new CustomUserDetails(users, authorities);
 
     }
-
-    public Users getUserFromSession(HttpSession session) {
-        Users user = (Users) session.getAttribute("user");
-        if (user == null) {
-            String name = SecurityContextHolder.getContext().getAuthentication().getName();
-            user = findUser(name);
-            session.setAttribute("user", user);
-        }
-        return user;
-    }
-
-
-/*    public Optional<User> login(String loginId, String password, PasswordEncoder passwordEncoder) { // PasswordEncoder 추가
-        return userRepository.findByLoginId(loginId)
-                .filter(user -> passwordEncoder.matches(password,  user.getPassword())); // 패스워드 매칭 방식 변경
-    }*/
-
-
 }

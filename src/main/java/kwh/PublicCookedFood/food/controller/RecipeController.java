@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -50,7 +51,8 @@ public class RecipeController {
             log.info(isBookmarked ? "is bookmarked" : "is unbookmarked");
         }
 
-
+        List<String> categories = Arrays.asList("주재료", "부재료", "양념");
+        model.addAttribute("categories", categories);
         model.addAttribute("infoResponseDto", infoResponseDto);
         model.addAttribute("irdntResponseDto", irdntResponseDto);
         model.addAttribute("crseResponseDto", crseResponseDto);

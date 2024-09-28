@@ -128,7 +128,7 @@ public class RecipeSaveController {
     @GetMapping(value = "/irdnt")
     public ResponseEntity<List<Recipe_IRDNT_ResponseDto>> getRecipeIRDNT() throws JsonProcessingException {
         int startRow = 1;
-        int endRow = 1000;
+        int endRow = 1000; //1부터 ~ 1000까지 읽는다
         int totalCount = irdnt_Count();
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -149,7 +149,7 @@ public class RecipeSaveController {
 
                 allRows.addAll(rows);
                 // 다음 페이지 설정
-                startRow += 1000;
+                startRow += 1000; //1~부터 1000까지 읽고, 1001부터 ~ 2000까지 읽기 위해 row 증가
                 endRow += 1000;
             }
 
@@ -158,7 +158,6 @@ public class RecipeSaveController {
                     .toList();
             log.info(String.valueOf(entities.size()));
             irdntRepository.saveAll(entities);
-
             return ResponseEntity.ok(allRows);
         } catch (JsonProcessingException e) {
             return ResponseEntity.status(500).build();

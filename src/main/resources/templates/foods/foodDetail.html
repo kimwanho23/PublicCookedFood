@@ -3,49 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+
+    <style>
+
+        .inline-items {
+            display: flex;
+            align-items: center;
+        }
+
+        .inline-items h1 {
+            margin-right: 10px; /* 제목과 버튼 사이의 간격 */
+        }
+    </style>
 </head>
+
 <body>
 
 <div th:insert="~{fragments/header}"></div>
 
 <div class="container col-lg-8 mx-auto p-4 py-md-5">
     <main>
-        <h1 class="text-body-emphasis" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목입니다.</h1>
+        <div class="inline-items">
+            <h1 class="text-body-emphasis" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목입니다.</h1>
 
-        <button type="button" th:if="${isBookmarked}" th:onclick="|location.href='@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
-                sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
-            북마크 해제하기
-        </button>
+            <button type="button" th:if="${isBookmarked}" th:onclick="|location.href='@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
+                    sec:authorize="isAuthenticated()" class="btn btn-dark">
+                북마크 해제하기
+            </button>
 
-        <button type="button" th:if="${!isBookmarked}" th:onclick="|location.href='@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
-                sec:authorize="isAuthenticated()" class="btn btn-dark" style="display: inline;">
-            북마크 추가
-        </button>
-
-        <p class="fs-5 col-md-8" th:text="${infoResponseDto.getSumry()}">요리 설명</p>
-
-        <div class="mb-5">
-            <a href="/docs/5.3/examples/" class="btn btn-primary btn-lg px-4">Download examples</a>
+            <button type="button" th:if="${!isBookmarked}" th:onclick="|location.href='@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
+                    sec:authorize="isAuthenticated()" class="btn btn-dark">
+                북마크 추가
+            </button>
         </div>
 
-        <hr class="col-3 col-md-2 mb-5">
+        <h6 th:text="${infoResponseDto.getSumry()}">요리 설명</h6>
+
+
+        <hr>
 
         <div class="row g-5">
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <h2 class="text-body-emphasis">재료 목록</h2>
-                <ul class="list-unstyled ps-0" th:each="irdnts : ${irdntResponseDto}">
-                    <li>
-                        <p th:text="${irdnts.getIrdntTYNM()} + ' ' + ${irdnts.getIrdntNM()} + ' ' + ${irdnts.getIrdntCPCTY()}"></p>
-                    </li>
 
-                </ul>
+
+                <div th:each="category : ${categories}" class="mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="align-middle" th:text="${category}"></h5>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li th:each="irdnts : ${irdntResponseDto}" th:if="${irdnts.getIrdntTYNM() == category}" class="list-group-item" th:text="${irdnts.getIrdntNM()} + ' ' + ${irdnts.getIrdntCPCTY()}"></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-9">
                 <h2 class="text-body-emphasis">조리법</h2>
                 <ul class="list-unstyled ps-0" th:each="crse : ${crseResponseDto}">
                     <li>
                         <p th:text="${crse.getCookingNO()} + '. ' + ${crse.getCookingDC()}"></p>
+                        <img th:if="${crse.getImgURL() != null and crse.getImgURL() != ' '}" th:src="@{${crse.getImgURL()}}" alt="이미지"/>
+                        <hr>
                     </li>
                 </ul>
             </div>

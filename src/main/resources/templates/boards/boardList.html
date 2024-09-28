@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+</head>
+<body>
+<div th:insert="~{fragments/header}"></div>
+
+
+
+<div class="container">
+
+    <table class="table table-hover text-center">
+        <thead class="table-dark">
+        <tr class="text-nowrap">
+            <th scope="col" style="width: 6%;">번호</th>
+            <th scope="col" style="width: 60%;">제목</th>
+            <th scope="col" style="width: 11%;">작성자</th>
+            <th scope="col" style="width: 11%;">작성일</th>
+            <th scope="col" style="width: 6%;">조회수</th>
+            <th scope="col" style="width: 6%;">추천수</th>
+        </tr>
+        </thead>
+        <tbody th:each="board : ${boardList}" th:if="${board.state == '1'}">
+        <tr th:onclick="|location.href='@{/board/{id}(id=${board.id})}'|" style="cursor: pointer">
+            <th th:text="${boardList.getTotalElements() -  (boardList.number * boardList.size) - boardStat.index}">번호</th>
+            <td th:text="${board.title.length() > 30 ? board.title.substring(0, 30) + '...' + ' [' + board.commentCount + ']' : board.title + ' [' + board.commentCount + ']'}">제목</td>
+            <td th:text="${board.user.name.length() > 7 ? board.user.name.substring(0, 7) + '...' : board.user.name}" >작성자</td>
+            <td th:text="${#temporals.format(board.regTime, 'yyyy.MM.dd') == #dates.format(#dates.createNow(),'yyyy.MM.dd') ? #temporals.format(board.regTime, 'HH:mm') : #temporals.format(board.regTime, 'yyyy.MM.dd')}">작성일</td>
+            <td th:text="${board.views}" >조회수</td>
+            <td th:text="${board.likeCount}">추천 수</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <button id="writeButton" sec:authorize="isAuthenticated()" type="button" class="btn btn-dark" th:onclick="|location.href='@{/board/write}'|">글쓰기
+    </button>
+
+    <!-- Button trigger modal -->
+    <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#loginModal">
+       글쓰기
+    </button>
+
+
+    <div th:if="${boardList.getTotalElements() > 0}">
+        <div th:replace="~{fragments/paginationFragment :: pagination('/board', ${startPage}, ${endPage}, ${currentPage}, ${hasPreviousGroup}, ${hasNextGroup}, ${keyword}, ${search})}"></div>
+    </div>
+
+
+    <div class="d-flex justify-content-center">
+        <form th:action="@{/board}" method="get" class="d-inline-flex mb-3">
+            <input type="text" name="search" th:value="${search}" placeholder="Search by title or content..." class="form-control me-2">
+            <button type="submit" class="btn btn-primary col-auto">검색</button>
+        </form>
+    </div>
+
+    <div th:replace="~{fragments/loginFragment}"></div>
+
+</div>
+</body>
+</html>

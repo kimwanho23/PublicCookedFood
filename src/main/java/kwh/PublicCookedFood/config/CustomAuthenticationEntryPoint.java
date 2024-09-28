@@ -12,7 +12,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+        response.sendRedirect("/foods");
+/*        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");*/
     }
 
 }

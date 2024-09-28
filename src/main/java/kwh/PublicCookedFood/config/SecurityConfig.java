@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -63,8 +64,13 @@ public class SecurityConfig {
                         .userService(customOAuth2UserService))
                 .defaultSuccessUrl("/foods", true))
 
+/*                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )*/
+
                 .authorizeHttpRequests((authorizeRequests) -> authorizeRequests
                         .requestMatchers("/u/login", "/u/signup").not().fullyAuthenticated()
+                        .requestMatchers("/u/profile", "/board/write").authenticated()
                         .requestMatchers("/css/**", "/js/**", "/img/**", "/foods/**", "/fragments/**").permitAll()
                         .requestMatchers("/", "/**", "/u/**", "/foods/**", "/error/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")

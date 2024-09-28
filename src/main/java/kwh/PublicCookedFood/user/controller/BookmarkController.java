@@ -6,7 +6,6 @@ import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.BookMarkDto;
 import kwh.PublicCookedFood.user.service.BookmarkService;
-import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -30,7 +29,7 @@ public class BookmarkController {
         Users user = (Users) session.getAttribute("user");
         List<BookMarkDto> userBookmarks = bookmarkService.findUserBookmarks(user);
        List<Recipe_INFO_ResponseDto> recipeInfoResponseDto = userBookmarks.stream()
-                .map(bookmarkDto -> recipeService.getRecipe_INFO(bookmarkDto.getRecipeID().getRecipeID()))
+                .map(bookmarkDto -> recipeService.getRecipe_INFO(bookmarkDto.getRecipeID()))
                 .toList();
 
 
@@ -42,8 +41,8 @@ public class BookmarkController {
     public String addBookmark(@PathVariable Long recipeId, HttpSession session){
         Users user = (Users) session.getAttribute("user");
             BookMarkDto bookmarkDto = BookMarkDto.builder()
-                    .recipeID(recipeService.getRecipe_INFO(recipeId).toEntity())
-                    .user(user)
+                    .recipeID(recipeId)
+                    .email(user.getEmail())
                     .build();
             bookmarkService.save(bookmarkDto);
         return "redirect:/foods/" + recipeId;

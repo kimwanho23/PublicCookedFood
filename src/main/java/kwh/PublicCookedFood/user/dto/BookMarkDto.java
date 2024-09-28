@@ -14,23 +14,17 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 public class BookMarkDto {
+    private String email;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "email")
-    private Users user;
-
-    @ManyToOne
-    @JoinColumn(name="recipe_ID")
-    private Recipe_INFO recipeID;
-
+    private Long recipeID;
 
     @Builder
-    public BookMarkDto(Users user, Recipe_INFO recipeID) {
-        this.user = user;
+    public BookMarkDto(String email, Long recipeID) {
+        this.email = email;
         this.recipeID = recipeID;
     }
 
-    public Bookmark toEntity() {
+    public Bookmark toEntity(Users user, Recipe_INFO recipeID) {
         return Bookmark.builder()
                 .user(user)
                 .recipeID(recipeID)

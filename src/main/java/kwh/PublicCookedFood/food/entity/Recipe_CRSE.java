@@ -26,13 +26,17 @@ public class Recipe_CRSE {
     @Column(name = "step_TIP")
     private String stepTIP;	// 과정 팁
 
+    @Column(name="img_URL")
+    private String imgURL;
+
     @Builder
-    public Recipe_CRSE(Long rowNUM, Long recipeID, String cookingNO, String cookingDC, String stepTIP) {
+    public Recipe_CRSE(Long rowNUM, Long recipeID, String cookingNO, String cookingDC, String stepTIP, String imgURL) {
         this.rowNUM = rowNUM;
         this.recipeID = recipeID;
         this.cookingNO = cookingNO;
         this.cookingDC = cookingDC;
         this.stepTIP = stepTIP;
+        this.imgURL = imgURL;
     }
 
     public Recipe_CRSE() {
@@ -46,6 +50,7 @@ public class Recipe_CRSE {
                 .cookingNO(cookingNO)
                 .cookingDC(cookingDC)
                 .stepTIP(stepTIP)
+                .imgURL(imgURL)
                 .build();
     }
 }

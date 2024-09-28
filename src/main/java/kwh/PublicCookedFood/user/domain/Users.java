@@ -1,10 +1,16 @@
 package kwh.PublicCookedFood.user.domain;
 
 import jakarta.persistence.*;
+import kwh.PublicCookedFood.board.domain.Board;
+import kwh.PublicCookedFood.board.domain.Comments;
+import kwh.PublicCookedFood.board.domain.Likes;
 import kwh.PublicCookedFood.user.dto.UserSaveDto;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -29,17 +35,29 @@ public class Users {
     @Column(nullable = false)
     private String loginMethod;
 
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
+    private List<Board> boards = new ArrayList<>(); // 사용자가 작성한 글
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
+    private List<Comments> comments = new ArrayList<>(); // 사용자가 작성한 댓글
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
+    private List<Likes> likes = new ArrayList<>(); //  내가 찍은 좋아요
+
     public Users() {
     }
 
     @Builder
-    public Users(Long id, String email, String password, String name, Role authority, String loginMethod) {
+    public Users(Long id, String email, String password, String name, Role authority, String loginMethod, List<Board> boards, List<Comments> comments, List<Likes> likes) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.name = name;
         this.authority = authority;
         this.loginMethod = loginMethod;
+        this.boards = boards;
+        this.comments = comments;
+        this.likes = likes;
     }
 
     public Users update(String name) {

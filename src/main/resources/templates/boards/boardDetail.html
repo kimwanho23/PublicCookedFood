@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+</head>
+<body>
+<div th:insert="~{fragments/header}"></div>
+
+<div class="container ">
+    <div class="list-unstyled ps-0 border-start border-end border-bottom border-top"  th:object="${boardDto}">
+        <div class="bg-light p-3 border-bottom">
+            <h3 th:text="${boardDto.title}"></h3>
+        </div>
+
+        <div class="hstack gap-3 p-3  border-bottom">
+            <img th:src="@{../img/person-black.svg}" alt="답글"/>
+            <span th:text="${boardDto.userId.name}"></span>
+            <span class="ms-auto" th:text="'조회수: ' + ${boardDto.views}"></span>
+            <div class="vr"></div>
+            <span th:text="'추천 ' + ${likes}"></span>
+        </div>
+
+        <div class="p-3 border-bottom">
+            <p th:utext="${boardDto.contents}" style="white-space: pre-wrap;"></p>
+        </div>
+
+        <div class="hstack gap-3 p-3 border-bottom justify-content-center">
+            <!-- 로그인하지 않은 사용자는 로그인 페이지로 이동 -->
+            <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-outline-dark"
+                    data-bs-toggle="modal" data-bs-target="#loginModal">
+                <span th:utext="'추천<br>' + ${likes}"></span>
+            </button>
+
+            <!-- 로그인한 사용자는 추천 버튼을 클릭하면 추천 요청을 보냄 -->
+            <form id="likeForm" th:action="@{/board/likes/{id}(id=${id})}" method="post" style="display:inline;" sec:authorize="isAuthenticated()">
+                <button type="submit" th:if="!${myLike}" class="btn btn-outline-dark">
+                    <span th:utext="'추천<br>' + ${likes}"></span>
+                </button>
+            </form>
+
+            <!-- 이미 추천한 경우 버튼을 비활성화 -->
+            <button type="button" th:if="${myLike}" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#likeModal">
+                <span th:utext="'추천<br>' + ${likes}"></span>
+            </button>
+        </div>
+
+        <div th:replace="~{fragments/loginFragment}"></div>
+        <div th:replace="~{fragments/likeFragment}"></div>
+
+        <div class="hstack gap-3 p-3 border-bottom" th:if="${user.id == boardDto.userId.id}" sec:authorize="isAuthenticated()">
+            <button type="button"  class="btn btn-outline-primary" th:onclick="|location.href='@{/board/update/{id}(id=${id})}'|">수정</button>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#deleteModal">삭제</button>
+            <div th:replace="~{fragments/deleteFragment :: deleteModal('/board/deleteBoard', ${boardDto.id})}"></div>
+        </div>
+
+        <div class="hstack gap-3 p-3 border-bottom">
+            <span th:text="'댓글: ' + (${commentsCount})">댓글</span>
+        </div>
+
+        <div class="gap-3" th:each="comment : ${comments}">
+            <div th:replace="~{fragments/commentFragment :: commentFragment(${comment})}"></div>
+        </div>
+
+
+        <div class="container mt-2 border-bottom p-2" sec:authorize="isAuthenticated()">
+            <div class="comment-list">
+                <div class="p-2">
+                    <div class="bd-example m-0">
+                        <form th:action="@{/board/comment/{id}(id=${boardDto.getId()})}" method="post">
+                            <div class="input-group width">
+                                <span class="input-group-text">댓글 내용</span>
+                                <textarea class="form-control" name="contents" rows="4" aria-label="With textarea"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-2">댓글 달기</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+<script src="https://cdn.ckeditor.com/ckeditor5/34.0.0/classic/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/34.0.0/classic/translations/ko.js"></script>
+<div th:insert="~{fragments/footer}"></div>
+</body>
+</html>

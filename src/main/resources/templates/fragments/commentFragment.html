@@ -1,0 +1,58 @@
+<!-- commentFragment.html -->
+
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<body>
+<div th:fragment="commentFragment(comment)">
+    <div class="card my-3 mx-3" th:if="${comment.state == '1'}">
+        <div class="card-header hstack gap-3">
+        <img th:if="${comment.parentId != null}" th:src="@{../img/arrow-return-right.svg}" alt="답글"/>
+            <img th:src="@{../img/person-black.svg}"  alt="댓글 작성자"/>
+        <div th:text="${comment.id}">작성자</div>
+            <div class="ms-auto" th:text="${#temporals.format(comment.regTime, 'yyyy-MM-dd HH:mm:ss')}">작성 시간</div>
+            <div class="vr" sec:authorize="isAuthenticated()"></div>
+
+
+            <a sec:authorize="isAuthenticated()" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" th:href="'#collapse' + ${comment.id}"
+               role="button"  aria-expanded="false" th:aria-controls="'collapse' + ${comment.id}">답글
+            </a>
+
+            <button sec:authorize="isAuthenticated()" th:if="${comment.userId == user.id}" type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteCommentModal' + ${comment.id}">삭제</button>
+
+
+        </div>
+        <div class="card-body">
+            <span th:text="${comment.contents}" style="white-space: pre-wrap;"></span>
+        </div>
+    </div>
+
+    <div class="card my-3 mx-3" th:if="${comment.state == '0'}"  >
+        <div class="card-body">
+            <span th:text="'삭제된 댓글입니다.'" th:class="text-muted" style="white-space: pre-wrap;"></span>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/deleteCommentFragment :: deleteCommentModal('/board/deleteComment', ${boardDto.id}, ${comment.id})}"></div>
+
+    <div class="collapse my-3 mx-3" th:id="'collapse' + ${comment.id}">
+        <div class="ms-3">
+            <form th:action="@{/board/comment/{id}(id=${boardDto.getId()})}" method="post">
+                <input type="hidden" name="parentId" th:value="${comment.id}" />
+                <input type="hidden" name="boardId" th:value="${comment.boardId}" />
+                <div class="input-group width">
+                    <span class="input-group-text">답글 내용</span>
+                    <textarea class="form-control" name="contents" rows="4" aria-label="With textarea"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary mt-2">답글 달기</button>
+            </form>
+        </div>
+    </div>
+
+
+        <!-- 재귀적으로 대댓글을 출력 -->
+        <div th:each="reply : ${comment.replies}" style="margin-left: 20px;">
+            <div th:replace="~{this :: commentFragment(${reply})}"></div>
+        </div>
+
+</div>
+</body>
+</html>

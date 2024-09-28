@@ -1,6 +1,5 @@
 package kwh.PublicCookedFood.food.service;
 
-import kwh.PublicCookedFood.food.dto.RecipeSpecification;
 import kwh.PublicCookedFood.food.dto.recipe_crse.Recipe_CRSE_ResponseDto;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
@@ -13,7 +12,6 @@ import kwh.PublicCookedFood.food.repository.Recipe_IRDNT_Repository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -47,12 +45,6 @@ public class RecipeService {
                 .toList(); //레시피 재료정보
     }
 
-    public List<Recipe_INFO_ResponseDto> Searched_Recipes(String keyword){
-        return infoRepository.findByRecipeNMKOContaining(keyword)
-                .stream()
-                .map(Recipe_INFO::toResponseDto)
-                .toList();
-    }
 
 
     /////////////////   카테고리명   ////////////////////////
@@ -68,29 +60,15 @@ public class RecipeService {
         return infoRepository.findDistinctByIrdntCODEIsNotNull();
     }
 
-    //////////////////// 카테고리에 해당하는 음식 검색 /////////////////////
 
-    public Page<Recipe_INFO_ResponseDto> getFilteredRecipeList(
-            List<String> tyNmList, List<String> nationNmList, List<String> irdntCodeList, Pageable pageable) {
-
-        Specification<Recipe_INFO> spec = Specification.where(null);
-
-        if (tyNmList != null && !tyNmList.isEmpty()) {
-            spec = spec.and(RecipeSpecification.hasTyNM(tyNmList));
-        }
-        if (nationNmList != null && !nationNmList.isEmpty()) {
-            spec = spec.and(RecipeSpecification.hasNationNM(nationNmList));
-        }
-        if (irdntCodeList != null && !irdntCodeList.isEmpty()) {
-            spec = spec.and(RecipeSpecification.hasIrdntCode(irdntCodeList));
-        }
-
-        return recipe_INFO_Repository.findAll(spec, pageable).map(Recipe_INFO::toResponseDto);
-    }
     //////////////////// 전체 레시피 리스트 ///////////////////////////////
 
     public Page<Recipe_INFO_ResponseDto> getAllRecipe_INFO(Pageable pageable) {
         return infoRepository.findAll(pageable).map(Recipe_INFO::toResponseDto); // 레시피 리스트 표시
     }
 
+    public Page<Recipe_INFO_ResponseDto> getFilteredRecipeList(String keyword, String search, Pageable pageable) {
+        return infoRepository.findRecipesByKeywordAndSearch(keyword, search, pageable).map(Recipe_INFO::toResponseDto); //검색 필터링
+
+    }
 }

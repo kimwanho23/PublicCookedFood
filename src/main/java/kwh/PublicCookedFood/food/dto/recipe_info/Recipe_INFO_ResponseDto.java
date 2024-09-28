@@ -22,43 +22,34 @@ public class Recipe_INFO_ResponseDto {
     @JsonProperty("RECIPE_NM_KO")
     private String recipeNMKO; // 레시피 이름(한글)
 
-    @JsonProperty("SUMRY")
     private String sumry; // 간략(요약) 소개
 
-    @JsonProperty("NATION_CODE")
     private String nationCODE; // 유형코드
 
-    @JsonProperty("NATION_NM")
     private String nationNM; // 유형분류
 
-    @JsonProperty("TY_CODE")
     private String tyCODE; // 음식분류코드
 
-    @JsonProperty("TY_NM")
     private String tyNM; // 음식분류
 
-    @JsonProperty("COOKING_TIME")
     private String cookingTIME; // 조리시간
 
-    @JsonProperty("CALORIE")
     private String calorie; // 칼로리
 
-    @JsonProperty("QNT")
     private String qnt; // 분량
 
-    @JsonProperty("LEVEL_NM")
     private String levelNM; // 난이도
 
-    @JsonProperty("IRDNT_CODE")
     private String irdntCODE; // 재료별 분류명
 
-    @JsonProperty("PC_NM")
     private String pcNM; // 가격별 분류
+
+    private String imgURL;
 
     @Builder
     public Recipe_INFO_ResponseDto(Long rowNUM, Long recipeID, String recipeNMKO, String sumry, String nationCODE,
                                    String nationNM, String tyCODE, String tyNM, String cookingTIME, String calorie,
-                                   String qnt, String levelNM, String irdntCODE, String pcNM) {
+                                   String qnt, String levelNM, String irdntCODE, String pcNM, String imgURL) {
         this.rowNUM = rowNUM;
         this.recipeID = recipeID;
         this.recipeNMKO = recipeNMKO;
@@ -73,6 +64,7 @@ public class Recipe_INFO_ResponseDto {
         this.levelNM = levelNM;
         this.irdntCODE = irdntCODE;
         this.pcNM = pcNM;
+        this.imgURL = imgURL;
     }
 
 
@@ -92,6 +84,7 @@ public class Recipe_INFO_ResponseDto {
                 .levelNM(levelNM)
                 .irdntCODE(irdntCODE)
                 .pcNM(pcNM)
+                .imgURL(imgURL)
                 .build();
     }
 }

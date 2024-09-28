@@ -55,11 +55,14 @@ public class Recipe_INFO {
     @Column(name = "pc_NM")
     private String pcNM;	// 가격별 분류
 
+    @Column(name="img_URL")
+    private String imgURL;
+
     @Builder
     public Recipe_INFO(Long rowNUM, Long recipeID, String recipeNMKO, String sumry,
                        String nationCODE, String nationNM, String tyCODE, String tyNM,
                        String cookingTIME, String calorie, String qnt, String levelNM,
-                       String irdntCODE, String pcNM) {
+                       String irdntCODE, String pcNM, String imgURL) {
         this.rowNUM = rowNUM;
         this.recipeID = recipeID;
         this.recipeNMKO = recipeNMKO;
@@ -74,6 +77,7 @@ public class Recipe_INFO {
         this.levelNM = levelNM;
         this.irdntCODE = irdntCODE;
         this.pcNM = pcNM;
+        this.imgURL = imgURL;
     }
 
     public Recipe_INFO() {
@@ -96,6 +100,7 @@ public class Recipe_INFO {
                 .levelNM(levelNM)
                 .irdntCODE(irdntCODE)
                 .pcNM(pcNM)
+                .imgURL(imgURL)
                 .build();
     }
 }

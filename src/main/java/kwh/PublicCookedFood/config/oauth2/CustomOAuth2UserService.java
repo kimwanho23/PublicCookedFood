@@ -2,6 +2,7 @@ package kwh.PublicCookedFood.config.oauth2;
 
 import jakarta.servlet.http.HttpSession;
 import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.user.dto.CustomUserDetails;
 import kwh.PublicCookedFood.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -41,16 +42,13 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         httpSession.setAttribute("user", user);
 
-        return new DefaultOAuth2User(
-                Collections.singleton(new SimpleGrantedAuthority(user.getRoleKey())),
-                attributes.getAttributes(),
-                attributes.getNameAttributeKey());
+        return new CustomUserDetails(user, oAuth2User.getAttributes());
     }
 
 
     private Users saveOrUpdate(OAuthAttributes attributes) {
         Users user = userRepository.findByEmail(attributes.getEmail())
-                .map(entity -> entity.update(attributes.getName()))
+/*                .map(entity -> entity.update(attributes.getName()))*/
                 .orElse(attributes.toEntity());
 
         return userRepository.save(user);

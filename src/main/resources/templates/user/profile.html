@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+
+<div th:insert="~{fragments/header}"></div>
+<body>
+<main class="container">
+    <div style="border: dimgray; border-radius: 15px; background-color: white;">
+        <form action="/u/profile" th:action th:object="${userUpdateDto}" style="padding: 40px;" method="post">
+            <h3>내 정보</h3>
+            <hr>
+            <div class="mb-4">
+                이메일
+                <input type="text" id="email" th:field="*{email}" class="form-control text-dark" th:placeholder="${user.email}" th:value="${user.name}" disabled>
+                <label for="email"></label>
+            </div>
+
+            <div class="mb-4">
+                닉네임
+                <input type="text"  id="name" th:field="*{name}" class="form-control text-dark" th:placeholder="${user.name}" th:value="${user.name}">
+                <label for="name"></label>
+            </div>
+
+            <button type="submit" class="w-100 btn btn-lg btn-dark">수정하기</button>
+            <p class="mt-5 mb-3 text-muted">©2024 DataPortal</p>
+        </form>
+    </div>
+</main>
+
+
+
+
+
+
+</body>
+</html>

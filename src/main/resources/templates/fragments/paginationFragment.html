@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div th:fragment="pagination(url, startPage, endPage, currentPage, hasPreviousGroup, hasNextGroup, keyword, search)">
+    <div class="d-flex gap-2 justify-content-center py-5">
+        <nav aria-label="Pagination">
+            <ul class="pagination">
+                <!-- Previous group button -->
+                <li class="page-item" th:classappend="${hasPreviousGroup} ? '' : 'disabled'">
+                    <a class="page-link"
+                       th:href="@{${url}(page=${startPage > 10 ? startPage - 10 : 0}, keyword=${keyword}, search=${search})}"
+                       th:attr="aria-disabled=${!hasPreviousGroup}">Previous</a>
+                </li>
+
+                <!-- Page numbers -->
+                <li th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                    class="page-item" th:classappend="${pageNum == currentPage} ? 'active' : ''">
+                    <a class="page-link" th:href="@{${url}(page=${pageNum}, keyword=${keyword}, search=${search})}"
+                       th:text="${pageNum + 1}">1</a>
+                </li>
+
+                <!-- Next group button -->
+                <li class="page-item" th:classappend="${hasNextGroup} ? '' : 'disabled'">
+                    <a class="page-link"
+                       th:href="@{${url}(page=${endPage + 1}, keyword=${keyword}, search=${search})}"
+                       th:attr="aria-disabled=${!hasNextGroup}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+</body>
+</html>

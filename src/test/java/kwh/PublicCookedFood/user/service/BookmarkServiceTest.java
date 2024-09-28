@@ -30,8 +30,8 @@ class BookmarkServiceTest {
     public void createUser() {
         for (long i = 1L; i <= 3; i++) {
             BookMarkDto bookMarkDto = BookMarkDto.builder()
-                    .recipeID(recipeService.getRecipe_INFO(i).toEntity())
-                    .user(userService.findUser("test"))
+                    .recipeID(recipeService.getRecipe_INFO(i).getRecipeID())
+                    .email(userService.findUserByEmail("test@gmail.com").getEmail())
                     .build();
             bookmarkService.save(bookMarkDto);
         }

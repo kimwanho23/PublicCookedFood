@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+</head>
+
+<body>
+<div th:insert="~{fragments/header}"></div>
+
+<div class="container">
+    <form th:action="@{/board/update/{id}(id=${boardDto.getId()})}" th:object="${boardDto}" style="padding: 70px;" method="post">
+
+        <div th:if="${#fields.hasGlobalErrors()}">
+            <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>
+        </div>
+
+        <div class="form-floating form-group mb-4">
+            <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="제목" th:value="*{title}">
+            <label for="title">제목</label>
+        </div>
+
+        <div class="mb-4">
+            <textarea style="height: 500px" id="summernote" th:value="*{contents}" th:field="*{contents}" class="form-control" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+            <label for="summernote"></label>
+        </div>
+
+        <script>
+            $('#summernote').summernote({
+                placeholder: 'Hello stand alone ui',
+                tabsize: 3,
+                height: 800,
+                toolbar: [
+                    ['style', ['style']],
+                    ['font', ['bold', 'underline', 'clear']],
+                    ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['table', ['table']],
+                    ['insert', ['link', 'picture', 'video']],
+                    ['view', ['fullscreen', 'codeview', 'help']]
+                ],
+                callbacks: {
+                    onPaste: function(e) {
+                        e.preventDefault();
+
+                        // Clipboard API 사용
+                        navigator.clipboard.readText().then(function(text) {
+                            // 현재 선택 영역에 텍스트를 삽입
+                            var selection = window.getSelection();
+                            if (!selection.rangeCount) return;
+
+                            selection.deleteFromDocument(); // 기존의 내용을 삭제
+                            selection.getRangeAt(0).insertNode(document.createTextNode(text));
+
+                            // 커서를 텍스트의 끝으로 이동
+                            selection.collapseToEnd();
+                        }).catch(function(err) {
+                            console.error('Failed to read clipboard contents: ', err);
+                        });
+                    }
+                }
+            });
+
+        </script>
+        <button type="submit" class="w-100 btn btn-lg btn-dark">글쓰기</button>
+
+        <p class="mt-5 mb-3 text-muted">©2024 DataPortal</p>
+
+    </form>
+</div>
+</body>
+
+
+</html>

@@ -34,8 +34,8 @@ public class Bookmark {
 
     public BookMarkDto toResponseDto(){
         return BookMarkDto.builder()
-                .user(user)
-                .recipeID(recipeID)
+                .email(user.getEmail())
+                .recipeID(recipeID.getRecipeID())
                 .build();
     }
 
