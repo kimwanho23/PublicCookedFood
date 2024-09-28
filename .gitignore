@@ -25,6 +25,7 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+application-oauth.properties
 
 ### NetBeans ###
 /nbproject/private/
@@ -38,4 +39,3 @@ out/
 
 application.properties
 application-API-KEY.properties
-application-oauth.properties

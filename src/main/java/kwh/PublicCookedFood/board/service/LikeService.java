@@ -3,15 +3,12 @@ package kwh.PublicCookedFood.board.service;
 import jakarta.transaction.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Likes;
-import kwh.PublicCookedFood.board.dto.LikesDto;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.LikesRepository;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

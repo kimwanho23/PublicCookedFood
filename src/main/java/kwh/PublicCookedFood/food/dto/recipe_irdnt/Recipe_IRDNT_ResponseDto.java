@@ -1,6 +1,5 @@
 package kwh.PublicCookedFood.food.dto.recipe_irdnt;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import kwh.PublicCookedFood.food.entity.Recipe_IRDNT;
 import lombok.Builder;
 import lombok.Getter;

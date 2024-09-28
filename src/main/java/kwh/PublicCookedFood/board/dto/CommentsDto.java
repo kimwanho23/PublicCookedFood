@@ -29,17 +29,11 @@ public class CommentsDto extends BaseEntity {
 
     private List<CommentsDto> replies = new ArrayList<>(); // 답글 리스트
 
+    @Setter
     private boolean areAllRepliesDeleted;
 
     public boolean areAllRepliesDeleted() {
         return replies.stream().allMatch(reply -> "0".equals(reply.getState()));
     }
 
-    public boolean isAreAllRepliesDeleted() {
-        return areAllRepliesDeleted;
-    }
-
-    public void setAreAllRepliesDeleted(boolean areAllRepliesDeleted) {
-        this.areAllRepliesDeleted = areAllRepliesDeleted;
-    }
 }

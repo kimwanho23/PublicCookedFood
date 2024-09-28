@@ -1,7 +1,5 @@
 package kwh.PublicCookedFood.food.dto.recipe_crse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
 import kwh.PublicCookedFood.food.entity.Recipe_CRSE;
 import lombok.*;
 

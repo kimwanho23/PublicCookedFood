@@ -1,18 +1,15 @@
 package kwh.PublicCookedFood.board.contoller;
 
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.dto.BoardDto;
 import kwh.PublicCookedFood.board.dto.CommentsDto;
 import kwh.PublicCookedFood.board.service.BoardService;
 import kwh.PublicCookedFood.board.service.CommentsService;
 import kwh.PublicCookedFood.board.service.LikeService;
 import kwh.PublicCookedFood.common.Paging;
-import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +24,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 
 @Controller
