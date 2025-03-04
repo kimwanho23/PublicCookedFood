@@ -62,7 +62,9 @@ Summernote 에디터를 사용하여 HTML 형식으로 글을 저장하며, 이�
 메인 페이지에서 검색을 해야 할 때, 기존 @RequestParam은 세 가지가 존재했습니다.
 그러다보니 쿼리 파라미터가 복잡해졌고, 이는 하나의 Keyword로 통합할 수 있는 여지가 되었습니다.
 [http://localhost:8080/foods?nationNmList=퓨전](http://localhost:8080/foods?nationNmList=%ED%93%A8%EC%A0%84)
+
 [http://localhost:8080/foods?irdntCodeList=밀가루](http://localhost:8080/foods?irdntCodeList=%EB%B0%80%EA%B0%80%EB%A3%A8)
+
 [http://localhost:8080/foods?tyNmList=만두/면류](http://localhost:8080/foods?tyNmList=%EB%A7%8C%EB%91%90/%EB%A9%B4%EB%A5%98)
 
 이 쿼리 파라미터는 하나의 카테고리로 생각하고 keyword로 통합하였습니다.
