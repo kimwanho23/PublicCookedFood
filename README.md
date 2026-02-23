@@ -10,7 +10,6 @@ Spring Boot 3 / Spring Security / Spring Data JPA / OAuth2.0 / QueryDSL
 ## DB
 MySQL
 
-<<<<<<< HEAD
 ## 환경 변수
 - `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
 - `MAIL_USERNAME`, `MAIL_PASSWORD`
@@ -90,4 +89,3 @@ Summernote 에디터를 사용하여 HTML 형식으로 글을 저장하며, 이�
 ex) http://localhost:8080/foods?keyword=한식search=고기
 
 ![키워드](https://github.com/user-attachments/assets/0274195b-f750-43a6-a3e5-06c125e8782e)
->>>>>>> origin/main
