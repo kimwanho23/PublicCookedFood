@@ -8,6 +8,9 @@ import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -21,48 +24,96 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private static final String PREV_PAGE_ATTRIBUTE = "prevPage";
     private static final String LOGIN_PAGE_URI = "/u/login";
     private static final String REGISTER_PAGE_URI = "/u/signup";
-    private static final String DEFAULT_REDIRECT_URI = "/foods";
+    private static final String OAUTH2_AUTHORIZATION_URI = "/oauth2/authorization";
+    private static final String DEFAULT_REDIRECT_URI = "/recipes";
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+    private final RequestCache requestCache = new HttpSessionRequestCache();
 
     public CustomAuthenticationSuccessHandler() {
     }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        SavedRequest savedRequest = requestCache.getRequest(request, response);
+        if (savedRequest != null) {
+            requestCache.removeRequest(request, response);
+        }
+
         String prevPage = (String) request.getSession().getAttribute(PREV_PAGE_ATTRIBUTE); // 이전 페이지를 가져온다.
         if (prevPage != null) {
             request.getSession().removeAttribute(PREV_PAGE_ATTRIBUTE);
         }
 
-        // 기본 URI
-        String uri = redirectUri(request, prevPage);
+        String uri = redirectUri(request,
+                savedRequest != null ? savedRequest.getRedirectUrl() : null,
+                prevPage);
         redirectStrategy.sendRedirect(request, response, uri); //로그인 시 이전 url로 리다이렉트
     }
 
-    private String redirectUri(HttpServletRequest request, String prevPage) {
-        if (prevPage == null || prevPage.isEmpty()) {
-            return DEFAULT_REDIRECT_URI;
+    private String redirectUri(HttpServletRequest request, String... candidates) {
+        for (String candidate : candidates) {
+            String uri = safeRedirectUri(request, candidate);
+            if (uri != null) {
+                return uri;
+            }
+        }
+        return DEFAULT_REDIRECT_URI;
+    }
+
+    private String safeRedirectUri(HttpServletRequest request, String rawUri) {
+        if (rawUri == null || rawUri.isBlank()) {
+            return null;
         }
 
         try {
-            URI uri = new URI(prevPage);
-            if (uri.isAbsolute() && !request.getServerName().equalsIgnoreCase(uri.getHost())) {
-                return DEFAULT_REDIRECT_URI;
+            URI uri = new URI(rawUri);
+            URI currentRequestUri = URI.create(request.getRequestURL().toString());
+            if (uri.isAbsolute() && !isSameOrigin(currentRequestUri, uri)) {
+                return null;
             }
 
             String path = uri.getPath();
             if (path == null || !path.startsWith("/") || path.startsWith("//")) {
-                return DEFAULT_REDIRECT_URI;
+                return null;
             }
 
-            if (path.startsWith(LOGIN_PAGE_URI) || path.startsWith(REGISTER_PAGE_URI)) {
-                return DEFAULT_REDIRECT_URI;
+            if (path.startsWith(LOGIN_PAGE_URI)
+                    || path.startsWith(REGISTER_PAGE_URI)
+                    || path.startsWith(OAUTH2_AUTHORIZATION_URI)
+                    || path.startsWith("/error")) {
+                return null;
             }
 
             return uri.getQuery() == null ? path : path + "?" + uri.getQuery();
         } catch (URISyntaxException e) {
-            return DEFAULT_REDIRECT_URI;
+            return null;
         }
+    }
+
+    private boolean isSameOrigin(URI source, URI target) {
+        if (source == null || target == null) {
+            return false;
+        }
+        if (source.getHost() == null || target.getHost() == null) {
+            return false;
+        }
+
+        boolean sameScheme = source.getScheme() != null
+                && source.getScheme().equalsIgnoreCase(target.getScheme());
+        boolean sameHost = source.getHost().equalsIgnoreCase(target.getHost());
+        boolean samePort = resolvePort(source) == resolvePort(target);
+
+        return sameScheme && sameHost && samePort;
+    }
+
+    private int resolvePort(URI uri) {
+        if (uri.getPort() != -1) {
+            return uri.getPort();
+        }
+        if ("https".equalsIgnoreCase(uri.getScheme())) {
+            return 443;
+        }
+        return 80;
     }
 }

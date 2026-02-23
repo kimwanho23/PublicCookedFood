@@ -1,7 +1,6 @@
-package kwh.PublicCookedFood.user.dto;
+package kwh.PublicCookedFood.user.dto.request;
 
 import jakarta.validation.constraints.Size;
-import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,12 +24,5 @@ public class UserUpdateDto {
         this.email = email;
         this.password = password;
         this.name = name;
-    }
-
-    public Users toEntity(){
-        return Users.builder()
-                .email(email)
-                .password(password)
-                .name(name).build();
     }
 }

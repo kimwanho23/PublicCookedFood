@@ -2,33 +2,94 @@ package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.common.BaseEntity;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "images", indexes = {
+        @Index(name = "idx_images_post_id_status", columnList = "post_id, status"),
+        @Index(name = "idx_images_url_status", columnList = "imgUrl, status")
+})
 public class Images extends BaseEntity {
+
+    public enum ImageStatus {
+        TEMP,
+        ATTACHED,
+        DELETED
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; //ID
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "post_id", referencedColumnName = "id")
     private Board board; // 게시글 번호
 
+    @Column(nullable = false, length = 255)
     private String originalFilename; //원본 파일
 
+    @Column(nullable = false, length = 255)
     private String savedFilename; // 저장 파일(서버)
 
+    @Column(nullable = false, length = 500)
     private String imgUrl; // 이미지 경로
 
-    public Images(Long id, Board board, String originalFilename, String savedFilename, String imgUrl) {
+    @Column(length = 100)
+    private String contentType; // MIME Type
+
+    @Column
+    private Long fileSize; // bytes
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ImageStatus status;
+
+    @Builder
+    public Images(Long id, Board board, String originalFilename, String savedFilename, String imgUrl,
+                  String contentType, Long fileSize, ImageStatus status) {
         this.id = id;
         this.board = board;
         this.originalFilename = originalFilename;
         this.savedFilename = savedFilename;
         this.imgUrl = imgUrl;
+        this.contentType = contentType;
+        this.fileSize = fileSize;
+        this.status = status == null ? ImageStatus.TEMP : status;
+    }
+
+    public static Images createTemporary(String originalFilename,
+                                         String savedFilename,
+                                         String imgUrl,
+                                         String contentType,
+                                         long fileSize) {
+        return Images.builder()
+                .originalFilename(originalFilename)
+                .savedFilename(savedFilename)
+                .imgUrl(imgUrl)
+                .contentType(contentType == null ? "" : contentType)
+                .fileSize(fileSize)
+                .status(ImageStatus.TEMP)
+                .build();
+    }
+
+    public void attachTo(Board board) {
+        this.board = board;
+        this.status = ImageStatus.ATTACHED;
+    }
+
+    public void markDeleted() {
+        this.status = ImageStatus.DELETED;
+    }
+
+    @PrePersist
+    protected void prePersist() {
+        if (status == null) {
+            status = ImageStatus.TEMP;
+        }
     }
 }

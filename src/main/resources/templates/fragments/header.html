@@ -20,7 +20,7 @@
 
 <nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/foods">PubCook</a>
+        <a class="navbar-brand" href="/recipes">PubCook</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -28,10 +28,10 @@
         <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav me-auto mb-2 mb-md-0">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/foods">공공 레시피</a>
+                    <a class="nav-link active" aria-current="page" href="/recipes">공공 레시피</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/board">게시판</a>
+                    <a class="nav-link" href="/boards">게시판</a>
                 </li>
             </ul>
 
@@ -41,11 +41,11 @@
             <form sec:authorize="isAuthenticated()" th:action="@{/u/logout}" method="post" style="display: inline;">
                 <div class="dropdown">
                     <button type="button" class="btn btn-dark dropdown-toggle nav-item" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span th:text="${user.name.length() > 7 ? user.name.substring(0, 7) + '...' : user.name}"></span>
+                        <span th:text="${#authentication != null and #authentication.principal != null and #authentication.principal.user != null and #authentication.principal.user.name != null ? (#authentication.principal.user.name.length() > 7 ? #authentication.principal.user.name.substring(0, 7) + '...' : #authentication.principal.user.name) : '사용자'}"></span>
                         <span><img th:src="@{/img/person.svg}" alt="user-image"/></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end mx-0 shadow w-220px" data-bs-theme="light">
-                        <li><a class="dropdown-item d-flex gap-2 align-items-center" th:href="@{/bookmark/bookmarkList}">북마크</a></li>
+                        <li><a class="dropdown-item d-flex gap-2 align-items-center" th:href="@{/bookmarks}">북마크</a></li>
                         <li><a class="dropdown-item d-flex gap-2 align-items-center" href="#">나의 글</a></li>
                         <li><a class="dropdown-item d-flex gap-2 align-items-center" th:href="@{/u/profile}">설정</a></li>
                         <li><hr class="dropdown-divider"></li>

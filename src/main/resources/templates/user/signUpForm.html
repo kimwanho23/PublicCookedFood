@@ -45,8 +45,8 @@
 <main class="form-signin w-100"  style="max-width: 500px;">
     <div style="border: dimgray; border-radius: 15px; background-color: white;">
 
-    <form action="/u/signup" th:action th:object="${userSaveDto}" style="padding: 70px;" method="post">
-        <a href="/foods">
+    <form action="/u/signup" th:action="@{/u/signup}" th:object="${userSaveDto}" style="padding: 70px;" method="post">
+        <a href="/recipes">
             <img th:src="@{../img/c-circle-fill.svg}" style="width: 100px; height: 100px; margin: 10px; padding: 10px;" alt="logo"/>
         </a>
         <h1 class="h3 mb-3 fw-normal display-4">환영합니다!</h1>

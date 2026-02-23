@@ -16,7 +16,7 @@ import java.io.IOException;
 @Component
 public class SaveRequestFilter extends OncePerRequestFilter {
 
-    private static final String HOME_PAGE_URI = "/foods";
+    private static final String HOME_PAGE_URI = "/recipes";
     private static final String LOGIN_PAGE_URI = "/u/login";
     private static final String SIGNUP_PAGE_URI = "/u/signup";
 

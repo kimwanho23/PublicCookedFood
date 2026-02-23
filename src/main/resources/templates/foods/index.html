@@ -19,7 +19,12 @@
                     </div>
                     <span th:each="item : ${category.items}">
                         <a th:name="category" th:value="${item}"
-                           th:href="@{/foods(keyword=${item != null and item != '' ? item : null}, search=${search != null and !#strings.isEmpty(search) ? search : null})}"
+                           th:href="@{/recipes(
+                                type=${category.param == 'type' ? item : (selectedType != null and !#strings.isEmpty(selectedType) ? selectedType : null)},
+                                nation=${category.param == 'nation' ? item : (selectedNation != null and !#strings.isEmpty(selectedNation) ? selectedNation : null)},
+                                ingredient=${category.param == 'ingredient' ? item : (selectedIngredient != null and !#strings.isEmpty(selectedIngredient) ? selectedIngredient : null)},
+                                search=${selectedSearch != null and !#strings.isEmpty(selectedSearch) ? selectedSearch : null}
+                           )}"
                            class="badge bg-dark-subtle text-black rounded-pill"
                            style="text-decoration-line: none">
                             <span th:text="${item}">카테고리 항목</span>
@@ -30,38 +35,183 @@
         </h4>
     </div>
 
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-        <div class="col" th:each="list : ${infoResponseDto}">
-            <div class="card shadow-sm">
-                <a th:action th:href="@{/foods/{id}(id=${list.getRecipeID()})}" class="icon-link">
-                    <img th:src="@{${list.imgURL}}" alt="이미지" width="100%" height="300"/>
-                </a>
-                <div class="card-body">
-                    <p th:text="${list.getRecipeNMKO()}" class="card-text">요리 제목입니다.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <p th:text="${list.getSumry()}">요리 소개글입니다.</p>
-                        <small class="text-muted" th:text="${list.getCalorie()}">칼로리</small>
+    <div id="recipeResults" th:fragment="recipeResults">
+        <div th:if="${queryErrorMsg != null}" class="alert alert-warning" th:text="${queryErrorMsg}"></div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+            <div class="col" th:each="list : ${infoResponseDto}">
+                <div class="card shadow-sm">
+                    <a th:href="@{/recipes/{id}(id=${list.getRecipeID()})}" class="icon-link">
+                        <img th:src="@{${list.imgURL}}" alt="이미지" width="100%" height="300"/>
+                    </a>
+                    <div class="card-body">
+                        <p th:text="${list.getRecipeNMKO()}" class="card-text">요리 제목입니다.</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <p th:text="${list.getSumry()}">요리 소개글입니다.</p>
+                            <small class="text-muted" th:text="${list.getCalorie()}">칼로리</small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div class="b-example-divider"></div>
+
+        <div th:if="${infoResponseDto.getTotalElements() > 0}">
+            <div th:replace="~{fragments/paginationFragment :: pagination('/recipes', ${startPage}, ${endPage}, ${currentPage}, ${hasPreviousGroup}, ${hasNextGroup}, ${selectedKeyword}, ${selectedSearch}, ${null}, ${selectedType}, ${selectedNation}, ${selectedIngredient})}"></div>
+        </div>
+
+        <div class="d-flex justify-content-center">
+            <form th:action="@{/recipes}" method="get" class="d-inline-flex mb-3">
+                <input type="hidden" name="keyword" th:if="${selectedKeyword != null and !#strings.isEmpty(selectedKeyword)}" th:value="${selectedKeyword}">
+                <input type="hidden" name="type" th:if="${selectedType != null and !#strings.isEmpty(selectedType)}" th:value="${selectedType}">
+                <input type="hidden" name="nation" th:if="${selectedNation != null and !#strings.isEmpty(selectedNation)}" th:value="${selectedNation}">
+                <input type="hidden" name="ingredient" th:if="${selectedIngredient != null and !#strings.isEmpty(selectedIngredient)}" th:value="${selectedIngredient}">
+                <input type="text" name="search" th:value="${selectedSearch}" placeholder="레시피명 검색" class="form-control me-2">
+                <button type="submit" class="btn btn-primary col-auto">검색</button>
+            </form>
+        </div>
     </div>
 
-    <div class="b-example-divider"></div>
 
-    <div th:if="${infoResponseDto.getTotalElements() > 0}">
-        <div th:replace="~{fragments/paginationFragment :: pagination('/foods', ${startPage}, ${endPage}, ${currentPage}, ${hasPreviousGroup}, ${hasNextGroup}, ${keyword}, ${search})}"></div>
-    </div>
+    <script>
+        (function () {
+            const pageRoot = document.getElementById('featured-3');
+            if (!pageRoot || !window.fetch || !window.history || !window.DOMParser) {
+                return;
+            }
 
-    <div class="d-flex justify-content-center">
-        <form th:action="@{/foods}" method="get" class="d-inline-flex mb-3">
-            <input type="text" name="search" th:value="${search}" placeholder="Search by title or content..." class="form-control me-2">
-            <button type="submit" class="btn btn-primary col-auto">검색</button>
-        </form>
-    </div>
+            const resultsSelector = '#recipeResults';
+            let pendingController = null;
 
+            function isRecipesListUrl(url) {
+                return /^\/recipes\/?$/.test(url.pathname);
+            }
 
+            function normalizeQueryParams(url) {
+                const normalized = new URL(url.toString(), window.location.origin);
+                const params = new URLSearchParams(normalized.search);
+                for (const [key, value] of Array.from(params.entries())) {
+                    if (typeof value === 'string' && value.trim() === '') {
+                        params.delete(key);
+                    }
+                }
+                normalized.search = params.toString();
+                return normalized;
+            }
 
+            function swapRecipeResults(html) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newResults = doc.querySelector(resultsSelector);
+                const currentResults = document.querySelector(resultsSelector);
+
+                if (!newResults || !currentResults) {
+                    return false;
+                }
+                currentResults.replaceWith(newResults);
+                return true;
+            }
+
+            function fetchRecipeResults(url, pushState) {
+                if (pendingController) {
+                    pendingController.abort();
+                }
+                pendingController = new AbortController();
+                pageRoot.setAttribute('aria-busy', 'true');
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html'
+                    },
+                    signal: pendingController.signal
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error('Failed to load recipe results');
+                        }
+                        return response.text();
+                    })
+                    .then((html) => {
+                        const replaced = swapRecipeResults(html);
+                        if (!replaced) {
+                            window.location.href = url;
+                            return;
+                        }
+                        if (pushState) {
+                            window.history.pushState({foodsAjax: true}, '', url);
+                        }
+                    })
+                    .catch((error) => {
+                        if (error && error.name === 'AbortError') {
+                            return;
+                        }
+                        window.location.href = url;
+                    })
+                    .finally(() => {
+                        pageRoot.removeAttribute('aria-busy');
+                        pendingController = null;
+                    });
+            }
+
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('a[href]');
+                if (!link || !pageRoot.contains(link)) {
+                    return;
+                }
+                if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+                if (link.target && link.target !== '_self') {
+                    return;
+                }
+
+                const url = new URL(link.href, window.location.origin);
+                if (!isRecipesListUrl(url)) {
+                    return;
+                }
+
+                event.preventDefault();
+                const normalizedUrl = normalizeQueryParams(url);
+                fetchRecipeResults(normalizedUrl.toString(), true);
+            });
+
+            document.addEventListener('submit', function (event) {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement) || !pageRoot.contains(form)) {
+                    return;
+                }
+
+                const method = (form.getAttribute('method') || 'get').toLowerCase();
+                if (method !== 'get') {
+                    return;
+                }
+
+                const action = form.getAttribute('action') || window.location.pathname;
+                const url = new URL(action, window.location.origin);
+                if (!isRecipesListUrl(url)) {
+                    return;
+                }
+
+                event.preventDefault();
+                const params = new URLSearchParams(new FormData(form));
+                url.search = params.toString();
+                const normalizedUrl = normalizeQueryParams(url);
+                fetchRecipeResults(normalizedUrl.toString(), true);
+            });
+
+            window.addEventListener('popstate', function () {
+                const currentUrl = new URL(window.location.href);
+                if (!isRecipesListUrl(currentUrl)) {
+                    return;
+                }
+                const normalizedUrl = normalizeQueryParams(currentUrl);
+                fetchRecipeResults(normalizedUrl.toString(), false);
+            });
+        })();
+    </script>
 </div>
 
 <div th:insert="~{fragments/footer}"></div>

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.domain.Likes;
-import kwh.PublicCookedFood.user.dto.UserSaveDto;
+import kwh.PublicCookedFood.user.dto.request.UserSaveDto;
 import lombok.Builder;
 import lombok.Getter;
 import org.hibernate.annotations.BatchSize;

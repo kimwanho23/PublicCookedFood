@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.food.entity;
 
 import jakarta.persistence.*;
-import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -44,17 +43,5 @@ public class Recipe_IRDNT {
         this.irdntCPCTY = irdntCPCTY;
         this.irdntTYCODE = irdntTYCODE;
         this.irdntTYNM = irdntTYNM;
-    }
-
-    public Recipe_IRDNT_ResponseDto toResponseDto(){
-        return Recipe_IRDNT_ResponseDto.builder()
-                .rowNUM(rowNUM)
-                .recipeID(recipeID)
-                .irdntSN(irdntSN)
-                .irdntNM(irdntNM)
-                .irdntCPCTY(irdntCPCTY)
-                .irdntTYCODE(irdntTYCODE)
-                .irdntTYNM(irdntTYNM)
-                .build();
     }
 }

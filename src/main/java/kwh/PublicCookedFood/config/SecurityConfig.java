@@ -26,11 +26,17 @@ public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
 
-    public SecurityConfig(CustomLogoutSuccessHandler customLogoutSuccessHandler, CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler, SaveRequestFilter saveRequestFilter, CustomOAuth2UserService customOAuth2UserService) {
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+
+    public SecurityConfig(CustomLogoutSuccessHandler customLogoutSuccessHandler, CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler, SaveRequestFilter saveRequestFilter, CustomOAuth2UserService customOAuth2UserService, CustomAuthenticationEntryPoint customAuthenticationEntryPoint, CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.customLogoutSuccessHandler = customLogoutSuccessHandler;
         this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
         this.saveRequestFilter = saveRequestFilter;
         this.customOAuth2UserService = customOAuth2UserService;
+        this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     @Bean
@@ -42,13 +48,12 @@ public class SecurityConfig {
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/uploadFile"))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/images"))
                 .headers((headers) -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
 
                 .addFilterBefore(saveRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(formLogin -> formLogin
                         .loginPage("/u/login")
-                        .defaultSuccessUrl("/foods",true)
                         .usernameParameter("email")
                         .passwordParameter("password")
                         .loginProcessingUrl("/u/login")
@@ -62,27 +67,28 @@ public class SecurityConfig {
                 .oauth2Login((oauth2) -> oauth2
                 .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
                         .userService(customOAuth2UserService))
-                .defaultSuccessUrl("/foods", true)
+                .successHandler(customAuthenticationSuccessHandler)
                 .failureUrl("/u/login?oauthError=true"))
                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
 
                 .authorizeHttpRequests((authorizeRequests) -> authorizeRequests
-                        .requestMatchers("/css/**", "/js/**", "/img/**", "/images/**", "/error/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/img/**", "/images/**", "/files/**", "/error/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/u/login", "/u/login/**", "/u/signup", "/oauth2/**", "/login/**").permitAll()
                         .requestMatchers("/u/profile", "/u/logout").authenticated()
-                        .requestMatchers("/board/write", "/board/update/**", "/board/deleteBoard/**",
-                                "/board/deleteComment/**", "/board/comment/**", "/board/likes/**").authenticated()
-                        .requestMatchers("/bookmark/**", "/uploadFile").authenticated()
-                        .requestMatchers("/crse", "/info", "/irdnt", "/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/", "/main", "/foods", "/foods/**", "/board", "/board/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/boards/new", "/boards/*/edit").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/boards", "/boards/*/comments").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/boards/*", "/boards/*/delete", "/boards/*/comments/*/delete").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/boards/*/likes").authenticated()
+                        .requestMatchers("/bookmarks/**", "/api/images").authenticated()
+                        .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/", "/main", "/recipes", "/recipes/**", "/boards", "/boards/featured", "/boards/*").permitAll()
                         .anyRequest().authenticated()
                 ).
                 exceptionHandling((exceptionHandling) -> exceptionHandling
-                        .accessDeniedPage("/foods")
-                        .authenticationEntryPoint
-                                (new CustomAuthenticationEntryPoint()));
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                        .authenticationEntryPoint(customAuthenticationEntryPoint));
         return http.build();
     }
 

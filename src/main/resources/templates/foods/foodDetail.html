@@ -26,13 +26,13 @@
         <div class="inline-items">
             <h1 class="text-body-emphasis" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목입니다.</h1>
 
-            <form th:if="${isBookmarked}" th:action="@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
+            <form th:if="${isBookmarked}" th:action="@{/bookmarks/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
                   method="post" sec:authorize="isAuthenticated()">
                 <input type="hidden" name="_method" value="delete"> <!-- Spring에서 DELETE 요청으로 처리 -->
                 <button type="submit" class="btn btn-dark">북마크 해제하기</button>
             </form>
 
-            <form th:if="${!isBookmarked}" th:action="@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
+            <form th:if="${!isBookmarked}" th:action="@{/bookmarks/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
                   method="post" sec:authorize="isAuthenticated()">
                 <button type="submit" class="btn btn-dark">북마크 추가</button>
             </form>

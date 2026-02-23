@@ -3,9 +3,10 @@ package kwh.PublicCookedFood.recipeSaveLogic;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kwh.PublicCookedFood.food.dto.recipe_crse.Recipe_CRSE_ResponseDto;
-import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
-import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import kwh.PublicCookedFood.food.dto.response.recipe_crse.Recipe_CRSE_ResponseDto;
+import kwh.PublicCookedFood.food.dto.response.recipe_info.Recipe_INFO_ResponseDto;
+import kwh.PublicCookedFood.food.dto.response.recipe_irdnt.Recipe_IRDNT_ResponseDto;
 import kwh.PublicCookedFood.food.entity.Recipe_CRSE;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.food.entity.Recipe_IRDNT;
@@ -16,7 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -26,6 +28,8 @@ import java.util.List;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@RequestMapping("/api/admin/recipes/import")
+@Tag(name = "Admin Recipe Import API")
 public class RecipeSaveController {
 
     private final Recipe_CRSE_Repository crseRepository;
@@ -45,7 +49,7 @@ public class RecipeSaveController {
     @Value("${CRSE_URL}")
     private String CRSE_URL;
 
-    @GetMapping(value = "/crse")
+    @PostMapping("/courses")
     public ResponseEntity<List<Recipe_CRSE_ResponseDto>> getRecipeCRSE() throws JsonProcessingException {
         int startRow = 1;
         int endRow = 1000;
@@ -85,7 +89,7 @@ public class RecipeSaveController {
         }
     }
 
-    @GetMapping(value = "/info")
+    @PostMapping("/infos")
     public ResponseEntity<List<Recipe_INFO_ResponseDto>> getRecipeINFO() throws JsonProcessingException {
         int startRow = 1;
         int endRow = 1000;
@@ -125,7 +129,7 @@ public class RecipeSaveController {
         }
     }
 
-    @GetMapping(value = "/irdnt")
+    @PostMapping("/ingredients")
     public ResponseEntity<List<Recipe_IRDNT_ResponseDto>> getRecipeIRDNT() throws JsonProcessingException {
         int startRow = 1;
         int endRow = 1000; //1부터 ~ 1000까지 읽는다

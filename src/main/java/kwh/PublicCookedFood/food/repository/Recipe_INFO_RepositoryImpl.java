@@ -7,8 +7,8 @@ import kwh.PublicCookedFood.food.entity.QRecipe_INFO;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -24,12 +24,26 @@ public class Recipe_INFO_RepositoryImpl implements Recipe_INFO_RepositoryCustom 
     }
 
     @Override
-    public Page<Recipe_INFO> findRecipesByKeywordAndSearch(String keyword, String search, Pageable pageable) {
+    public Page<Recipe_INFO> findRecipesByConditions(String type,
+                                                     String nation,
+                                                     String ingredient,
+                                                     String keyword,
+                                                     String search,
+                                                     Pageable pageable) {
         QRecipe_INFO recipeInfo = QRecipe_INFO.recipe_INFO;
 
         BooleanBuilder builder = new BooleanBuilder();
 
-        if (keyword != null && !keyword.isEmpty()) {
+        if (type != null && !type.isEmpty()) {
+            builder.and(recipeInfo.tyNM.eq(type));
+        }
+        if (nation != null && !nation.isEmpty()) {
+            builder.and(recipeInfo.nationNM.eq(nation));
+        }
+        if (ingredient != null && !ingredient.isEmpty()) {
+            builder.and(recipeInfo.irdntCODE.eq(ingredient));
+        }
+        if (keyword != null && !keyword.isEmpty()) { // legacy parameter compatibility
             builder.and(
                     recipeInfo.tyNM.containsIgnoreCase(keyword)
                             .or(recipeInfo.nationNM.containsIgnoreCase(keyword))
@@ -42,16 +56,18 @@ public class Recipe_INFO_RepositoryImpl implements Recipe_INFO_RepositoryCustom 
         List<Recipe_INFO> results = queryFactory
                 .selectFrom(recipeInfo)
                 .where(builder)
+                .orderBy(recipeInfo.rowNUM.asc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        Long total = queryFactory
-                .select(recipeInfo.count())
-                .from(recipeInfo)
-                .where(builder)
-                .fetchOne();
-
-        return new PageImpl<>(results, pageable, total == null ? 0 : total);
+        return PageableExecutionUtils.getPage(results, pageable, () -> {
+            Long total = queryFactory
+                    .select(recipeInfo.count())
+                    .from(recipeInfo)
+                    .where(builder)
+                    .fetchOne();
+            return total == null ? 0 : total;
+        });
     }
 }

@@ -1,19 +1,22 @@
 package kwh.PublicCookedFood.user.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
-
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import kwh.PublicCookedFood.config.oauth2.LoginUser;
 import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.LoginDto;
-import kwh.PublicCookedFood.user.dto.UserSaveDto;
-import kwh.PublicCookedFood.user.dto.UserUpdateDto;
+import kwh.PublicCookedFood.user.dto.CustomUserDetails;
+import kwh.PublicCookedFood.user.dto.request.LoginDto;
+import kwh.PublicCookedFood.user.dto.request.UserSaveDto;
+import kwh.PublicCookedFood.user.dto.request.UserUpdateDto;
 
 import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,12 +27,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/u")
 @Slf4j
+@Hidden
 public class UserController {
     private final UserService userService;
 
     private final PasswordEncoder passwordEncoder;
-
-    private final HttpSession httpSession;
 
     @GetMapping(value="/signup")
     public String saveForm(@ModelAttribute("userSaveDto") UserSaveDto userSaveDto, HttpServletRequest request){
@@ -53,11 +55,17 @@ public class UserController {
             model.addAttribute("errorMessage", e.getMessage());
             return "/user/signUpForm";
         }
-        return "redirect:/foods";
+        return "redirect:/recipes";
     }
 
     @GetMapping(value="/profile")
-    public String profileForm(@ModelAttribute("userUpdateDto") UserUpdateDto userUpdateDto){
+    public String profileForm(@LoginUser Users user,
+                              @ModelAttribute("userUpdateDto") UserUpdateDto userUpdateDto,
+                              Model model){
+        if (user == null) {
+            return "redirect:/u/login";
+        }
+        model.addAttribute("user", user);
         return "/user/profile";
     }
 
@@ -66,6 +74,7 @@ public class UserController {
         if (user == null) {
             return "redirect:/u/login";
         }
+        model.addAttribute("user", user);
 
         if(bindingResult.hasErrors()){
             return "/user/profile";
@@ -83,7 +92,8 @@ public class UserController {
             }
 
             Users savedUser = userService.save(existingUser);
-            httpSession.setAttribute("user", savedUser);
+            model.addAttribute("user", savedUser);
+            refreshAuthenticationPrincipal(savedUser);
             return "redirect:/u/profile";
         } catch (IllegalStateException e){
             model.addAttribute("errorMessage", e.getMessage());
@@ -118,6 +128,25 @@ public class UserController {
     public String loginError(Model model){
         model.addAttribute("loginErrorMsg", "아이디 또는 비밀번호를 확인해주세요");
         return "/user/loginForm";
+    }
+
+    private void refreshAuthenticationPrincipal(Users savedUser) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails currentPrincipal)) {
+            return;
+        }
+
+        CustomUserDetails updatedPrincipal = currentPrincipal.getAttributes() == null
+                ? new CustomUserDetails(savedUser)
+                : new CustomUserDetails(savedUser, currentPrincipal.getAttributes());
+
+        UsernamePasswordAuthenticationToken updatedAuthentication =
+                new UsernamePasswordAuthenticationToken(
+                        updatedPrincipal,
+                        authentication.getCredentials(),
+                        updatedPrincipal.getAuthorities());
+        updatedAuthentication.setDetails(authentication.getDetails());
+        SecurityContextHolder.getContext().setAuthentication(updatedAuthentication);
     }
 
 }

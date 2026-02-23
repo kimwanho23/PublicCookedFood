@@ -1,6 +1,5 @@
 package kwh.PublicCookedFood.config.oauth2;
 
-import jakarta.servlet.http.HttpSession;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.CustomUserDetails;
 import kwh.PublicCookedFood.user.repository.UserRepository;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
     private final UserRepository userRepository;
-    private final HttpSession httpSession;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -36,8 +34,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
 
         Users user = saveOrUpdate(attributes);
-
-        httpSession.setAttribute("user", user);
 
         return new CustomUserDetails(user, oAuth2User.getAttributes());
     }
