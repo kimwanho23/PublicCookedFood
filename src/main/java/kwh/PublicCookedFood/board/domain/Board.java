@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
-import kwh.PublicCookedFood.board.dto.BoardDto;
 import kwh.PublicCookedFood.common.BaseEntity;
 import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Builder;
@@ -15,7 +14,13 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor
-@Table(name = "board")
+@Table(name = "board", indexes = {
+        @Index(name = "idx_board_state_reg_time", columnList = "state, regTime"),
+        @Index(name = "idx_board_state_title", columnList = "state, title"),
+        @Index(name = "idx_board_user_id", columnList = "user_id"),
+        @Index(name = "idx_board_state_section_reg_time", columnList = "state, section_id, regTime"),
+        @Index(name = "idx_board_state_like_count", columnList = "state, likeCount")
+})
 public class Board extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,13 +35,19 @@ public class Board extends BaseEntity {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private Users user; //작성자
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id", referencedColumnName = "id")
+    private BoardSection section; // 게시판 탭
+
     private Long views; // 조회수
 
     private Long likeCount; // 좋아요 수
 
     private Long commentCount; //댓글 수
 
-    private String state;
+    @Column(nullable = false, length = 1)
+    @Convert(converter = SoftDeleteStateConverter.class)
+    private SoftDeleteState state = SoftDeleteState.ACTIVE;
 
 
     @BatchSize(size = 100)
@@ -47,37 +58,20 @@ public class Board extends BaseEntity {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "board")
     private List<Comments> comments = new ArrayList<>(); // 댓글
 
-/*    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "board")
-    private List<Files> files = new ArrayList<>(); // 파일
-
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "board")
-    private List<Images> images = new ArrayList<>(); // 이미지*/
-
     @Builder
-    public Board(Long id, String title, String contents, Users user, Long views, Long likeCount, Long commentCount,
-                 String state, List<Likes> likes, List<Comments> comments) {
+    public Board(Long id, String title, String contents, Users user, BoardSection section,
+                 Long views, Long likeCount, Long commentCount, SoftDeleteState state,
+                 List<Likes> likes, List<Comments> comments) {
         this.id = id;
         this.title = title;
         this.contents = contents;
         this.user = user;
+        this.section = section;
         this.views = views;
         this.likeCount = likeCount;
         this.commentCount = commentCount;
-        this.state = state;
+        this.state = state == null ? SoftDeleteState.ACTIVE : state;
         this.likes = likes;
         this.comments = comments;
-    }
-
-    public BoardDto toResponseDto(){
-        return BoardDto.builder()
-                .id(id)
-                .title(title)
-                .contents(contents)
-                .userId(user)
-                .views(views)
-                .likesCount(likeCount)
-                .commentsCount(commentCount)
-                .state(state)
-                .build();
     }
 }

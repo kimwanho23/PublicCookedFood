@@ -2,14 +2,13 @@ package kwh.PublicCookedFood.user.domain;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
-import kwh.PublicCookedFood.user.dto.BookMarkDto;
 import lombok.Builder;
 import lombok.Getter;
 
 @Entity
 @Getter
 @Table(name = "bookmark",  uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"email", "recipe_ID"})
+        @UniqueConstraint(columnNames = {"user_id", "recipe_ID"})
 })
 public class Bookmark {
 
@@ -17,7 +16,7 @@ public class Bookmark {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "email", referencedColumnName = "email", nullable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private Users user;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -33,13 +32,5 @@ public class Bookmark {
         this.user = user;
         this.recipeID = recipeID;
     }
-
-    public BookMarkDto toResponseDto(){
-        return BookMarkDto.builder()
-                .email(user.getEmail())
-                .recipeID(recipeID.getRecipeID())
-                .build();
-    }
-
 
 }

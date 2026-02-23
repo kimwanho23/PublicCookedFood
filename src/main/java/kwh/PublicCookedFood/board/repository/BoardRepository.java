@@ -1,6 +1,8 @@
 package kwh.PublicCookedFood.board.repository;
 
 import kwh.PublicCookedFood.board.domain.Board;
+import kwh.PublicCookedFood.board.domain.BoardSection;
+import kwh.PublicCookedFood.board.domain.SoftDeleteState;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +10,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 
 @Repository
 public interface BoardRepository extends JpaRepository<Board, Long> {
@@ -21,30 +25,95 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     void updateLikes(@Param("boardId") Long boardId);
 
     @Modifying
-    @Query("UPDATE Board b SET b.commentCount = :commentCount WHERE b.id = :postId and b.state = '1'")
-    void updateCommentCount(@Param("postId") Long postId, @Param("commentCount") Long commentCount);
+    @Query("UPDATE Board b SET b.commentCount = :commentCount WHERE b.id = :postId and b.state = :state")
+    void updateCommentCount(@Param("postId") Long postId,
+                            @Param("commentCount") Long commentCount,
+                            @Param("state") SoftDeleteState state);
 
     @Query(
-            value = "SELECT b FROM Board b JOIN FETCH b.user " +
-                    "WHERE b.state = :state AND b.title LIKE CONCAT('%', :search, '%') " +
+            value = "SELECT b FROM Board b " +
+                    "JOIN FETCH b.user " +
+                    "LEFT JOIN FETCH b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey)) " +
+                    "AND b.title LIKE CONCAT('%', :search, '%') " +
                     "ORDER BY b.regTime DESC",
             countQuery = "SELECT COUNT(b) FROM Board b " +
-                    "WHERE b.state = :state AND b.title LIKE CONCAT('%', :search, '%')"
+                    "LEFT JOIN b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey)) " +
+                    "AND b.title LIKE CONCAT('%', :search, '%')"
     )
     Page<Board> findByTitleContainingAndStateWithUser(@Param("search") String search,
-                                                      @Param("state") String state,
+                                                      @Param("state") SoftDeleteState state,
+                                                      @Param("sectionKey") String sectionKey,
                                                       Pageable pageable);
 
     @Query(
-            value = "SELECT b FROM Board b JOIN FETCH b.user WHERE b.state = :state ORDER BY b.regTime DESC",
-            countQuery = "SELECT COUNT(b) FROM Board b WHERE b.state = :state"
+            value = "SELECT b FROM Board b " +
+                    "JOIN FETCH b.user " +
+                    "LEFT JOIN FETCH b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey)) " +
+                    "ORDER BY b.regTime DESC",
+            countQuery = "SELECT COUNT(b) FROM Board b " +
+                    "LEFT JOIN b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey))"
     )
-    Page<Board> findAllByStateWithUser(@Param("state") String state, Pageable pageable);
+    Page<Board> findAllByStateWithUser(@Param("state") SoftDeleteState state,
+                                       @Param("sectionKey") String sectionKey,
+                                       Pageable pageable);
 
+    @Query(
+            value = "SELECT b FROM Board b " +
+                    "JOIN FETCH b.user " +
+                    "LEFT JOIN FETCH b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND b.likeCount >= :threshold " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey)) " +
+                    "AND b.title LIKE CONCAT('%', :search, '%') " +
+                    "ORDER BY b.likeCount DESC, b.regTime DESC",
+            countQuery = "SELECT COUNT(b) FROM Board b " +
+                    "LEFT JOIN b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND b.likeCount >= :threshold " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey)) " +
+                    "AND b.title LIKE CONCAT('%', :search, '%')"
+    )
+    Page<Board> findFeaturedByTitleContainingAndStateWithUser(@Param("search") String search,
+                                                              @Param("state") SoftDeleteState state,
+                                                              @Param("threshold") Long threshold,
+                                                              @Param("sectionKey") String sectionKey,
+                                                              Pageable pageable);
+
+    @Query(
+            value = "SELECT b FROM Board b " +
+                    "JOIN FETCH b.user " +
+                    "LEFT JOIN FETCH b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND b.likeCount >= :threshold " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey)) " +
+                    "ORDER BY b.likeCount DESC, b.regTime DESC",
+            countQuery = "SELECT COUNT(b) FROM Board b " +
+                    "LEFT JOIN b.section s " +
+                    "WHERE b.state = :state " +
+                    "AND b.likeCount >= :threshold " +
+                    "AND (:sectionKey IS NULL OR (s IS NOT NULL AND s.sectionKey = :sectionKey))"
+    )
+    Page<Board> findFeaturedByStateWithUser(@Param("state") SoftDeleteState state,
+                                            @Param("threshold") Long threshold,
+                                            @Param("sectionKey") String sectionKey,
+                                            Pageable pageable);
+
+    @Query("SELECT b FROM Board b JOIN FETCH b.user LEFT JOIN FETCH b.section WHERE b.id = :id")
+    Optional<Board> findByIdWithUser(@Param("id") Long id);
+
+    boolean existsBySectionAndState(BoardSection section, SoftDeleteState state);
 
 
     @Modifying
-    @Query(value = "update Board p set p.state = '0' where p.id = :id", nativeQuery = true)
-    void deleteBoardOption(@Param("id") Long id);
+    @Query("update Board p set p.state = :state where p.id = :id")
+    void updateState(@Param("id") Long id, @Param("state") SoftDeleteState state);
 
 }

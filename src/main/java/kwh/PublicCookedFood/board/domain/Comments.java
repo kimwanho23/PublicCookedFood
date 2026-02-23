@@ -13,6 +13,12 @@ import java.util.List;
 
 @Entity
 @Getter
+@Table(name = "Comments", indexes = {
+        @Index(name = "idx_comments_post_state", columnList = "post_id, state"),
+        @Index(name = "idx_comments_post_reg_time", columnList = "post_id, regTime"),
+        @Index(name = "idx_comments_parent_id", columnList = "parent_id"),
+        @Index(name = "idx_comments_post_parent_reg_time", columnList = "post_id, parent_id, regTime")
+})
 public class Comments extends BaseEntity {
 
     @Id
@@ -36,8 +42,9 @@ public class Comments extends BaseEntity {
     @JoinColumn(name = "parent_id")
     private Comments parent; // 답글 인덱스 (첫 댓글은 null)
 
-    @Column(nullable = false)
-    private String state = "1"; // 댓글 상태 (기본 값 설정)
+    @Column(nullable = false, length = 1)
+    @Convert(converter = SoftDeleteStateConverter.class)
+    private SoftDeleteState state = SoftDeleteState.ACTIVE; // 댓글 상태 (기본 값 설정)
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comments> replies = new ArrayList<>(); // 답글 리스트
@@ -46,13 +53,13 @@ public class Comments extends BaseEntity {
     }
 
     @Builder
-    public Comments(Long id, Users user, Board board, String contents, Comments parent, String state, List<Comments> replies) {
+    public Comments(Long id, Users user, Board board, String contents, Comments parent, SoftDeleteState state, List<Comments> replies) {
         this.id = id;
         this.user = user;
         this.board = board;
         this.contents = contents;
         this.parent = parent;
-        this.state = state != null ? state : "1";
+        this.state = state == null ? SoftDeleteState.ACTIVE : state;
         this.replies = replies;
     }
 
