@@ -37,8 +37,8 @@
 <main class="form-signin w-100" style="max-width: 500px;">
     <div style="border: dimgray; border-radius: 15px; background-color: white;">
 
-    <form action="/u/login" th:action th:object="${loginDto}" style="padding: 70px;" method="post">
-        <a href="/foods">
+    <form action="/u/login" th:action="@{/u/login}" th:object="${loginDto}" style="padding: 70px;" method="post">
+        <a href="/recipes">
             <img th:src="@{../img/c-circle-fill.svg}" style="width: 100px; height: 100px; margin: 10px; padding: 10px;" alt="logo"/>
         </a>
         <h1 class="h3 mb-3 fw-normal display-4">로그인</h1>
@@ -65,8 +65,8 @@
 
         <div class="divider">아니면?</div>
 
-        <button type="button" th:onclick="|location.href='@{signup}'|" class="btn btn-dark" style="margin-right: 20px;">회원가입</button>
-        <button type="button" th:onclick="|location.href='@{signup}'|" class="btn btn-dark">아이디/비밀번호 찾기</button>
+        <button type="button" th:onclick="|location.href='@{/u/signup}'|" class="btn btn-dark" style="margin-right: 20px;">회원가입</button>
+        <button type="button" class="btn btn-outline-secondary" onclick="alert('아이디/비밀번호 찾기 기능은 준비 중입니다.')">아이디/비밀번호 찾기</button>
 
         <label></label>
         <div class="divider">소셜 로그인</div>

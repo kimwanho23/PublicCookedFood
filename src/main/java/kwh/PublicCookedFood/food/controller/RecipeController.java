@@ -1,8 +1,10 @@
 package kwh.PublicCookedFood.food.controller;
 
-import kwh.PublicCookedFood.food.dto.recipe_crse.Recipe_CRSE_ResponseDto;
-import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
-import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
+import io.swagger.v3.oas.annotations.Hidden;
+import kwh.PublicCookedFood.config.oauth2.LoginUser;
+import kwh.PublicCookedFood.food.dto.response.recipe_crse.Recipe_CRSE_ResponseDto;
+import kwh.PublicCookedFood.food.dto.response.recipe_info.Recipe_INFO_ResponseDto;
+import kwh.PublicCookedFood.food.dto.response.recipe_irdnt.Recipe_IRDNT_ResponseDto;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 
 import kwh.PublicCookedFood.food.service.RecipeService;
@@ -22,8 +24,9 @@ import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/foods")
+@RequestMapping("/recipes")
 @Slf4j
+@Hidden
 public class RecipeController {
 
     private final RecipeService recipeService;
@@ -32,17 +35,15 @@ public class RecipeController {
 
 
     @GetMapping("/{id}")
-    public String foodDetail(@PathVariable Long id, Model model){
+    public String foodDetail(@PathVariable Long id, @LoginUser Users user, Model model){
         Recipe_INFO recipeInfo = recipeService.getRecipeEntityByRecipeId(id);
-        Recipe_INFO_ResponseDto infoResponseDto = recipeInfo.toResponseDto();
+        Recipe_INFO_ResponseDto infoResponseDto = recipeService.toInfoResponse(recipeInfo);
 
         List<Recipe_IRDNT_ResponseDto> irdntResponseDto =
                 recipeService.getRecipe_IRDNT(id);
 
         List<Recipe_CRSE_ResponseDto> crseResponseDto =
                 recipeService.getRecipe_CRSE(id);
-
-        Users user = (Users) model.getAttribute("user");
         boolean isLoggedIn = user != null;
         boolean isBookmarked = false;
 

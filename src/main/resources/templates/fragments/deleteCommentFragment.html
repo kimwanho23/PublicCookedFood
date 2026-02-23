@@ -5,7 +5,7 @@
     <title>Title</title>
 </head>
 <body>
-<div th:fragment="deleteCommentModal(url, id, commentId)">
+<div th:fragment="deleteCommentModal(actionUrl, commentId)">
     <div class="modal fade" th:id="'deleteCommentModal' + ${commentId}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -17,7 +17,7 @@
                     정말로 삭제하시겠습니까?
                 </div>
                 <div class="modal-footer">
-                    <form th:action="|@{${url}}/${id}/${commentId}|"  method="post">
+                    <form th:action="${actionUrl}" method="post">
                         <input type="hidden" name="_method" value="patch"/>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
                         <button type="submit" class="btn btn-primary">삭제</button>

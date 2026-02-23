@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
-import kwh.PublicCookedFood.board.dto.LikesDto;
 import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,12 +32,5 @@ public class Likes {
         this.id = id;
         this.user = user;
         this.board = board;
-    }
-
-    public LikesDto toResponseDto(){
-        return LikesDto.builder()
-                .postId(board)
-                .userId(user)
-                .build();
     }
 }

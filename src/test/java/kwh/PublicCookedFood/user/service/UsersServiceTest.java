@@ -1,7 +1,7 @@
 package kwh.PublicCookedFood.user.service;
 
 import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.UserSaveDto;
+import kwh.PublicCookedFood.user.dto.request.UserSaveDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

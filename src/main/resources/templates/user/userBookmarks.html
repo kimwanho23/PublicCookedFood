@@ -23,7 +23,7 @@
    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
         <div class="col" th:each="list : ${recipeInfoResponseDto}">
             <div class="card shadow-sm">
-                <a th:action th:href="@{/foods/{id}(id=${list.getRecipeID()})}" class="icon-link">
+                <a th:href="@{/recipes/{id}(id=${list.getRecipeID()})}" class="icon-link">
                     <img th:src="@{${list.imgURL}}" alt="음식 이미지" width="100%" height="300"/>
                 </a>
                 <div class="card-body">

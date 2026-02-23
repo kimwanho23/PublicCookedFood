@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.food.entity;
 
 import jakarta.persistence.*;
-import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.user.domain.Bookmark;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +12,16 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "Recipe_INFO")
+@Table(name = "Recipe_INFO", indexes = {
+        @Index(name = "idx_recipe_info_recipe_id", columnList = "recipe_ID"),
+        @Index(name = "idx_recipe_info_ty_nm", columnList = "ty_NM"),
+        @Index(name = "idx_recipe_info_nation_nm", columnList = "nation_NM"),
+        @Index(name = "idx_recipe_info_irdnt_code", columnList = "irdnt_CODE"),
+        @Index(name = "idx_recipe_info_recipe_nm_ko", columnList = "recipe_NM_KO"),
+        @Index(name = "idx_recipe_info_ty_nm_row_num", columnList = "ty_NM, row_NUM"),
+        @Index(name = "idx_recipe_info_nation_nm_row_num", columnList = "nation_NM, row_NUM"),
+        @Index(name = "idx_recipe_info_irdnt_code_row_num", columnList = "irdnt_CODE, row_NUM")
+})
 @ToString(exclude = "bookmarks")
 public class Recipe_INFO {
 
@@ -92,25 +100,5 @@ public class Recipe_INFO {
 
     public Recipe_INFO() {
 
-    }
-
-    public Recipe_INFO_ResponseDto toResponseDto(){
-        return Recipe_INFO_ResponseDto.builder()
-                .rowNUM(rowNUM)
-                .recipeID(recipeID)
-                .recipeNMKO(recipeNMKO)
-                .sumry(sumry)
-                .nationCODE(nationCODE)
-                .nationNM(nationNM)
-                .tyCODE(tyCODE)
-                .tyNM(tyNM)
-                .cookingTIME(cookingTIME)
-                .calorie(calorie)
-                .qnt(qnt)
-                .levelNM(levelNM)
-                .irdntCODE(irdntCODE)
-                .pcNM(pcNM)
-                .imgURL(imgURL)
-                .build();
     }
 }

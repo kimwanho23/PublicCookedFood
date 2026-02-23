@@ -3,7 +3,6 @@ package kwh.PublicCookedFood.user.repository;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.user.domain.Bookmark;
 import kwh.PublicCookedFood.user.domain.Users;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,13 +14,10 @@ import java.util.Optional;
 @Repository
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
-   List<Bookmark> findByUser(Users user);
-
    @Query("SELECT DISTINCT b FROM Bookmark b " +
            "JOIN FETCH b.recipeID " +
-           "JOIN FETCH b.user " +
-           "WHERE b.user.email = :email")
-   List<Bookmark> findBookmarksByUserEmail(@Param("email") String email);
+           "WHERE b.user.id = :userId")
+   List<Bookmark> findBookmarksByUserId(@Param("userId") Long userId);
 
    void deleteByUserAndRecipeID(Users user, Recipe_INFO recipeID);
 

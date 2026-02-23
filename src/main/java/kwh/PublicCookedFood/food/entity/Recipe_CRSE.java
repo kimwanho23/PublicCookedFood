@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.food.entity;
 
 import jakarta.persistence.*;
-import kwh.PublicCookedFood.food.dto.recipe_crse.Recipe_CRSE_ResponseDto;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -41,16 +40,5 @@ public class Recipe_CRSE {
 
     public Recipe_CRSE() {
 
-    }
-
-    public Recipe_CRSE_ResponseDto toResponseDto(){
-        return Recipe_CRSE_ResponseDto.builder()
-                .rowNUM(rowNUM)
-                .recipeID(recipeID)
-                .cookingNO(cookingNO)
-                .cookingDC(cookingDC)
-                .stepTIP(stepTIP)
-                .imgURL(imgURL)
-                .build();
     }
 }

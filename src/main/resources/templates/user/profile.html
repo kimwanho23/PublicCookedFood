@@ -9,7 +9,7 @@
 <body>
 <main class="container">
     <div style="border: dimgray; border-radius: 15px; background-color: white;">
-        <form action="/u/profile" th:action th:object="${userUpdateDto}" style="padding: 40px;" method="post">
+        <form action="/u/profile" th:action="@{/u/profile}" th:object="${userUpdateDto}" style="padding: 40px;" method="post">
             <input type="hidden" name="_method" value="put"/>
             <h3>내 정보</h3>
             <hr>

@@ -5,28 +5,52 @@
     <title>Title</title>
 </head>
 <body>
-<div th:fragment="pagination(url, startPage, endPage, currentPage, hasPreviousGroup, hasNextGroup, keyword, search)">
+<div th:fragment="pagination(url, startPage, endPage, currentPage, hasPreviousGroup, hasNextGroup, keyword, search, section, type, nation, ingredient)">
     <div class="d-flex gap-2 justify-content-center py-5">
         <nav aria-label="Pagination">
             <ul class="pagination">
                 <!-- Previous group button -->
                 <li class="page-item" th:classappend="${hasPreviousGroup} ? '' : 'disabled'">
                     <a class="page-link"
-                       th:href="@{${url}(page=${startPage > 10 ? startPage - 9 : 1}, keyword=${keyword}, search=${search})}"
+                       th:href="@{${url}(
+                            page=${startPage > 10 ? startPage - 9 : 1},
+                            keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
+                            search=${search != null and !#strings.isEmpty(search) ? search : null},
+                            section=${section != null and !#strings.isEmpty(section) ? section : null},
+                            type=${type != null and !#strings.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#strings.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#strings.isEmpty(ingredient) ? ingredient : null}
+                       )}"
                        th:attr="aria-disabled=${!hasPreviousGroup}">Previous</a>
                 </li>
 
                 <!-- Page numbers -->
                 <li th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
                     class="page-item" th:classappend="${pageNum == currentPage} ? 'active' : ''">
-                    <a class="page-link" th:href="@{${url}(page=${pageNum + 1}, keyword=${keyword}, search=${search})}"
+                    <a class="page-link" th:href="@{${url}(
+                            page=${pageNum + 1},
+                            keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
+                            search=${search != null and !#strings.isEmpty(search) ? search : null},
+                            section=${section != null and !#strings.isEmpty(section) ? section : null},
+                            type=${type != null and !#strings.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#strings.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#strings.isEmpty(ingredient) ? ingredient : null}
+                        )}"
                        th:text="${pageNum + 1}">1</a>
                 </li>
 
                 <!-- Next group button -->
                 <li class="page-item" th:classappend="${hasNextGroup} ? '' : 'disabled'">
                     <a class="page-link"
-                       th:href="@{${url}(page=${endPage + 2}, keyword=${keyword}, search=${search})}"
+                       th:href="@{${url}(
+                            page=${endPage + 2},
+                            keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
+                            search=${search != null and !#strings.isEmpty(search) ? search : null},
+                            section=${section != null and !#strings.isEmpty(section) ? section : null},
+                            type=${type != null and !#strings.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#strings.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#strings.isEmpty(ingredient) ? ingredient : null}
+                       )}"
                        th:attr="aria-disabled=${!hasNextGroup}">Next</a>
                 </li>
             </ul>

@@ -16,7 +16,9 @@
 
         <div class="hstack gap-3 p-3  border-bottom">
             <img th:src="@{../img/person-black.svg}" alt="답글"/>
-            <span th:text="${boardDto.userId.name}"></span>
+            <span class="badge text-bg-secondary"
+                  th:text="${boardDto.sectionName != null ? boardDto.sectionName : '미분류'}">탭</span>
+            <span th:text="${boardDto.userName}"></span>
             <span class="ms-auto" th:text="'조회수: ' + ${boardDto.views}"></span>
             <div class="vr"></div>
             <span th:text="'추천 ' + ${likes}"></span>
@@ -34,7 +36,7 @@
             </button>
 
             <!-- 로그인한 사용자는 추천 버튼을 클릭하면 추천 요청을 보냄 -->
-            <form id="likeForm" th:action="@{/board/likes/{id}(id=${id})}" method="post" style="display:inline;" sec:authorize="isAuthenticated()">
+            <form id="likeForm" th:action="@{/boards/{id}/likes(id=${id})}" method="post" style="display:inline;" sec:authorize="isAuthenticated()">
                 <input type="hidden" name="_method" value="put"/>
                 <button type="submit" th:if="!${myLike}" class="btn btn-outline-dark">
                     <span th:utext="'추천<br>' + ${likes}"></span>
@@ -50,10 +52,10 @@
         <div th:replace="~{fragments/loginFragment}"></div>
         <div th:replace="~{fragments/likeFragment}"></div>
 
-        <div class="hstack gap-3 p-3 border-bottom" th:if="${user != null and user.id == boardDto.userId.id}" sec:authorize="isAuthenticated()">
-            <button type="button"  class="btn btn-outline-primary" th:onclick="|location.href='@{/board/update/{id}(id=${id})}'|">수정</button>
+        <div class="hstack gap-3 p-3 border-bottom" th:if="${currentUserId != null and currentUserId == boardDto.userId}" sec:authorize="isAuthenticated()">
+            <button type="button"  class="btn btn-outline-primary" th:onclick="|location.href='@{/boards/{id}/edit(id=${id})}'|">수정</button>
             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#deleteModal">삭제</button>
-            <div th:replace="~{fragments/deleteFragment :: deleteModal('/board/deleteBoard', ${boardDto.id})}"></div>
+            <div th:replace="~{fragments/deleteFragment :: deleteModal(@{/boards/{id}/delete(id=${boardDto.id})})}"></div>
         </div>
 
         <div class="hstack gap-3 p-3 border-bottom">
@@ -70,7 +72,7 @@
             <div class="comment-list">
                 <div class="p-2">
                     <div class="bd-example m-0">
-                        <form th:action="@{/board/comment/{id}(id=${boardDto.getId()})}" method="post">
+                        <form th:action="@{/boards/{id}/comments(id=${boardDto.getId()})}" method="post">
                             <div class="input-group width">
                                 <span class="input-group-text">댓글 내용</span>
                                 <textarea class="form-control" name="contents" rows="4" aria-label="With textarea"></textarea>

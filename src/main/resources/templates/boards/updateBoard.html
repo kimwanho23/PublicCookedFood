@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Title</title>
 
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
 </head>
@@ -13,7 +13,7 @@
 <div th:insert="~{fragments/header}"></div>
 
 <div class="container">
-    <form th:action="@{/board/update/{id}(id=${boardDto.getId()})}" th:object="${boardDto}" style="padding: 70px;" method="post">
+    <form th:action="@{/boards/{id}(id=${boardDto.getId()})}" th:object="${boardDto}" style="padding: 70px;" method="post">
         <input type="hidden" name="_method" value="patch"/>
 
         <div th:if="${#fields.hasGlobalErrors()}">
@@ -21,13 +21,23 @@
         </div>
 
         <div class="form-floating form-group mb-4">
-            <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="제목" th:value="*{title}">
+            <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="제목" th:value="*{title}" th:errorclass="field-error">
             <label for="title">제목</label>
+            <div class="field-error" th:errors="*{title}"></div>
+        </div>
+
+        <div class="form-floating form-group mb-4">
+            <select id="sectionId" th:field="*{sectionId}" class="form-select" th:errorclass="field-error">
+                <option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.sectionName}">게시판 탭</option>
+            </select>
+            <label for="sectionId">게시판 탭</label>
+            <div class="field-error" th:errors="*{sectionId}"></div>
         </div>
 
         <div class="mb-4">
-            <textarea style="height: 500px" id="summernote" th:value="*{contents}" th:field="*{contents}" class="form-control" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+            <textarea style="height: 500px" id="summernote" th:value="*{contents}" th:field="*{contents}" class="form-control" th:errorclass="field-error" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
             <label for="summernote"></label>
+            <div class="field-error" th:errors="*{contents}"></div>
         </div>
 
         <script>
@@ -62,9 +72,44 @@
                         }).catch(function(err) {
                             console.error('Failed to read clipboard contents: ', err);
                         });
+                    },
+                    onImageUpload: function(files) {
+                        for (var i = 0; i < files.length; i++) {
+                            uploadFile(files[i], this);
+                        }
                     }
                 }
             });
+
+            function uploadFile(file, el) {
+                var data = new FormData();
+                data.append("file", file);
+
+                $.ajax({
+                    data: data,
+                    type: "POST",
+                    url: '/api/images',
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    enctype: 'multipart/form-data',
+                    success: function(url) {
+                        $(el).summernote('insertImage', url, function ($image) {
+                        });
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 401) {
+                            alert('로그인이 필요합니다. 다시 로그인해주세요.');
+                            return;
+                        }
+                        if (xhr.status === 403) {
+                            alert('이미지 업로드 권한이 없습니다.');
+                            return;
+                        }
+                        alert('이미지 업로드에 실패했습니다.');
+                    }
+                });
+            }
 
         </script>
         <button type="submit" class="w-100 btn btn-lg btn-dark">글쓰기</button>

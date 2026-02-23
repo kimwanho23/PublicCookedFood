@@ -7,7 +7,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface Recipe_INFO_RepositoryCustom {
 
-    Page<Recipe_INFO> findRecipesByKeywordAndSearch(@Param("keyword") String keyword,
-                                                    @Param("search") String search,
-                                                    Pageable pageable);
+    Page<Recipe_INFO> findRecipesByConditions(@Param("type") String type,
+                                              @Param("nation") String nation,
+                                              @Param("ingredient") String ingredient,
+                                              @Param("keyword") String keyword,
+                                              @Param("search") String search,
+                                              Pageable pageable);
 }

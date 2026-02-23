@@ -13,20 +13,30 @@
 <div th:insert="~{fragments/header}"></div>
 
 <div class="container">
-<form action="/board/write" th:action th:object="${boardDto}" style="padding: 70px;" method="post">
+<form th:action="@{/boards}" th:object="${boardDto}" style="padding: 70px;" method="post">
 
     <div th:if="${#fields.hasGlobalErrors()}">
         <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>
     </div>
 
     <div class="form-floating form-group mb-4">
-        <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="제목">
+        <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="제목" th:errorclass="field-error">
         <label for="title">제목</label>
+        <div class="field-error" th:errors="*{title}"></div>
+    </div>
+
+    <div class="form-floating form-group mb-4">
+        <select id="sectionId" th:field="*{sectionId}" class="form-select" th:errorclass="field-error">
+            <option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.sectionName}">게시판 탭</option>
+        </select>
+        <label for="sectionId">게시판 탭</label>
+        <div class="field-error" th:errors="*{sectionId}"></div>
     </div>
 
     <div class="mb-4">
-        <textarea style="height: 500px" id="summernote" th:field="*{contents}" class="form-control" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+        <textarea style="height: 500px" id="summernote" th:field="*{contents}" class="form-control" th:errorclass="field-error" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         <label for="summernote"></label>
+        <div class="field-error" th:errors="*{contents}"></div>
     </div>
 
     <script>
@@ -77,7 +87,7 @@
             $.ajax({
                 data: data,
                 type: "POST",
-                url: '/uploadFile',
+                url: '/api/images',
                 cache: false,
                 contentType: false,
                 processData: false,
@@ -88,6 +98,17 @@
 /*                        $image.css('width', "100%");*/
                     });
                 },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        alert('로그인이 필요합니다. 다시 로그인해주세요.');
+                        return;
+                    }
+                    if (xhr.status === 403) {
+                        alert('이미지 업로드 권한이 없습니다.');
+                        return;
+                    }
+                    alert('이미지 업로드에 실패했습니다.');
+                }
             });
         }
     </script>
