@@ -1,9 +1,12 @@
 package kwh.PublicCookedFood.food.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import kwh.PublicCookedFood.board.service.BoardService;
 import kwh.PublicCookedFood.common.Paging;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.service.RecipeService;
+import kwh.PublicCookedFood.user.dto.BookMarkDto;
+import kwh.PublicCookedFood.user.service.BookmarkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +27,18 @@ import java.util.Map;
 public class MainController {
 
     private final RecipeService recipeService;
+    private final BookmarkService bookmarkService;
+    private final BoardService boardService;
+
+    @GetMapping("/")
+    public String root() {
+        return "redirect:/foods";
+    }
+
+    @GetMapping("/main")
+    public String Home() {
+        return "/foods/main";
+    }
 
     @GetMapping(value = "/foods")
     public String index(@PageableDefault(size = 15) Pageable pageable,
@@ -46,7 +61,6 @@ public class MainController {
 
         return "/foods/index";
     }
-
 
     private Page<Recipe_INFO_ResponseDto> getRecipeInfo(Pageable pageable, String keyword, String search) {
         if ((keyword == null || keyword.isEmpty()) && (search == null || search.isEmpty())) {

@@ -7,10 +7,16 @@ import lombok.Getter;
 
 @Getter
 public class UserSaveDto {
+    @NotBlank
+    @Email
     private String email;
 
+    @NotBlank
+    @Size(min = 8, max = 50)
     private String password;
 
+    @NotBlank
+    @Size(max = 20)
     private String name;
 
     private String loginMethod;

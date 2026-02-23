@@ -2,79 +2,74 @@ package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.dto.BoardDto;
-import kwh.PublicCookedFood.board.dto.CommentsDto;
-import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.user.dto.UserSaveDto;
 import kwh.PublicCookedFood.user.service.UserService;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Commit;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 class BoardServiceTest {
-    private static final Logger log = LoggerFactory.getLogger(BoardServiceTest.class);
 
     @Autowired
     private UserService userService;
-
 
     @Autowired
     private BoardService boardService;
 
     @Autowired
-    private RecipeService recipeService;
-
-    @Autowired
     private LikeService likeService;
 
     @Autowired
-    private CommentsService commentsService;
+    private PasswordEncoder passwordEncoder;
 
-
-    @Commit
     @Test
-    public void write() {
-        Users user = userService.findUserByEmail("test@gmail.com");
+    void write() {
+        Users user = createUser("board-write-" + System.nanoTime() + "@test.com");
 
-        BoardDto saveDto = BoardDto.builder()
+        Board savedBoard = boardService.save(BoardDto.builder()
                 .title("Title")
                 .contents("testContents")
                 .userId(user)
-                .build();
-        boardService.save(saveDto);
+                .views(0L)
+                .likesCount(0L)
+                .commentsCount(0L)
+                .state("1")
+                .build());
+
+        assertThat(savedBoard.getId()).isNotNull();
     }
 
-    @Commit
     @Test
-    public void likeTest() {
-        Users user = userService.findUserByEmail("test@gmail.com");
-
-        likeService.saveLikes(5L, user.getId());
-        boardService.updateLikes(5L);
-    }
-
-/*
-    @Commit
-    @Test
-    public void commentTest() {
-        Users user = userService.findUserByEmail("test@gmail.com");
-        Board board = boardService.getBoard(5L);
-        CommentsDto commentsDto = CommentsDto.builder()
+    void likeTest() {
+        Users user = createUser("board-like-" + System.nanoTime() + "@test.com");
+        Board board = boardService.save(BoardDto.builder()
+                .title("Like Test")
+                .contents("like-content")
                 .userId(user)
-                .postId(board)
-                .contents("re-ReComment testContent")
-                .parentIdx(3L)
-                .build();
+                .views(0L)
+                .likesCount(0L)
+                .commentsCount(0L)
+                .state("1")
+                .build());
 
-        commentsService.save(commentsDto);
+        Long likeId = likeService.saveLikes(board.getId(), user.getId());
+        boardService.updateLikes(board.getId());
 
+        assertThat(likeId).isNotNull();
+        assertThat(likeService.getLike(board.getId())).isEqualTo(1L);
     }
 
-*/
-
-
-
+    private Users createUser(String email) {
+        UserSaveDto userDto = UserSaveDto.builder()
+                .email(email)
+                .name("테스터")
+                .password("12345678")
+                .build();
+        return userService.save(Users.createUser(userDto, passwordEncoder));
+    }
 }

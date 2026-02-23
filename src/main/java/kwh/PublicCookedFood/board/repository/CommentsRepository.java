@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface CommentsRepository extends JpaRepository<Comments, Long> {
 
@@ -16,8 +18,16 @@ public interface CommentsRepository extends JpaRepository<Comments, Long> {
 
     Long countByBoardIdAndState(Long boardId, String state);
 
+    @Query("SELECT c FROM Comments c " +
+            "JOIN FETCH c.user " +
+            "JOIN FETCH c.board " +
+            "LEFT JOIN FETCH c.parent " +
+            "WHERE c.board.id = :postId " +
+            "ORDER BY c.regTime ASC")
+    List<Comments> findAllByBoardIdWithUserAndParentOrderByRegTimeAsc(@Param("postId") Long postId);
+
     @Modifying
-    @Query("update Comments p set p.state = '0' where p.id = :id")
-    void deleteComment(@Param("id") Long id);
+    @Query(value = "update Comments p set p.state = '0' where p.id = :id", nativeQuery = true)
+    void deleteCommentOption(@Param("id") Long id);
 
 }

@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 @Getter
@@ -29,11 +30,10 @@ public class CommentsDto extends BaseEntity {
 
     private List<CommentsDto> replies = new ArrayList<>(); // 답글 리스트
 
-    @Setter
     private boolean areAllRepliesDeleted;
 
     public boolean areAllRepliesDeleted() {
-        return replies.stream().allMatch(reply -> "0".equals(reply.getState()));
+        return Objects.equals(this.getState(), "0") && replies.stream().allMatch(reply -> Objects.equals(reply.getState(), "0"));
     }
 
 }

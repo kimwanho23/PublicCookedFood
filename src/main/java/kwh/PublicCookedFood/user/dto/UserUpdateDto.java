@@ -1,5 +1,6 @@
 package kwh.PublicCookedFood.user.dto;
 
+import jakarta.validation.constraints.Size;
 import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +17,7 @@ public class UserUpdateDto {
 
     private String password;
 
+    @Size(max = 20)
     private String name;
 
     @Builder

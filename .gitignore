@@ -25,7 +25,6 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-application-oauth.properties
 
 ### NetBeans ###
 /nbproject/private/
@@ -37,5 +36,8 @@ application-oauth.properties
 ### VS Code ###
 .vscode/
 
-application.properties
-application-API-KEY.properties
+application.yml
+application-API-KEY.yml
+application-oauth.yml
+.env
+.env.local

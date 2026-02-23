@@ -46,11 +46,12 @@ public class Recipe_INFO_RepositoryImpl implements Recipe_INFO_RepositoryCustom 
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        long total = queryFactory
-                .selectFrom(recipeInfo)
+        Long total = queryFactory
+                .select(recipeInfo.count())
+                .from(recipeInfo)
                 .where(builder)
-                .fetch().size();
+                .fetchOne();
 
-        return new PageImpl<>(results, pageable, total);
+        return new PageImpl<>(results, pageable, total == null ? 0 : total);
     }
 }

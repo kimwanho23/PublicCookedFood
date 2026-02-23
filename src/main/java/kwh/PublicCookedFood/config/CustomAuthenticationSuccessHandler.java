@@ -11,6 +11,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 // 커스텀 로그인 핸들러
 @Component
@@ -19,6 +21,7 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private static final String PREV_PAGE_ATTRIBUTE = "prevPage";
     private static final String LOGIN_PAGE_URI = "/u/login";
     private static final String REGISTER_PAGE_URI = "/u/signup";
+    private static final String DEFAULT_REDIRECT_URI = "/foods";
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
@@ -33,17 +36,33 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         }
 
         // 기본 URI
-        String uri = redirectUri(prevPage);
+        String uri = redirectUri(request, prevPage);
         redirectStrategy.sendRedirect(request, response, uri); //로그인 시 이전 url로 리다이렉트
     }
 
-    private String redirectUri(String prevPage) {
-        if (prevPage != null
-                && !prevPage.isEmpty()
-                && !prevPage.contains(LOGIN_PAGE_URI)
-                && !prevPage.contains(REGISTER_PAGE_URI)) {
-            return prevPage;
+    private String redirectUri(HttpServletRequest request, String prevPage) {
+        if (prevPage == null || prevPage.isEmpty()) {
+            return DEFAULT_REDIRECT_URI;
         }
-        return "/";
+
+        try {
+            URI uri = new URI(prevPage);
+            if (uri.isAbsolute() && !request.getServerName().equalsIgnoreCase(uri.getHost())) {
+                return DEFAULT_REDIRECT_URI;
+            }
+
+            String path = uri.getPath();
+            if (path == null || !path.startsWith("/") || path.startsWith("//")) {
+                return DEFAULT_REDIRECT_URI;
+            }
+
+            if (path.startsWith(LOGIN_PAGE_URI) || path.startsWith(REGISTER_PAGE_URI)) {
+                return DEFAULT_REDIRECT_URI;
+            }
+
+            return uri.getQuery() == null ? path : path + "?" + uri.getQuery();
+        } catch (URISyntaxException e) {
+            return DEFAULT_REDIRECT_URI;
+        }
     }
 }

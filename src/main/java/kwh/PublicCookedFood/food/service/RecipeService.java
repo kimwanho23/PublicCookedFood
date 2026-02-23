@@ -24,7 +24,11 @@ public class RecipeService {
     private final Recipe_INFO_Repository infoRepository;
 
     private final Recipe_IRDNT_Repository irdntRepository;
-    private final Recipe_INFO_Repository recipe_INFO_Repository;
+
+    public Recipe_INFO getRecipeEntityByRecipeId(Long recipeId) {
+        return infoRepository.findByRecipeID(recipeId)
+                .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
+    }
 
     public List<Recipe_CRSE_ResponseDto> getRecipe_CRSE(Long id){
         return crseRepository.findAllByRecipeIDOrderByCookingNOAsc(id)
@@ -34,8 +38,7 @@ public class RecipeService {
     }
 
     public Recipe_INFO_ResponseDto getRecipe_INFO(Long id){
-        return infoRepository.findByRecipeID(id)
-                .toResponseDto(); //모든 레시피 기본정보
+        return getRecipeEntityByRecipeId(id).toResponseDto(); //모든 레시피 기본정보
     }
 
     public List<Recipe_IRDNT_ResponseDto> getRecipe_IRDNT(Long recipeId){
@@ -44,8 +47,6 @@ public class RecipeService {
                 .map(Recipe_IRDNT::toResponseDto)
                 .toList(); //레시피 재료정보
     }
-
-
 
     /////////////////   카테고리명   ////////////////////////
     public List<String> getRecipeNation_NM(){

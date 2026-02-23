@@ -28,6 +28,14 @@ public class BookmarkService {
                 .toList();
     }
 
+    public List<Bookmark> findUserBookmarkEmail(Users user) { //나의 북마크
+/*        return bookmarkRepository.findBookmarksByUserEmail(user.getEmail())
+                .stream()
+                .map(Bookmark::toResponseDto)
+                .toList();*/
+        return bookmarkRepository.findBookmarksByUserEmail(user.getEmail());
+    }
+
     public boolean isBookmarked(Users email, Recipe_INFO recipeId) { //이미 북마크한 게시물인지 판단
         return bookmarkRepository.existsByUserAndRecipeID(email, recipeId);
     }
@@ -35,16 +43,16 @@ public class BookmarkService {
    @Transactional
     public Bookmark save(BookMarkDto bookmark){ // 북마크 저장
        Users user = userRepository.findByEmail(bookmark.getEmail()).orElseThrow();
-       Recipe_INFO recipe = recipeInfoRepository.findById(bookmark.getRecipeID())
+       Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(bookmark.getRecipeID())
                .orElseThrow(() -> new RuntimeException("Recipe not found"));
-        return bookmarkRepository.save(bookmark.toEntity(user, recipe));
+       return bookmarkRepository.findByUserAndRecipeID(user, recipe)
+               .orElseGet(() -> bookmarkRepository.save(bookmark.toEntity(user, recipe)));
     }
 
     @Transactional
     public void delete(Users email, Recipe_INFO recipeID){ // 북마크 삭제
         bookmarkRepository.deleteByUserAndRecipeID(email, recipeID);
     }
-
 
 
 }

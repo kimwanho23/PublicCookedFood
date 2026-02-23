@@ -18,6 +18,7 @@
                 </div>
                 <div class="modal-footer">
                     <form th:action="|@{${url}}/${id}/${commentId}|"  method="post">
+                        <input type="hidden" name="_method" value="patch"/>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
                         <button type="submit" class="btn btn-primary">삭제</button>
                     </form>

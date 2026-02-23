@@ -8,7 +8,9 @@ import lombok.Getter;
 
 @Entity
 @Getter
-@Table(name = "bookmark")
+@Table(name = "bookmark",  uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"email", "recipe_ID"})
+})
 public class Bookmark {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

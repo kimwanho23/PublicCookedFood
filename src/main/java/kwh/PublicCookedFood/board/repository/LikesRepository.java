@@ -9,10 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LikesRepository extends JpaRepository<Likes, Long> {
 
-
     Long countByBoardId(Long boardId);
 
     Boolean existsByBoardIdAndUserId(Long boardId, Long userId);
-
-
 }

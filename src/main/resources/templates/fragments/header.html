@@ -28,26 +28,17 @@
         <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav me-auto mb-2 mb-md-0">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/bookmark/bookmarkList">공공 레시피</a>
+                    <a class="nav-link active" aria-current="page" href="/foods">공공 레시피</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/board">게시판</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-                </li>
             </ul>
-
-
-            <form class="d-flex me-2" role="search">
-                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
 
             <a sec:authorize="!isAuthenticated()" id="loginButton" th:href="@{/u/login}" style="display: inline;">
                 <button type="button" class="btn btn-dark" style="margin-right: 20px;">로그인</button>
             </a>
-            <form sec:authorize="isAuthenticated()" th:action="@{/u/logout}" style="display: inline;">
+            <form sec:authorize="isAuthenticated()" th:action="@{/u/logout}" method="post" style="display: inline;">
                 <div class="dropdown">
                     <button type="button" class="btn btn-dark dropdown-toggle nav-item" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <span th:text="${user.name.length() > 7 ? user.name.substring(0, 7) + '...' : user.name}"></span>
@@ -56,11 +47,9 @@
                     <ul class="dropdown-menu dropdown-menu-end mx-0 shadow w-220px" data-bs-theme="light">
                         <li><a class="dropdown-item d-flex gap-2 align-items-center" th:href="@{/bookmark/bookmarkList}">북마크</a></li>
                         <li><a class="dropdown-item d-flex gap-2 align-items-center" href="#">나의 글</a></li>
-                        <li><a class="dropdown-item d-flex gap-2 align-items-center" href="#">Movies</a></li>
-                        <li><a class="dropdown-item d-flex gap-2 align-items-center" href="#">Music</a></li>
                         <li><a class="dropdown-item d-flex gap-2 align-items-center" th:href="@{/u/profile}">설정</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item dropdown-item-danger d-flex gap-2 align-items-center" th:href="@{/u/logout}">로그아웃</a></li>
+                        <li><button type="submit" class="dropdown-item dropdown-item-danger d-flex gap-2 align-items-center">로그아웃</button></li>
                     </ul>
                 </div>
             </form>

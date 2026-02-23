@@ -22,15 +22,20 @@ public class LikeService {
 
     @Transactional
     public Long saveLikes(Long boardId, Long userId) {
-        Users user = userRepository.findById(userId).orElse(null);
-        Board board = boardRepository.findById(boardId).orElse(null);
+        if (likesRepository.existsByBoardIdAndUserId(boardId, userId)) {
+            return null;
+        }
+
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid board ID"));
 
         Likes like = Likes.builder()
                 .board(board)
                 .user(user)
                 .build();
-        likesRepository.save(like);
-        return like.getId();
+        return likesRepository.save(like).getId();
     }
 
     public Long getLike(Long id){

@@ -24,12 +24,27 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     @Query("UPDATE Board b SET b.commentCount = :commentCount WHERE b.id = :postId and b.state = '1'")
     void updateCommentCount(@Param("postId") Long postId, @Param("commentCount") Long commentCount);
 
-    Page<Board> findByTitleContainingAndStateOrderByRegTimeDesc(String search, String state, Pageable pageable);
+    @Query(
+            value = "SELECT b FROM Board b JOIN FETCH b.user " +
+                    "WHERE b.state = :state AND b.title LIKE CONCAT('%', :search, '%') " +
+                    "ORDER BY b.regTime DESC",
+            countQuery = "SELECT COUNT(b) FROM Board b " +
+                    "WHERE b.state = :state AND b.title LIKE CONCAT('%', :search, '%')"
+    )
+    Page<Board> findByTitleContainingAndStateWithUser(@Param("search") String search,
+                                                      @Param("state") String state,
+                                                      Pageable pageable);
 
-    Page<Board> findAllByStateOrderByRegTimeDesc(String state, Pageable pageable);
+    @Query(
+            value = "SELECT b FROM Board b JOIN FETCH b.user WHERE b.state = :state ORDER BY b.regTime DESC",
+            countQuery = "SELECT COUNT(b) FROM Board b WHERE b.state = :state"
+    )
+    Page<Board> findAllByStateWithUser(@Param("state") String state, Pageable pageable);
+
+
 
     @Modifying
-    @Query("update Board p set p.state = '0' where p.id = :id")
-    void deleteBoard(@Param("id") Long id);
+    @Query(value = "update Board p set p.state = '0' where p.id = :id", nativeQuery = true)
+    void deleteBoardOption(@Param("id") Long id);
 
 }
