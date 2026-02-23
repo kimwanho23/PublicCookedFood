@@ -26,15 +26,16 @@
         <div class="inline-items">
             <h1 class="text-body-emphasis" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목입니다.</h1>
 
-            <button type="button" th:if="${isBookmarked}" th:onclick="|location.href='@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
-                    sec:authorize="isAuthenticated()" class="btn btn-dark">
-                북마크 해제하기
-            </button>
+            <form th:if="${isBookmarked}" th:action="@{/bookmark/delete/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
+                  method="post" sec:authorize="isAuthenticated()">
+                <input type="hidden" name="_method" value="delete"> <!-- Spring에서 DELETE 요청으로 처리 -->
+                <button type="submit" class="btn btn-dark">북마크 해제하기</button>
+            </form>
 
-            <button type="button" th:if="${!isBookmarked}" th:onclick="|location.href='@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}'|"
-                    sec:authorize="isAuthenticated()" class="btn btn-dark">
-                북마크 추가
-            </button>
+            <form th:if="${!isBookmarked}" th:action="@{/bookmark/add/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
+                  method="post" sec:authorize="isAuthenticated()">
+                <button type="submit" class="btn btn-dark">북마크 추가</button>
+            </form>
         </div>
 
         <h6 th:text="${infoResponseDto.getSumry()}">요리 설명</h6>

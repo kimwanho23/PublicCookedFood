@@ -7,6 +7,8 @@ import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,15 +32,18 @@ public class Board extends BaseEntity {
 
     private Long views; // 조회수
 
-    private Long likeCount; // 좋아요
+    private Long likeCount; // 좋아요 수
 
     private Long commentCount; //댓글 수
 
     private String state;
 
+
+    @BatchSize(size = 100)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "board")
     private List<Likes> likes = new ArrayList<>(); // 좋아요
 
+    @BatchSize(size = 100)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "board")
     private List<Comments> comments = new ArrayList<>(); // 댓글
 
@@ -73,10 +78,6 @@ public class Board extends BaseEntity {
                 .likesCount(likeCount)
                 .commentsCount(commentCount)
                 .state(state)
-                .likes(likes)
-                .comments(comments)
                 .build();
     }
-
-
 }

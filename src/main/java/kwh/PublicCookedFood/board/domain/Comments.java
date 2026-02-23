@@ -42,10 +42,9 @@ public class Comments extends BaseEntity {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comments> replies = new ArrayList<>(); // 답글 리스트
 
-
     public Comments() {
-
     }
+
     @Builder
     public Comments(Long id, Users user, Board board, String contents, Comments parent, String state, List<Comments> replies) {
         this.id = id;

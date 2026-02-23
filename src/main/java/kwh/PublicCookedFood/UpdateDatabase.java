@@ -12,12 +12,16 @@ import org.json.JSONTokener;
 public class UpdateDatabase { //엑셀에서 이미지
     public static void main(String[] args) {
         // JSON 파일 경로
-        String filePath = "C:\\Users\\yh245\\Downloads\\datas.json";
+        String filePath = System.getenv().getOrDefault("UPDATE_JSON_PATH", "datas.json");
 
         // MySQL 연결 정보
-        String url = "jdbc:mysql://localhost:3306/food";
-        String user = "root";
-        String password = "wnrmdakrpd145!";
+        String url = System.getenv().getOrDefault("DB_URL", "jdbc:mysql://localhost:3306/food");
+        String user = System.getenv().getOrDefault("DB_USERNAME", "root");
+        String password = System.getenv("DB_PASSWORD");
+
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException("DB_PASSWORD 환경 변수가 필요합니다.");
+        }
 
         Connection conn = null;
         PreparedStatement updateStmt = null;

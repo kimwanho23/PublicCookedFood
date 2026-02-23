@@ -13,7 +13,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
         response.sendRedirect("/foods");
-/*        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");*/
     }
 
 }

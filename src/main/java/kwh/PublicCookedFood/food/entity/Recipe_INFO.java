@@ -2,14 +2,19 @@ package kwh.PublicCookedFood.food.entity;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
+import kwh.PublicCookedFood.user.domain.Bookmark;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
 @Table(name = "Recipe_INFO")
-@ToString
+@ToString(exclude = "bookmarks")
 public class Recipe_INFO {
 
     @Id @GeneratedValue(strategy = GenerationType.AUTO)
@@ -58,11 +63,15 @@ public class Recipe_INFO {
     @Column(name="img_URL")
     private String imgURL;
 
+    @BatchSize(size = 100)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "recipeID")
+    private List<Bookmark> bookmarks = new ArrayList<>(); // 사용자 북마크
+
     @Builder
     public Recipe_INFO(Long rowNUM, Long recipeID, String recipeNMKO, String sumry,
                        String nationCODE, String nationNM, String tyCODE, String tyNM,
                        String cookingTIME, String calorie, String qnt, String levelNM,
-                       String irdntCODE, String pcNM, String imgURL) {
+                       String irdntCODE, String pcNM, String imgURL, List<Bookmark> bookmarks) {
         this.rowNUM = rowNUM;
         this.recipeID = recipeID;
         this.recipeNMKO = recipeNMKO;
@@ -78,6 +87,7 @@ public class Recipe_INFO {
         this.irdntCODE = irdntCODE;
         this.pcNM = pcNM;
         this.imgURL = imgURL;
+        this.bookmarks = bookmarks;
     }
 
     public Recipe_INFO() {

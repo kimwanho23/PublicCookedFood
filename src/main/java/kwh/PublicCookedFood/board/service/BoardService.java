@@ -5,6 +5,8 @@ import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.dto.BoardDto;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.CommentsRepository;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,11 +16,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class BoardService {
 
+    private static final Safelist BOARD_CONTENT_SAFELIST = Safelist.relaxed()
+            .addProtocols("img", "src", "http", "https", "data");
+
     private final BoardRepository boardRepository;
     private final CommentsRepository commentsRepository;
 
     public Page<Board> getBoardList(Pageable pageable) {
-        return boardRepository.findAllByStateOrderByRegTimeDesc("1", pageable);
+
+        return boardRepository.findAllByStateWithUser("1", pageable);
     }
 
     public BoardDto getBoardDetail(Long id){
@@ -27,11 +33,13 @@ public class BoardService {
 
     @Transactional
     public Page<Board> findByKeyword(String search, Pageable pageable) {
-        return boardRepository.findByTitleContainingAndStateOrderByRegTimeDesc(search, "1", pageable);
+        return boardRepository.findByTitleContainingAndStateWithUser(search, "1", pageable);
     }
 
     @Transactional
     public Board save(BoardDto boardDto) {
+        boardDto.setTitle(Jsoup.clean(boardDto.getTitle() == null ? "" : boardDto.getTitle(), Safelist.none()));
+        boardDto.setContents(Jsoup.clean(boardDto.getContents() == null ? "" : boardDto.getContents(), BOARD_CONTENT_SAFELIST));
         return boardRepository.save(boardDto.toEntity());
     }
 
@@ -42,13 +50,14 @@ public class BoardService {
 
     @Transactional
     public void delete(Long id) {
-        boardRepository.deleteBoard(id);
+        boardRepository.deleteBoardOption(id);
     }
 
     @Transactional
     public void updateLikes(Long id) {
         boardRepository.updateLikes(id);
     }
+
     @Transactional
     public void updateCommentCounts(Long id) {
         Long commentCount = commentsRepository.countByBoardIdAndState(id, "1");

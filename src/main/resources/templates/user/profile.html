@@ -10,11 +10,13 @@
 <main class="container">
     <div style="border: dimgray; border-radius: 15px; background-color: white;">
         <form action="/u/profile" th:action th:object="${userUpdateDto}" style="padding: 40px;" method="post">
+            <input type="hidden" name="_method" value="put"/>
             <h3>내 정보</h3>
             <hr>
+            <div th:if="${errorMessage != null}" class="alert alert-danger py-2" th:text="${errorMessage}"></div>
             <div class="mb-4">
                 이메일
-                <input type="text" id="email" th:field="*{email}" class="form-control text-dark" th:placeholder="${user.email}" th:value="${user.name}" disabled>
+                <input type="text" id="email" th:field="*{email}" class="form-control text-dark" th:placeholder="${user.email}" th:value="${user.email}" disabled>
                 <label for="email"></label>
             </div>
 

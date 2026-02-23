@@ -60,8 +60,6 @@ public class BoardDto extends BaseEntity {
                 .likeCount(likesCount)
                 .commentCount(commentsCount)
                 .state(state)
-                .likes(likes)
-                .comments(comments)
                 .build();
     }
 }

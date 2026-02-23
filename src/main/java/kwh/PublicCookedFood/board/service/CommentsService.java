@@ -3,7 +3,6 @@ package kwh.PublicCookedFood.board.service;
 import jakarta.transaction.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
-import kwh.PublicCookedFood.board.dto.BoardDto;
 import kwh.PublicCookedFood.board.dto.CommentsDto;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.CommentsRepository;
@@ -11,11 +10,15 @@ import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +33,7 @@ public class CommentsService {
 
     @Transactional
     public void deleteComment(Long id) {
-        commentsRepository.deleteComment(id);
+        commentsRepository.deleteCommentOption(id);
     }
 
     @Transactional
@@ -63,18 +66,43 @@ public class CommentsService {
         return commentsRepository.countByBoardIdAndState(id, "1");
     }
 
+    public Comments getComment(Long id) {
+        return commentsRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid comment ID"));
+    }
+
 
     public Page<CommentsDto> getCommentListWithReplies(Long postId, Pageable pageable) {
-        // 최상위 댓글(부모 댓글이 없는 댓글)들을 먼저 조회
-        Page<Comments> parentComments = commentsRepository.findByBoardIdAndParentIsNullOrderByRegTimeAsc(postId, pageable);
+        List<Comments> allComments = commentsRepository.findAllByBoardIdWithUserAndParentOrderByRegTimeAsc(postId);
 
-        // 각 최상위 댓글에 대해 대댓글들을 재귀적으로 조회하여 DTO로 변환
-        return parentComments.
-                map(this::convertToDto);
+        List<Comments> parentComments = allComments.stream()
+                .filter(comment -> comment.getParent() == null)
+                .toList();
+
+        Map<Long, List<Comments>> repliesByParentId = allComments.stream()
+                .filter(comment -> comment.getParent() != null)
+                .collect(Collectors.groupingBy(comment -> comment.getParent().getId(),
+                        LinkedHashMap::new, Collectors.toList()));
+
+        int start = (int) pageable.getOffset();
+        if (start >= parentComments.size()) {
+            return new PageImpl<>(List.of(), pageable, parentComments.size());
+        }
+        int end = Math.min(start + pageable.getPageSize(), parentComments.size());
+
+        List<CommentsDto> content = parentComments.subList(start, end).stream()
+                .map(comment -> convertToDto(comment, repliesByParentId))
+                .toList();
+
+        return new PageImpl<>(content, pageable, parentComments.size());
     }
 
 
     private CommentsDto convertToDto(Comments comment) {
+        return convertToDto(comment, Map.of());
+    }
+
+    private CommentsDto convertToDto(Comments comment, Map<Long, List<Comments>> repliesByParentId) {
         CommentsDto dto = new CommentsDto();
         dto.setId(comment.getId());
         dto.setUserId(comment.getUser().getId());
@@ -86,9 +114,9 @@ public class CommentsService {
         dto.setRegTime(comment.getRegTime());
         dto.setUpdateTime(comment.getUpdateTime());
 
-        // 대댓글들을 재귀적으로 처리하여 DTO로 변환
-        List<CommentsDto> replies = comment.getReplies().stream()
-                .map(this::convertToDto)
+        List<CommentsDto> replies = repliesByParentId.getOrDefault(comment.getId(), List.of())
+                .stream()
+                .map(reply -> convertToDto(reply, repliesByParentId))
                 .toList();
         dto.setReplies(replies);
 

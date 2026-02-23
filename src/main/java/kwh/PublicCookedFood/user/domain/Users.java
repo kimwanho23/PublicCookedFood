@@ -7,6 +7,7 @@ import kwh.PublicCookedFood.board.domain.Likes;
 import kwh.PublicCookedFood.user.dto.UserSaveDto;
 import lombok.Builder;
 import lombok.Getter;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
@@ -35,12 +36,19 @@ public class Users {
     @Column(nullable = false)
     private String loginMethod;
 
+    @BatchSize(size = 100)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
+    private List<Bookmark> bookmarks = new ArrayList<>(); // 사용자 북마크
+
+    @BatchSize(size = 100)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
     private List<Board> boards = new ArrayList<>(); // 사용자가 작성한 글
 
+    @BatchSize(size = 100)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
     private List<Comments> comments = new ArrayList<>(); // 사용자가 작성한 댓글
 
+    @BatchSize(size = 100)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
     private List<Likes> likes = new ArrayList<>(); //  내가 찍은 좋아요
 
@@ -48,13 +56,14 @@ public class Users {
     }
 
     @Builder
-    public Users(Long id, String email, String password, String name, Role authority, String loginMethod, List<Board> boards, List<Comments> comments, List<Likes> likes) {
+    public Users(Long id, String email, String password, String name, Role authority, String loginMethod, List<Bookmark> bookmarks, List<Board> boards, List<Comments> comments, List<Likes> likes) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.name = name;
         this.authority = authority;
         this.loginMethod = loginMethod;
+        this.bookmarks = bookmarks;
         this.boards = boards;
         this.comments = comments;
         this.likes = likes;

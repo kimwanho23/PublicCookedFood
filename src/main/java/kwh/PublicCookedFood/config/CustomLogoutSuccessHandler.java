@@ -18,22 +18,25 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response,
                                 Authentication authentication) throws IOException, ServletException {
         String referer = request.getHeader("Referer");
-        String redirectUrl;
+        String redirectUrl = "/foods";
 
-        if (referer != null) {
+        if (referer != null && !referer.isBlank()) {
             try {
                 URI uri = new URI(referer);
-                String path = uri.getPath();
+                if (uri.isAbsolute() && !request.getServerName().equalsIgnoreCase(uri.getHost())) {
+                    response.sendRedirect("/foods");
+                    return;
+                }
 
-                // path가 /u/profile일 때만 /foods로 리다이렉트
-                redirectUrl = "/u/profile".equals(path) ? "/foods" : referer;
-            } catch (URISyntaxException e) {
-                // URL이 잘못된 경우 기본 페이지로 리다이렉트
-                redirectUrl = "/";
+                String path = uri.getPath();
+                if (path != null && path.startsWith("/") && !path.startsWith("//")) {
+                    redirectUrl = "/u/profile".equals(path)
+                            ? "/foods"
+                            : (uri.getQuery() == null ? path : path + "?" + uri.getQuery());
+                }
+            } catch (URISyntaxException ignored) {
+                redirectUrl = "/foods";
             }
-        } else {
-            // referer가 null인 경우 기본 페이지로 리다이렉트
-            redirectUrl = "/";
         }
 
         response.sendRedirect(redirectUrl);

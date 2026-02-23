@@ -1,10 +1,12 @@
 package kwh.PublicCookedFood.common;
 
 import jakarta.servlet.http.HttpSession;
+import kwh.PublicCookedFood.config.oauth2.LoginUser;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
@@ -21,12 +23,10 @@ public class GlobalControllerAdvice {
     private final HttpSession httpSession;
 
     @ModelAttribute
-    public void addUserToModel(Model model) { // 현재 유저를 세션에 등록, 헤더 때문에 필요
-        Users user = (Users) httpSession.getAttribute("user");
-
+    public void addUserToModel(@LoginUser Users user, Model model) { // 현재 유저를 세션에 등록, 헤더 때문에 필요
         if (user == null) {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated()) {
+            if (authentication != null && authentication.isAuthenticated() && !(authentication instanceof AnonymousAuthenticationToken)) {
                 String email = authentication.getName();
                 user = userService.findUserByEmail(email);
                 httpSession.setAttribute("user", user);

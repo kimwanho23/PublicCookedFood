@@ -8,11 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 @RequiredArgsConstructor
 @Service
@@ -45,8 +44,13 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
 
     private Users saveOrUpdate(OAuthAttributes attributes) {
+        if (attributes.getEmail() == null || attributes.getEmail().isBlank()) {
+            throw new OAuth2AuthenticationException(new OAuth2Error("invalid_token"),
+                    "OAuth provider did not return a usable email.");
+        }
+
         Users user = userRepository.findByEmail(attributes.getEmail())
-/*                .map(entity -> entity.update(attributes.getName()))*/
+                .map(entity -> entity.update(attributes.getName()))
                 .orElse(attributes.toEntity());
 
         return userRepository.save(user);

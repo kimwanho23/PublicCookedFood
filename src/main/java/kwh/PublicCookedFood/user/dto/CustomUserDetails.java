@@ -2,16 +2,15 @@ package kwh.PublicCookedFood.user.dto;
 
 import kwh.PublicCookedFood.user.domain.Users;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Getter
 public class CustomUserDetails implements UserDetails, OAuth2User {
 
@@ -37,9 +36,10 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        Collection<GrantedAuthority> collect = new ArrayList<>();
-        collect.add((GrantedAuthority) user::getEmail);
-        return collect;
+        if (user.getAuthority() == null) {
+            return Collections.emptyList();
+        }
+        return List.of(() -> user.getAuthority().getKey());
     }
 
     @Override
@@ -54,6 +54,6 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public String getName() {
-        return null;
+        return user.getEmail();
     }
 }

@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import kwh.PublicCookedFood.config.oauth2.LoginUser;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.LoginDto;
 import kwh.PublicCookedFood.user.dto.UserSaveDto;
@@ -18,9 +19,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
-
 
 @Controller
 @RequiredArgsConstructor
@@ -63,49 +61,54 @@ public class UserController {
         return "/user/profile";
     }
 
-    @PostMapping("/profile")
-    public String update(@Valid UserUpdateDto userUpdateDto, BindingResult bindingResult, Model model){
+    @PutMapping("/profile")
+    public String update(@LoginUser Users user, @Valid UserUpdateDto userUpdateDto, BindingResult bindingResult, Model model){
+        if (user == null) {
+            return "redirect:/u/login";
+        }
+
         if(bindingResult.hasErrors()){
             return "/user/profile";
         }
+
         try{
-            Users currentUser = (Users) httpSession.getAttribute("user");
-            log.info(currentUser.toString());
-            String email = currentUser.getEmail();
-            if(email != null){
-                Users existingUser = userService.findUserByEmail(email);
-
-                Users updatedUser = Users.builder()
-                        .id(existingUser.getId())
-                        .email(existingUser.getEmail()) // 이메일은 변경하지 않음
-                        .name(!Objects.equals(userUpdateDto.getName(), "") ? userUpdateDto.getName() : existingUser.getName())
-                        .password(existingUser.getPassword())
-                        .loginMethod(existingUser.getLoginMethod())
-                        .authority(existingUser.getAuthority())
-                        .build();
-
-                userService.save(updatedUser);
-                httpSession.setAttribute("user", updatedUser);
+            Users existingUser = userService.findUserByEmail(user.getEmail());
+            if (existingUser == null) {
+                model.addAttribute("errorMessage", "사용자 정보를 찾을 수 없습니다.");
                 return "/user/profile";
             }
-            else {
-                log.info("email null");
+
+            if (userUpdateDto.getName() != null && !userUpdateDto.getName().isBlank()) {
+                existingUser.update(userUpdateDto.getName());
             }
 
+            Users savedUser = userService.save(existingUser);
+            httpSession.setAttribute("user", savedUser);
+            return "redirect:/u/profile";
         } catch (IllegalStateException e){
             model.addAttribute("errorMessage", e.getMessage());
             return "/user/profile";
         }
-        return "/user/profile";
     }
 
     //로그인 페이지 출력
     @GetMapping("/login")
-    public String login( @ModelAttribute("loginDto") LoginDto loginDto,HttpServletRequest request) {
+    public String login(@ModelAttribute("loginDto") LoginDto loginDto,
+                        @RequestParam(required = false) Boolean error,
+                        @RequestParam(required = false) Boolean oauthError,
+                        HttpServletRequest request,
+                        Model model) {
         String uri = request.getHeader("Referer");
 
         if (uri != null && !uri.contains("/u/login")) {
             request.getSession().setAttribute("prevPage", uri);
+        }
+
+        if (Boolean.TRUE.equals(error)) {
+            model.addAttribute("loginErrorMsg", "아이디 또는 비밀번호를 확인해주세요.");
+        }
+        if (Boolean.TRUE.equals(oauthError)) {
+            model.addAttribute("loginErrorMsg", "소셜 로그인에 실패했습니다. OAuth 클라이언트 설정(redirect URI, client id/secret)을 확인해주세요.");
         }
         return "user/loginForm";
     }

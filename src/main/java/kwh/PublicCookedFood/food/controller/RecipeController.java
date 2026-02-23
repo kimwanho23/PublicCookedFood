@@ -3,6 +3,7 @@ package kwh.PublicCookedFood.food.controller;
 import kwh.PublicCookedFood.food.dto.recipe_crse.Recipe_CRSE_ResponseDto;
 import kwh.PublicCookedFood.food.dto.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.dto.recipe_irdnt.Recipe_IRDNT_ResponseDto;
+import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 
 import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.user.domain.Users;
@@ -32,8 +33,8 @@ public class RecipeController {
 
     @GetMapping("/{id}")
     public String foodDetail(@PathVariable Long id, Model model){
-        Recipe_INFO_ResponseDto infoResponseDto =
-                recipeService.getRecipe_INFO(id);
+        Recipe_INFO recipeInfo = recipeService.getRecipeEntityByRecipeId(id);
+        Recipe_INFO_ResponseDto infoResponseDto = recipeInfo.toResponseDto();
 
         List<Recipe_IRDNT_ResponseDto> irdntResponseDto =
                 recipeService.getRecipe_IRDNT(id);
@@ -43,15 +44,16 @@ public class RecipeController {
 
         Users user = (Users) model.getAttribute("user");
         boolean isLoggedIn = user != null;
+        boolean isBookmarked = false;
 
         if (isLoggedIn) {
             // 북마크 여부 확인
-            boolean isBookmarked = bookmarkService.isBookmarked(user, infoResponseDto.toEntity());
-            model.addAttribute("isBookmarked", isBookmarked);
+            isBookmarked = bookmarkService.isBookmarked(user, recipeInfo);
             log.info(isBookmarked ? "is bookmarked" : "is unbookmarked");
         }
 
         List<String> categories = Arrays.asList("주재료", "부재료", "양념");
+        model.addAttribute("isBookmarked", isBookmarked);
         model.addAttribute("categories", categories);
         model.addAttribute("infoResponseDto", infoResponseDto);
         model.addAttribute("irdntResponseDto", irdntResponseDto);

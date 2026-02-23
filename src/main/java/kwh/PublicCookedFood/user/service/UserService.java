@@ -1,21 +1,15 @@
 package kwh.PublicCookedFood.user.service;
 
-import jakarta.servlet.http.HttpSession;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.CustomUserDetails;
 import kwh.PublicCookedFood.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,17 +20,17 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public Users save(Users users){
+        userRepository.findByEmail(users.getEmail()).ifPresent(existing -> {
+            if (users.getId() == null || !existing.getId().equals(users.getId())) {
+                throw new IllegalStateException("이미 가입된 이메일입니다.");
+            }
+        });
         return userRepository.save(users);
     }
 
     public Users findUserByEmail(String email){
         return userRepository.findByEmail(email).orElse(null);
     }
-
-    public Users findUserById(Long id){
-        return userRepository.findById(id).orElse(null);
-    }
-
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
