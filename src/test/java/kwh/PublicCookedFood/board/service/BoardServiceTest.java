@@ -1,9 +1,10 @@
 package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.dto.BoardDto;
+import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.dto.request.BoardSaveRequest;
 import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.UserSaveDto;
+import kwh.PublicCookedFood.user.dto.request.UserSaveDto;
 import kwh.PublicCookedFood.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,14 +32,14 @@ class BoardServiceTest {
     void write() {
         Users user = createUser("board-write-" + System.nanoTime() + "@test.com");
 
-        Board savedBoard = boardService.save(BoardDto.builder()
+        Board savedBoard = boardService.save(BoardSaveRequest.builder()
                 .title("Title")
                 .contents("testContents")
-                .userId(user)
+                .userId(user.getId())
                 .views(0L)
                 .likesCount(0L)
                 .commentsCount(0L)
-                .state("1")
+                .state(SoftDeleteState.ACTIVE)
                 .build());
 
         assertThat(savedBoard.getId()).isNotNull();
@@ -47,14 +48,14 @@ class BoardServiceTest {
     @Test
     void likeTest() {
         Users user = createUser("board-like-" + System.nanoTime() + "@test.com");
-        Board board = boardService.save(BoardDto.builder()
+        Board board = boardService.save(BoardSaveRequest.builder()
                 .title("Like Test")
                 .contents("like-content")
-                .userId(user)
+                .userId(user.getId())
                 .views(0L)
                 .likesCount(0L)
                 .commentsCount(0L)
-                .state("1")
+                .state(SoftDeleteState.ACTIVE)
                 .build());
 
         Long likeId = likeService.saveLikes(board.getId(), user.getId());

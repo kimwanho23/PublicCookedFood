@@ -3,8 +3,8 @@ package kwh.PublicCookedFood.user.service;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.food.repository.Recipe_INFO_Repository;
 import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.BookMarkDto;
-import kwh.PublicCookedFood.user.dto.UserSaveDto;
+import kwh.PublicCookedFood.user.dto.request.BookmarkCreateRequest;
+import kwh.PublicCookedFood.user.dto.request.UserSaveDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,13 +32,13 @@ class BookmarkServiceTest {
         Users user = createUser("bookmark-list-" + System.nanoTime() + "@test.com");
         for (long i = 1L; i <= 3; i++) {
             createRecipe(i);
-            bookmarkService.save(BookMarkDto.builder()
+            bookmarkService.save(BookmarkCreateRequest.builder()
                     .recipeID(i)
-                    .email(user.getEmail())
+                    .userId(user.getId())
                     .build());
         }
 
-        assertThat(bookmarkService.findUserBookmarkEmail(user)).hasSize(3);
+        assertThat(bookmarkService.findUserBookmarks(user)).hasSize(3);
     }
 
     @Test
@@ -46,12 +46,12 @@ class BookmarkServiceTest {
         Users user = createUser("bookmark-add-" + System.nanoTime() + "@test.com");
         createRecipe(5L);
 
-        bookmarkService.save(BookMarkDto.builder()
+        bookmarkService.save(BookmarkCreateRequest.builder()
                 .recipeID(5L)
-                .email(user.getEmail())
+                .userId(user.getId())
                 .build());
 
-        assertThat(bookmarkService.findUserBookmarkEmail(user)).hasSize(1);
+        assertThat(bookmarkService.findUserBookmarks(user)).hasSize(1);
     }
 
     private Users createUser(String email) {

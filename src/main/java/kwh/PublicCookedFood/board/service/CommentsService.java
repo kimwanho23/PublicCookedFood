@@ -3,7 +3,9 @@ package kwh.PublicCookedFood.board.service;
 import jakarta.transaction.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
-import kwh.PublicCookedFood.board.dto.CommentsDto;
+import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.dto.request.CommentCreateRequest;
+import kwh.PublicCookedFood.board.dto.response.CommentResponse;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.CommentsRepository;
 import kwh.PublicCookedFood.user.domain.Users;
@@ -33,11 +35,11 @@ public class CommentsService {
 
     @Transactional
     public void deleteComment(Long id) {
-        commentsRepository.deleteCommentOption(id);
+        commentsRepository.updateState(id, SoftDeleteState.DELETED);
     }
 
     @Transactional
-    public CommentsDto createComment(CommentsDto commentsDto) {
+    public CommentResponse createComment(CommentCreateRequest commentsDto) {
         Comments parent = null;
         if (commentsDto.getParentId() != null) {
             parent = commentsRepository.findById(commentsDto.getParentId())
@@ -54,7 +56,7 @@ public class CommentsService {
                 .board(board)
                 .contents(commentsDto.getContents())
                 .parent(parent)
-                .state(commentsDto.getState() != null ? commentsDto.getState() : "1")
+                .state(commentsDto.getState() == null ? SoftDeleteState.ACTIVE : commentsDto.getState())
                 .replies(new ArrayList<>()) // 대댓글 초기화
                 .build();
 
@@ -63,7 +65,7 @@ public class CommentsService {
     }
 
     public Long getCommentsCount(Long id){
-        return commentsRepository.countByBoardIdAndState(id, "1");
+        return commentsRepository.countByBoardIdAndState(id, SoftDeleteState.ACTIVE);
     }
 
     public Comments getComment(Long id) {
@@ -72,51 +74,48 @@ public class CommentsService {
     }
 
 
-    public Page<CommentsDto> getCommentListWithReplies(Long postId, Pageable pageable) {
-        List<Comments> allComments = commentsRepository.findAllByBoardIdWithUserAndParentOrderByRegTimeAsc(postId);
+    public Page<CommentResponse> getCommentListWithReplies(Long postId, Pageable pageable) {
+        Page<Comments> parentComments = commentsRepository
+                .findParentCommentsWithUserByBoardIdOrderByRegTimeAsc(postId, pageable);
 
-        List<Comments> parentComments = allComments.stream()
-                .filter(comment -> comment.getParent() == null)
-                .toList();
+        List<Comments> replies = commentsRepository
+                .findRepliesWithUserAndParentByBoardIdOrderByRegTimeAsc(postId);
 
-        Map<Long, List<Comments>> repliesByParentId = allComments.stream()
-                .filter(comment -> comment.getParent() != null)
+        Map<Long, List<Comments>> repliesByParentId = replies.stream()
                 .collect(Collectors.groupingBy(comment -> comment.getParent().getId(),
                         LinkedHashMap::new, Collectors.toList()));
 
-        int start = (int) pageable.getOffset();
-        if (start >= parentComments.size()) {
-            return new PageImpl<>(List.of(), pageable, parentComments.size());
-        }
-        int end = Math.min(start + pageable.getPageSize(), parentComments.size());
-
-        List<CommentsDto> content = parentComments.subList(start, end).stream()
-                .map(comment -> convertToDto(comment, repliesByParentId))
+        List<CommentResponse> content = parentComments.getContent().stream()
+                .map(comment -> convertToDto(comment, repliesByParentId, postId))
                 .toList();
 
-        return new PageImpl<>(content, pageable, parentComments.size());
+        return new PageImpl<>(content, pageable, parentComments.getTotalElements());
     }
 
 
-    private CommentsDto convertToDto(Comments comment) {
+    private CommentResponse convertToDto(Comments comment) {
         return convertToDto(comment, Map.of());
     }
 
-    private CommentsDto convertToDto(Comments comment, Map<Long, List<Comments>> repliesByParentId) {
-        CommentsDto dto = new CommentsDto();
+    private CommentResponse convertToDto(Comments comment, Map<Long, List<Comments>> repliesByParentId) {
+        return convertToDto(comment, repliesByParentId, comment.getBoard().getId());
+    }
+
+    private CommentResponse convertToDto(Comments comment, Map<Long, List<Comments>> repliesByParentId, Long boardId) {
+        CommentResponse dto = new CommentResponse();
         dto.setId(comment.getId());
         dto.setUserId(comment.getUser().getId());
         dto.setName(comment.getUser().getName());
-        dto.setBoardId(comment.getBoard().getId());
+        dto.setBoardId(boardId);
         dto.setContents(comment.getContents());
         dto.setParentId(comment.getParent() != null ? comment.getParent().getId() : null);
         dto.setState(comment.getState());
         dto.setRegTime(comment.getRegTime());
         dto.setUpdateTime(comment.getUpdateTime());
 
-        List<CommentsDto> replies = repliesByParentId.getOrDefault(comment.getId(), List.of())
+        List<CommentResponse> replies = repliesByParentId.getOrDefault(comment.getId(), List.of())
                 .stream()
-                .map(reply -> convertToDto(reply, repliesByParentId))
+                .map(reply -> convertToDto(reply, repliesByParentId, boardId))
                 .toList();
         dto.setReplies(replies);
 
