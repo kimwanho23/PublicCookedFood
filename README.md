@@ -10,17 +10,3 @@ Spring Boot 3 / Spring Security
 ## DB
 MySQL
 
-## 환경 변수
-- `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
-- `MAIL_USERNAME`, `MAIL_PASSWORD`
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-- `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`
-- `GOOGLE_REDIRECT_URI`, `NAVER_REDIRECT_URI`
-- `RECIPE_API_KEY`
-- `FILE_DIR`
-
-## 로컬 실행 (.env)
-1. 루트에서 `.env.example`을 복사해 `.env`를 만듭니다.
-2. `.env`의 `DB_PASSWORD` 등 값을 실제 값으로 채웁니다.
-3. 앱 실행: `./gradlew bootRun`
-
