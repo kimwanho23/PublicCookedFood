@@ -3,11 +3,14 @@ package kwh.PublicCookedFood.board.service;
 import jakarta.transaction.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Likes;
+import kwh.PublicCookedFood.board.domain.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.LikesRepository;
 import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.repository.UserRepository;
+import kwh.PublicCookedFood.user.service.UserBlockService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,6 +23,8 @@ public class LikeService {
 
     private final BoardRepository boardRepository;
 
+    private final UserBlockService userBlockService;
+
     @Transactional
     public Long saveLikes(Long boardId, Long userId) {
         if (likesRepository.existsByBoardIdAndUserId(boardId, userId)) {
@@ -30,12 +35,25 @@ public class LikeService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid board ID"));
+        if (board.getState() != SoftDeleteState.ACTIVE) {
+            throw new IllegalArgumentException("삭제된 게시글에는 좋아요를 누를 수 없습니다.");
+        }
+        if (board.getUser() != null && userBlockService.isEitherBlocked(userId, board.getUser().getId())) {
+            throw new IllegalStateException("차단 관계인 사용자의 게시글에는 좋아요를 누를 수 없습니다.");
+        }
 
         Likes like = Likes.builder()
                 .board(board)
                 .user(user)
                 .build();
-        return likesRepository.save(like).getId();
+        try {
+            return likesRepository.save(like).getId();
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청 경합으로 unique 제약 충돌 시 기존 레코드를 재조회한다.
+            return likesRepository.findByBoardIdAndUserId(boardId, userId)
+                    .map(Likes::getId)
+                    .orElse(null);
+        }
     }
 
     public Long getLike(Long id){

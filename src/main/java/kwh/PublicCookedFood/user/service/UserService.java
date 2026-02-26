@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,34 @@ public class UserService implements UserDetailsService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Users> findById(Long userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        return userRepository.findById(userId);
+    }
+
+    public Optional<Users> findByNameAndPhoneNumber(String name, String phoneNumber) {
+        if (name == null || name.isBlank() || phoneNumber == null || phoneNumber.isBlank()) {
+            return Optional.empty();
+        }
+        return userRepository.findByNameAndPhoneNumber(name.trim(), normalizePhoneNumber(phoneNumber));
+    }
+
+    public Optional<Users> findByEmailAndNameAndPhoneNumber(String email, String name, String phoneNumber) {
+        if (email == null || email.isBlank()
+                || name == null || name.isBlank()
+                || phoneNumber == null || phoneNumber.isBlank()) {
+            return Optional.empty();
+        }
+        return userRepository.findByEmailAndNameAndPhoneNumber(
+                email.trim(),
+                name.trim(),
+                normalizePhoneNumber(phoneNumber)
+        );
+    }
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
        Users users = userRepository.findByEmail(email).orElse(null);
@@ -42,5 +72,12 @@ public class UserService implements UserDetailsService {
             return new CustomUserDetails(users);
         }
 
+    }
+
+    private String normalizePhoneNumber(String rawPhoneNumber) {
+        if (rawPhoneNumber == null) {
+            return "";
+        }
+        return rawPhoneNumber.replaceAll("[^0-9]", "");
     }
 }

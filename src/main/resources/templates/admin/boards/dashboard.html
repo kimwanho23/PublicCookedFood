@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <th:block th:replace="~{fragments/header :: headResources('운영 대시보드')}"></th:block>
+</head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel hero-panel-board mb-4">
+            <h1 class="display-title h3 mb-2">운영 대시보드</h1>
+            <p class="mb-0 text-white-50">신고 처리 현황, 인기 게시글, 레시피 리뷰 랭킹, 최근 활동 로그를 확인합니다.</p>
+        </section>
+
+        <section class="section-wrap p-4 mb-3">
+            <div class="row g-3">
+                <div class="col-6 col-lg-2">
+                    <article class="surface-soft p-3 h-100">
+                        <p class="small text-muted-soft mb-1">OPEN</p>
+                        <p class="h4 mb-0" th:text="${openCount}">0</p>
+                    </article>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <article class="surface-soft p-3 h-100">
+                        <p class="small text-muted-soft mb-1">RESOLVED</p>
+                        <p class="h4 mb-0" th:text="${resolvedCount}">0</p>
+                    </article>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <article class="surface-soft p-3 h-100">
+                        <p class="small text-muted-soft mb-1">REJECTED</p>
+                        <p class="h4 mb-0" th:text="${rejectedCount}">0</p>
+                    </article>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <article class="surface-soft p-3 h-100">
+                        <p class="small text-muted-soft mb-1">ALL REPORTS</p>
+                        <p class="h4 mb-0" th:text="${allCount}">0</p>
+                    </article>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <article class="surface-soft p-3 h-100">
+                        <p class="small text-muted-soft mb-1">HIDDEN POSTS</p>
+                        <p class="h4 mb-0" th:text="${hiddenByReportCount}">0</p>
+                    </article>
+                </div>
+                <div class="col-6 col-lg-2 d-flex align-items-stretch">
+                    <a class="btn btn-soft w-100 d-flex align-items-center justify-content-center" th:href="@{/admin/boards/reports(status='OPEN')}">
+                        신고 관리 이동
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <section class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-3">주간 인기 게시글</h2>
+                    <div class="alert alert-light border mb-0"
+                         th:if="${popularBoards == null or #lists.isEmpty(popularBoards)}">
+                        표시할 게시글이 없습니다.
+                    </div>
+                    <ul class="list-group list-group-flush" th:if="${popularBoards != null and !#lists.isEmpty(popularBoards)}">
+                        <li class="list-group-item px-0" th:each="board : ${popularBoards}">
+                            <a th:href="@{/boards/{id}(id=${board.id})}" class="text-decoration-none">
+                                <strong th:text="${board.title}">게시글 제목</strong>
+                            </a>
+                            <div class="small text-muted-soft mt-1"
+                                 th:text="|추천 ${board.likeCount != null ? board.likeCount : 0} · 댓글 ${board.commentCount != null ? board.commentCount : 0}|">
+                                추천 0 · 댓글 0
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
+            <div class="col-lg-6">
+                <section class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-3">레시피 리뷰 랭킹</h2>
+                    <div class="alert alert-light border mb-0"
+                         th:if="${reviewRankings == null or #lists.isEmpty(reviewRankings)}">
+                        표시할 랭킹이 없습니다.
+                    </div>
+                    <ul class="list-group list-group-flush" th:if="${reviewRankings != null and !#lists.isEmpty(reviewRankings)}">
+                        <li class="list-group-item px-0" th:each="rank : ${reviewRankings}">
+                            <a th:href="@{/recipes/{id}(id=${rank.recipeId()})}" class="text-decoration-none">
+                                <strong th:text="${rank.recipeName()}">레시피명</strong>
+                            </a>
+                            <div class="small text-muted-soft mt-1"
+                                 th:text="|리뷰 ${rank.reviewCount()} · 평점 ${rank.averageRating()}|">
+                                리뷰 0 · 평점 0.0
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+
+        <section class="section-wrap p-4 mt-3">
+            <h2 class="h5 mb-3">최근 활동 로그</h2>
+            <div class="alert alert-light border mb-0"
+                 th:if="${recentActivities == null or #lists.isEmpty(recentActivities)}">
+                활동 로그가 없습니다.
+            </div>
+            <div class="table-responsive" th:if="${recentActivities != null and !#lists.isEmpty(recentActivities)}">
+                <table class="table align-middle table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th scope="col" style="min-width: 180px;">시간</th>
+                        <th scope="col" style="min-width: 160px;">사용자</th>
+                        <th scope="col" style="min-width: 180px;">액션</th>
+                        <th scope="col" style="min-width: 260px;">상세</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${recentActivities}">
+                        <td th:text="${item.regTime != null ? #temporals.format(item.regTime, 'yyyy.MM.dd HH:mm:ss') : '-'}">2026.02.24 20:00:00</td>
+                        <td th:text="${item.user != null ? item.user.name : '-'}">사용자</td>
+                        <td><span class="badge text-bg-light" th:text="${item.action}">ACTION</span></td>
+                        <td th:text="${item.detail != null and !#strings.isEmpty(item.detail) ? item.detail : '-'}">detail</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
+</body>
+</html>

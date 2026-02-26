@@ -20,7 +20,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
             response.getWriter().write("{\"message\":\"Unauthorized\"}");
             return;
         }
-        response.sendRedirect("/recipes");
+        response.sendRedirect("/u/login");
     }
 
     private boolean isApiRequest(HttpServletRequest request) {

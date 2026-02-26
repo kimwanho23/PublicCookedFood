@@ -31,7 +31,7 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
 
                 String path = uri.getPath();
                 if (path != null && path.startsWith("/") && !path.startsWith("//")) {
-                    redirectUrl = "/u/profile".equals(path)
+                    redirectUrl = ("/u/profile".equals(path) || "/u/settings".equals(path))
                             ? "/recipes"
                             : (uri.getQuery() == null ? path : path + "?" + uri.getQuery());
                 }

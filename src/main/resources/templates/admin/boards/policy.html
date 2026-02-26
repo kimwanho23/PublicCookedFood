@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <th:block th:replace="~{fragments/header :: headResources('게시판 정책 관리')}"></th:block>
+</head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel hero-panel-board mb-4">
+            <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
+                <div>
+                    <h1 class="display-title h3 mb-2">게시판 정책 관리</h1>
+                    <p class="mb-0 text-white-50">썸네일 노출 방식과 추천글 기준을 운영 정책으로 관리합니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-wrap p-4">
+            <div class="alert alert-success" th:if="${policyMessage != null}" th:text="${policyMessage}"></div>
+
+            <form th:action="@{/admin/boards/policy}" method="post" class="row g-3">
+                <div class="col-md-4">
+                    <label for="featuredLikeThreshold" class="form-label">추천글 기준 추천 수</label>
+                    <input id="featuredLikeThreshold"
+                           name="featuredLikeThreshold"
+                           type="number"
+                           class="form-control"
+                           th:min="${minFeaturedThreshold}"
+                           th:max="${maxFeaturedThreshold}"
+                           th:value="${policy.featuredLikeThreshold}"
+                           required>
+                    <div class="form-text">
+                        1 ~ 10000 사이 값을 사용합니다.
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <label for="thumbnailDisplayMode" class="form-label">썸네일 표시 모드</label>
+                    <select id="thumbnailDisplayMode" name="thumbnailDisplayMode" class="form-select" required>
+                        <option value="LEFT" th:selected="${policy.thumbnailDisplayMode == 'LEFT'}">LEFT (좌측 썸네일)</option>
+                        <option value="HOVER" th:selected="${policy.thumbnailDisplayMode == 'HOVER'}">HOVER (호버 미리보기)</option>
+                        <option value="NONE" th:selected="${policy.thumbnailDisplayMode == 'NONE'}">NONE (미표시)</option>
+                    </select>
+                    <div class="form-text">
+                        LEFT: 좌측 고정 노출, HOVER: PC 호버 미리보기(모바일은 리스트 썸네일), NONE: 썸네일 숨김
+                    </div>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-brand">저장</button>
+                    <a th:href="@{/admin/boards/dashboard}" class="btn btn-soft">운영 대시보드</a>
+                    <a th:href="@{/boards}" class="btn btn-outline-secondary">게시판으로 이동</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
+</body>
+</html>

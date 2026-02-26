@@ -9,9 +9,11 @@ import kwh.PublicCookedFood.user.dto.request.BookmarkCreateRequest;
 import kwh.PublicCookedFood.user.repository.BookmarkRepository;
 import kwh.PublicCookedFood.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +27,14 @@ public class BookmarkService {
         return bookmarkRepository.findBookmarksByUserId(user.getId());
     }
 
+    public List<Bookmark> findUserBookmarks(Users user, String search) {
+        String normalizedSearch = normalizeQueryText(search);
+
+        return bookmarkRepository.findBookmarksByUserId(user.getId()).stream()
+                .filter(bookmark -> normalizedSearch == null || containsRecipeText(bookmark, normalizedSearch))
+                .toList();
+    }
+
     public boolean isBookmarked(Users user, Recipe_INFO recipeId) { //이미 북마크한 게시물인지 판단
         return bookmarkRepository.existsByUserAndRecipeID(user, recipeId);
     }
@@ -34,12 +44,19 @@ public class BookmarkService {
        Users user = userRepository.findById(bookmark.getUserId())
                .orElseThrow(() -> new IllegalArgumentException("User not found"));
        Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(bookmark.getRecipeID())
-               .orElseThrow(() -> new RuntimeException("Recipe not found"));
-       return bookmarkRepository.findByUserAndRecipeID(user, recipe)
-               .orElseGet(() -> bookmarkRepository.save(Bookmark.builder()
-                       .user(user)
-                       .recipeID(recipe)
-                       .build()));
+               .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
+       try {
+           return bookmarkRepository.findByUserAndRecipeID(user, recipe)
+                   .map(existing -> existing)
+                   .orElseGet(() -> bookmarkRepository.save(Bookmark.builder()
+                           .user(user)
+                           .recipeID(recipe)
+                           .build()));
+       } catch (DataIntegrityViolationException e) {
+           // 동시에 중복 요청이 들어온 경우 unique 제약 충돌 후 기존 레코드 재조회
+           return bookmarkRepository.findByUserAndRecipeID(user, recipe)
+                   .orElseThrow(() -> e);
+       }
     }
 
     @Transactional
@@ -47,5 +64,23 @@ public class BookmarkService {
         bookmarkRepository.deleteByUserAndRecipeID(user, recipeID);
     }
 
+    private String normalizeQueryText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean containsRecipeText(Bookmark bookmark, String keyword) {
+        if (bookmark == null || bookmark.getRecipeID() == null) {
+            return false;
+        }
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        String recipeName = bookmark.getRecipeID().getRecipeNMKO();
+        String summary = bookmark.getRecipeID().getSumry();
+        return (recipeName != null && recipeName.toLowerCase(Locale.ROOT).contains(normalizedKeyword))
+                || (summary != null && summary.toLowerCase(Locale.ROOT).contains(normalizedKeyword));
+    }
 
 }

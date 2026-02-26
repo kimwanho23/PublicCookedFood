@@ -44,6 +44,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             throw new OAuth2AuthenticationException(new OAuth2Error("invalid_token"),
                     "OAuth provider did not return a usable email.");
         }
+        if (!attributes.isEmailVerified()) {
+            throw new OAuth2AuthenticationException(new OAuth2Error("invalid_token"),
+                    "OAuth provider email is not verified.");
+        }
 
         Users user = userRepository.findByEmail(attributes.getEmail())
                 .map(entity -> entity.update(attributes.getName()))

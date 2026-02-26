@@ -49,6 +49,9 @@ public class Board extends BaseEntity {
     @Convert(converter = SoftDeleteStateConverter.class)
     private SoftDeleteState state = SoftDeleteState.ACTIVE;
 
+    @Column(name = "is_hidden_by_report", nullable = false)
+    private boolean hiddenByReport = false;
+
 
     @BatchSize(size = 100)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "board")
@@ -61,6 +64,7 @@ public class Board extends BaseEntity {
     @Builder
     public Board(Long id, String title, String contents, Users user, BoardSection section,
                  Long views, Long likeCount, Long commentCount, SoftDeleteState state,
+                 boolean hiddenByReport,
                  List<Likes> likes, List<Comments> comments) {
         this.id = id;
         this.title = title;
@@ -71,7 +75,12 @@ public class Board extends BaseEntity {
         this.likeCount = likeCount;
         this.commentCount = commentCount;
         this.state = state == null ? SoftDeleteState.ACTIVE : state;
+        this.hiddenByReport = hiddenByReport;
         this.likes = likes;
         this.comments = comments;
+    }
+
+    public void updateHiddenByReport(boolean hiddenByReport) {
+        this.hiddenByReport = hiddenByReport;
     }
 }

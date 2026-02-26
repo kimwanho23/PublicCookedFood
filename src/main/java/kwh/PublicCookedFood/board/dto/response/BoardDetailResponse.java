@@ -21,6 +21,8 @@ public class BoardDetailResponse {
 
     private String userName;
 
+    private String userProfileImageUrl;
+
     private Long sectionId;
 
     private String sectionKey;
@@ -41,6 +43,7 @@ public class BoardDetailResponse {
 
     @Builder
     public BoardDetailResponse(Long id, String title, String contents, Long userId, String userName,
+                               String userProfileImageUrl,
                                Long sectionId, String sectionKey, String sectionName,
                                Long views, Long likesCount, Long commentsCount, SoftDeleteState state,
                                LocalDateTime regTime, LocalDateTime updateTime) {
@@ -49,6 +52,7 @@ public class BoardDetailResponse {
         this.contents = contents;
         this.userId = userId;
         this.userName = userName;
+        this.userProfileImageUrl = userProfileImageUrl;
         this.sectionId = sectionId;
         this.sectionKey = sectionKey;
         this.sectionName = sectionName;

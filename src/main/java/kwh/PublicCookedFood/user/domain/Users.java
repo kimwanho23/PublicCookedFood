@@ -10,12 +10,13 @@ import lombok.Getter;
 import org.hibernate.annotations.BatchSize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "user")
+@Table(name = "member")
 public class Users {
 
     @Id @GeneratedValue(strategy = GenerationType.AUTO)
@@ -29,6 +30,27 @@ public class Users {
 
     @Column(nullable = false)
     private String name; //별명
+
+    @Column(length = 30)
+    private String phoneNumber;
+
+    @Column
+    private LocalDate birthDate;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Column(length = 120)
+    private String address;
+
+    @Column(length = 120)
+    private String addressDetail;
+
+    @Column(length = 500)
+    private String profileImageUrl;
+
+    @Column(nullable = false)
+    private boolean notificationEnabled = true;
 
     @Enumerated(EnumType.STRING)
     private Role authority; // 권한
@@ -56,11 +78,21 @@ public class Users {
     }
 
     @Builder
-    public Users(Long id, String email, String password, String name, Role authority, String loginMethod, List<Bookmark> bookmarks, List<Board> boards, List<Comments> comments, List<Likes> likes) {
+    public Users(Long id, String email, String password, String name, String phoneNumber, LocalDate birthDate,
+                 Gender gender, String address, String addressDetail, String profileImageUrl,
+                 Boolean notificationEnabled, Role authority, String loginMethod, List<Bookmark> bookmarks,
+                 List<Board> boards, List<Comments> comments, List<Likes> likes) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.name = name;
+        this.phoneNumber = normalizePhoneNumber(phoneNumber);
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.address = normalizeNullableText(address);
+        this.addressDetail = normalizeNullableText(addressDetail);
+        this.profileImageUrl = normalizeNullableText(profileImageUrl);
+        this.notificationEnabled = notificationEnabled == null || notificationEnabled;
         this.authority = authority;
         this.loginMethod = loginMethod;
         this.bookmarks = bookmarks;
@@ -70,7 +102,36 @@ public class Users {
     }
 
     public Users update(String name) {
-        this.name = name;
+        if (name != null && !name.isBlank()) {
+            this.name = name.trim();
+        }
+        return this;
+    }
+
+    public Users updateProfile(String name, String phoneNumber, LocalDate birthDate, Gender gender,
+                               String address, String addressDetail, String profileImageUrl) {
+        if (name != null && !name.isBlank()) {
+            this.name = name.trim();
+        }
+        this.phoneNumber = normalizePhoneNumber(phoneNumber);
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.address = normalizeNullableText(address);
+        this.addressDetail = normalizeNullableText(addressDetail);
+        this.profileImageUrl = normalizeNullableText(profileImageUrl);
+        return this;
+    }
+
+    public Users updatePassword(String encodedPassword) {
+        if (encodedPassword == null || encodedPassword.isBlank()) {
+            return this;
+        }
+        this.password = encodedPassword;
+        return this;
+    }
+
+    public Users updateNotificationEnabled(boolean enabled) {
+        this.notificationEnabled = enabled;
         return this;
     }
 
@@ -84,9 +145,32 @@ public class Users {
                 .name(userSaveDto.getName())
                 .email(userSaveDto.getEmail())
                 .password(passwordEncoder.encode(userSaveDto.getPassword()))
+                .phoneNumber(userSaveDto.getPhoneNumber())
+                .birthDate(userSaveDto.getBirthDate())
+                .gender(userSaveDto.getGender())
+                .address(userSaveDto.getAddress())
+                .addressDetail(userSaveDto.getAddressDetail())
+                .profileImageUrl(userSaveDto.getProfileImageUrl())
+                .notificationEnabled(true)
                 .authority(Role.USER)
                 .loginMethod("Current")
                 .build();
+    }
+
+    private static String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) {
+            return null;
+        }
+        String digits = phoneNumber.replaceAll("[^0-9]", "");
+        return digits.isBlank() ? null : digits;
+    }
+
+    private static String normalizeNullableText(String rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        String trimmed = rawValue.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
 }

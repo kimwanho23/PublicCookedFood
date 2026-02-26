@@ -1,42 +1,102 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link th:href="@{/css/bootstrap.min.css}"
-          href="../css/bootstrap.min.css" rel="stylesheet">
-    <title>Title</title>
-
+    <th:block th:replace="~{fragments/header :: headResources('내 북마크')}"></th:block>
 </head>
-<body>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
 
-<div th:insert="~{fragments/header}"></div>
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel mb-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-2">
+                <div>
+                    <h1 class="h3 mb-2">나의 북마크</h1>
+                    <p class="mb-0 text-white-50">저장한 레시피를 다시 꺼내보고 바로 이동할 수 있습니다.</p>
+                </div>
+                <span class="hero-badge" th:text="|총 ${bookmarks != null ? bookmarks.size() : 0}개|">총 0개</span>
+            </div>
+        </section>
 
-<main class="container">
-    <div class="bg-body-tertiary p-5 rounded mb-4" >
-        <div style="display: flex; align-items: center;">
-            <h1 style="margin-right: 10px;">나의 북마크 목록</h1> <span class="badge rounded-pill text-bg-dark" th:text="${recipeInfoResponseDto.size()}">Dark</span>
-        </div>
-        <p class="lead">내가 북마크한 레시피 목록을 표시합니다.</p>
-    </div>
+        <section class="section-wrap p-4">
+            <form class="row g-2 mb-3" method="get" th:action="@{/bookmarks}">
+                <div class="col-md-10">
+                    <input type="text" class="form-control form-control-sm" name="search" placeholder="레시피 검색"
+                           th:value="${selectedSearch}">
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-sm btn-soft">검색</button>
+                </div>
+            </form>
 
-   <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-        <div class="col" th:each="list : ${recipeInfoResponseDto}">
-            <div class="card shadow-sm">
-                <a th:href="@{/recipes/{id}(id=${list.getRecipeID()})}" class="icon-link">
-                    <img th:src="@{${list.imgURL}}" alt="음식 이미지" width="100%" height="300"/>
-                </a>
-                <div class="card-body">
-                    <p th:text="${list.recipeNMKO}" class="card-text">요리 제목입니다.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <p th:text="${list.sumry}">요리 소개글입니다.</p>
-                        <small class="text-muted" th:text="${list.calorie}">칼로리</small>
-                    </div>
+            <div class="alert alert-light border" th:if="${bookmarks == null or bookmarks.isEmpty()}">
+                아직 북마크한 레시피가 없습니다.
+            </div>
+
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-4" th:if="${bookmarks != null and !bookmarks.isEmpty()}">
+                <div class="col" th:each="bookmark : ${bookmarks}">
+                    <article class="recipe-card recipe-card-clickable"
+                             tabindex="0"
+                             role="link"
+                             th:attr="data-recipe-url=@{/recipes/{id}(id=${bookmark.recipeID.recipeID})}">
+                        <a th:href="@{/recipes/{id}(id=${bookmark.recipeID.recipeID})}" class="recipe-card-link">
+                            <img th:src="@{${bookmark.recipeID.imgURL}}" alt="음식 이미지" class="recipe-thumb">
+                            <div class="p-3">
+                                <p class="recipe-title" th:text="${bookmark.recipeID.recipeNMKO}">요리 제목</p>
+                                <p class="recipe-summary" th:text="${bookmark.recipeID.sumry != null and bookmark.recipeID.sumry.length() > 70 ? bookmark.recipeID.sumry.substring(0, 70) + '...' : bookmark.recipeID.sumry}">요리 소개</p>
+                                <div class="recipe-meta d-flex justify-content-between">
+                                    <span th:text="${bookmark.recipeID.nationNM}">국가</span>
+                                    <span th:text="${bookmark.recipeID.calorie}">칼로리</span>
+                                </div>
+                            </div>
+                        </a>
+                    </article>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 </main>
 
+<script>
+    document.addEventListener('click', function (event) {
+        const recipeCard = event.target.closest('.recipe-card-clickable[data-recipe-url]');
+        if (!recipeCard) {
+            return;
+        }
+        if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+        if (event.target.closest('a, button, input, select, textarea, label')) {
+            return;
+        }
+        const targetUrl = recipeCard.getAttribute('data-recipe-url');
+        if (!targetUrl) {
+            return;
+        }
+        event.preventDefault();
+        window.location.href = targetUrl;
+    });
+
+    document.addEventListener('keydown', function (event) {
+        const recipeCard = event.target.closest('.recipe-card-clickable[data-recipe-url]');
+        if (!recipeCard) {
+            return;
+        }
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+        if (event.target.closest('a, button, input, select, textarea, label')) {
+            return;
+        }
+        const targetUrl = recipeCard.getAttribute('data-recipe-url');
+        if (!targetUrl) {
+            return;
+        }
+        event.preventDefault();
+        window.location.href = targetUrl;
+    });
+</script>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
 </body>
 </html>

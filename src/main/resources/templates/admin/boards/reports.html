@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <th:block th:replace="~{fragments/header :: headResources('게시글 신고 관리')}"></th:block>
+</head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel hero-panel-board mb-4">
+            <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
+                <div>
+                    <h1 class="display-title h3 mb-2">게시글 신고 관리</h1>
+                    <p class="mb-0 text-white-50">신고 사유를 검토하고 처리 상태를 변경합니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-wrap p-4">
+            <div class="alert alert-success" th:if="${reportMessage != null}" th:text="${reportMessage}"></div>
+            <div class="alert alert-danger" th:if="${reportErrorMessage != null}" th:text="${reportErrorMessage}"></div>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a class="btn btn-sm"
+                   th:classappend="${reportFilter == 'OPEN'} ? ' btn-brand' : ' btn-outline-secondary'"
+                   th:href="@{/admin/boards/reports(status='OPEN')}">
+                    OPEN (<span th:text="${openCount}">0</span>)
+                </a>
+                <a class="btn btn-sm"
+                   th:classappend="${reportFilter == 'RESOLVED'} ? ' btn-brand' : ' btn-outline-secondary'"
+                   th:href="@{/admin/boards/reports(status='RESOLVED')}">
+                    RESOLVED (<span th:text="${resolvedCount}">0</span>)
+                </a>
+                <a class="btn btn-sm"
+                   th:classappend="${reportFilter == 'REJECTED'} ? ' btn-brand' : ' btn-outline-secondary'"
+                   th:href="@{/admin/boards/reports(status='REJECTED')}">
+                    REJECTED (<span th:text="${rejectedCount}">0</span>)
+                </a>
+                <a class="btn btn-sm"
+                   th:classappend="${reportFilter == 'ALL'} ? ' btn-brand' : ' btn-outline-secondary'"
+                   th:href="@{/admin/boards/reports(status='ALL')}">
+                    ALL (<span th:text="${allCount}">0</span>)
+                </a>
+                <a class="btn btn-sm btn-soft" th:href="@{/admin/boards/dashboard}">대시보드</a>
+                <a class="btn btn-sm btn-outline-secondary ms-auto" th:href="@{/admin/boards/policy}">정책 관리</a>
+            </div>
+            <p class="small text-muted mb-3">정렬 기준: 의심 신고 우선, 우선순위 점수 높은 순, 최신순</p>
+
+            <div class="alert alert-light border" th:if="${reportPage == null or reportPage.totalElements == 0}">
+                조회된 신고가 없습니다.
+            </div>
+
+            <div class="table-responsive" th:if="${reportPage != null and reportPage.totalElements > 0}">
+                <table class="table align-middle table-hover">
+                    <thead>
+                    <tr>
+                        <th scope="col" style="min-width: 90px;">ID</th>
+                        <th scope="col" style="min-width: 140px;">신고일</th>
+                        <th scope="col" style="min-width: 260px;">게시글</th>
+                        <th scope="col" style="min-width: 180px;">신고자</th>
+                        <th scope="col" style="min-width: 140px;">사유</th>
+                        <th scope="col" style="min-width: 220px;">상세</th>
+                        <th scope="col" style="min-width: 120px;">상태</th>
+                        <th scope="col" style="min-width: 120px;">우선순위</th>
+                        <th scope="col" style="min-width: 220px;">처리 정보</th>
+                        <th scope="col" style="min-width: 220px;">처리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="report : ${reportPage.content}">
+                        <td th:text="${report.id}">1</td>
+                        <td th:text="${#temporals.format(report.regTime, 'yyyy.MM.dd HH:mm')}">2026.02.24 12:30</td>
+                        <td>
+                            <a th:href="@{/boards/{id}(id=${report.board.id})}" target="_blank" rel="noopener noreferrer">
+                                <span th:text="${report.board.title != null and report.board.title.length() > 35 ? report.board.title.substring(0, 35) + '...' : report.board.title}">게시글 제목</span>
+                            </a>
+                        </td>
+                        <td>
+                            <div th:text="${report.reporter != null ? report.reporter.name : '-'}">신고자</div>
+                            <small class="text-muted" th:text="${report.reporter != null ? report.reporter.email : ''}">email@example.com</small>
+                        </td>
+                        <td th:text="${report.reason != null ? report.reason.label : '-'}">사유</td>
+                        <td th:text="${report.details != null and !#strings.isEmpty(report.details) ? report.details : '-'}">상세 내용</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${report.status.name() == 'OPEN'} ? ' text-bg-warning' : (${report.status.name() == 'RESOLVED'} ? ' text-bg-success' : ' text-bg-secondary')"
+                                  th:text="${report.status.name()}">OPEN</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                <span class="badge text-bg-dark"
+                                      th:text="${report.priorityScore != null ? report.priorityScore : 0}">0</span>
+                                <span class="badge text-bg-danger"
+                                      th:if="${report.suspicious}">의심 신고</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div th:if="${report.processor != null}">
+                                <div th:text="${report.processor.name}">관리자명</div>
+                                <small class="text-muted" th:text="${report.processor.email}">admin@example.com</small>
+                            </div>
+                            <div th:if="${report.processor == null}" class="text-muted">-</div>
+                            <div class="small text-muted mt-1"
+                                 th:text="${report.processedTime != null ? #temporals.format(report.processedTime, 'yyyy.MM.dd HH:mm') : '-'}">-</div>
+                            <div class="small mt-1"
+                                 th:text="${report.processedNote != null and !#strings.isEmpty(report.processedNote) ? report.processedNote : '-'}">-</div>
+                        </td>
+                        <td>
+                            <form th:action="@{/admin/boards/reports/{id}/status(id=${report.id})}" method="post" class="d-grid gap-2">
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="OPEN" th:selected="${report.status.name() == 'OPEN'}">OPEN</option>
+                                    <option value="RESOLVED" th:selected="${report.status.name() == 'RESOLVED'}">RESOLVED</option>
+                                    <option value="REJECTED" th:selected="${report.status.name() == 'REJECTED'}">REJECTED</option>
+                                </select>
+                                <input type="text"
+                                       name="processNote"
+                                       maxlength="500"
+                                       class="form-control form-control-sm"
+                                       placeholder="처리 메모 (선택)"
+                                       th:value="${report.processedNote}">
+                                <input type="hidden" name="redirectStatus" th:value="${reportFilter}">
+                                <input type="hidden" name="page" th:value="${reportPage.number}">
+                                <button type="submit" class="btn btn-sm btn-soft">적용</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav th:if="${reportPage != null and reportPage.totalPages > 1}" aria-label="신고 목록 페이지네이션">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${reportPage.first} ? ' disabled'">
+                        <a class="page-link"
+                           th:href="@{/admin/boards/reports(status=${reportFilter}, page=${reportPage.number - 1}, size=${reportPage.size})}">이전</a>
+                    </li>
+                    <li class="page-item"
+                        th:each="pageNum : ${#numbers.sequence(0, reportPage.totalPages - 1)}"
+                        th:classappend="${pageNum == reportPage.number} ? ' active'">
+                        <a class="page-link"
+                           th:text="${pageNum + 1}"
+                           th:href="@{/admin/boards/reports(status=${reportFilter}, page=${pageNum}, size=${reportPage.size})}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${reportPage.last} ? ' disabled'">
+                        <a class="page-link"
+                           th:href="@{/admin/boards/reports(status=${reportFilter}, page=${reportPage.number + 1}, size=${reportPage.size})}">다음</a>
+                    </li>
+                </ul>
+            </nav>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
+</body>
+</html>

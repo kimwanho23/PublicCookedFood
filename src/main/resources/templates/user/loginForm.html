@@ -1,95 +1,63 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link th:href="@{/css/bootstrap.min.css}"
-          href="../css/bootstrap.min.css" rel="stylesheet">
-    <title>Title</title>
-
+    <th:block th:replace="~{fragments/header :: headResources('로그인')}"></th:block>
     <link rel="icon" href="data:,">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
-
-        form{
-            font-family: 'Jua',serif;
-            border: #0a58ca;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            color : dimgray;
-            padding: 15px;
-        }
-
-        .divider::before, .divider::after {
-            flex: 1;
-            content: '';
-            padding: 0.5px;
-            margin: 5px;
-        }
-    </style>
 </head>
-
-<body class="text-center d-flex justify-content-center align-items-center vh-100">
-<main class="form-signin w-100" style="max-width: 500px;">
-    <div style="border: dimgray; border-radius: 15px; background-color: white;">
-
-    <form action="/u/login" th:action="@{/u/login}" th:object="${loginDto}" style="padding: 70px;" method="post">
-        <a href="/recipes">
-            <img th:src="@{../img/c-circle-fill.svg}" style="width: 100px; height: 100px; margin: 10px; padding: 10px;" alt="logo"/>
+<body class="app-shell">
+<main class="auth-shell">
+    <section class="auth-card">
+        <a class="text-decoration-none" th:href="@{/recipes}">
+            <span class="auth-logo">P</span>
         </a>
-        <h1 class="h3 mb-3 fw-normal display-4">로그인</h1>
 
-        <div th:if="${#fields.hasGlobalErrors()}">
-            <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>
+        <h1 class="h4 mb-1">로그인</h1>
+        <p class="text-muted-soft mb-4">계정으로 로그인하고 북마크와 게시판 기능을 이용하세요.</p>
+
+        <form action="/u/login" th:action="@{/u/login}" th:object="${loginDto}" method="post">
+            <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger py-2">
+                <p class="mb-1" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>
+            </div>
+            <div th:if="${loginErrorMsg != null}" class="alert alert-danger py-2" th:text="${loginErrorMsg}"></div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">이메일</label>
+                <input type="text" id="email" class="form-control" th:field="*{email}" placeholder="이메일" th:errorclass="field-error">
+                <div class="field-error" th:errors="*{email}"></div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">비밀번호</label>
+                <input type="password" id="password" class="form-control" th:field="*{password}" placeholder="비밀번호" th:errorclass="field-error">
+                <div class="field-error" th:errors="*{password}"></div>
+            </div>
+
+            <button class="btn btn-brand w-100" type="submit">로그인</button>
+        </form>
+
+        <div class="auth-divider">또는</div>
+
+        <div class="d-flex gap-2 mb-3">
+            <button type="button" th:onclick="|location.href='@{/u/signup}'|" class="btn btn-outline-secondary flex-fill">회원가입</button>
+            <a class="btn btn-soft flex-fill" th:href="@{/u/account/recover}">계정 찾기</a>
         </div>
-        <div th:if="${loginErrorMsg != null}" class="alert alert-danger py-2" th:text="${loginErrorMsg}"></div>
 
-        <div class="form-floating form-group mb-4" >
-            <input type="text" id="name" class="form-control" th:field="*{email}" placeholder="이메일" th:errorclass="field-error">
-            <label for="name">이메일</label>
-            <div class="field-error" th:errors="*{email}"></div>
+        <div class="auth-divider">소셜 로그인</div>
+
+        <div class="d-flex justify-content-center gap-3">
+            <a class="social-circle text-decoration-none" id="kakao-login-btn" href="#">
+                <img th:src="@{../img/btn_kakao.svg}" alt="카카오 로그인" style="width: 28px; height: 28px;">
+            </a>
+
+            <a class="social-circle text-decoration-none" id="google-login-btn" th:href="@{/oauth2/authorization/google}">
+                <img th:src="@{../img/btn_google.svg}" alt="구글 로그인" style="width: 28px; height: 28px;">
+            </a>
+
+            <a class="social-circle text-decoration-none" id="naver-login-btn" th:href="@{/oauth2/authorization/naver}">
+                <img th:src="@{../img/btn_naver.svg}" alt="네이버 로그인" style="width: 28px; height: 28px;">
+            </a>
         </div>
-
-
-        <div class="form-floating form-group mb-4">
-            <input type="password" id="password" class="form-control" th:field="*{password}" placeholder="비밀번호" th:errorclass="field-error">
-            <label for="password">비밀번호</label>
-            <div class="field-error" th:errors="*{password}"></div>
-        </div>
-
-        <button class="w-100 btn btn-lg btn-dark" type="submit">로그인</button>
-
-        <div class="divider">아니면?</div>
-
-        <button type="button" th:onclick="|location.href='@{/u/signup}'|" class="btn btn-dark" style="margin-right: 20px;">회원가입</button>
-        <button type="button" class="btn btn-outline-secondary" onclick="alert('아이디/비밀번호 찾기 기능은 준비 중입니다.')">아이디/비밀번호 찾기</button>
-
-        <label></label>
-        <div class="divider">소셜 로그인</div>
-
-
-        <a class="me-3 text-decoration-none" id="kakao-login-btn">
-            <img th:src="@{../img/btn_kakao.svg}" alt="카카오 로그인" style="width: 50px; height: 50px;" />
-        </a>
-
-        <a class="me-3 text-decoration-none" id="google-login-btn" th:href="@{/oauth2/authorization/google}">
-            <img th:src="@{../img/btn_google.svg}" alt="구글 로그인" style="width: 50px; height: 50px;" />
-        </a>
-
-        <a class="text-decoration-none" id="naver-login-btn" th:href="@{/oauth2/authorization/naver}">
-            <img th:src="@{../img/btn_naver.svg}" alt="네이버 로그인"  style="width: 50px; height: 50px;" />
-        </a>
-
-
-        <p class="mt-5 mb-3 text-muted">©2024 DataPortal</p>
-
-
-    </form>
-    </div>
+    </section>
 </main>
 </body>
 </html>

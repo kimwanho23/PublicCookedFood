@@ -7,6 +7,7 @@ import kwh.PublicCookedFood.board.domain.BoardSection;
 import kwh.PublicCookedFood.board.dto.request.BoardSectionCreateRequest;
 import kwh.PublicCookedFood.board.dto.request.BoardSectionUpdateRequest;
 import kwh.PublicCookedFood.board.dto.request.FeaturedThresholdUpdateRequest;
+import kwh.PublicCookedFood.board.dto.request.ThumbnailDisplayModeUpdateRequest;
 import kwh.PublicCookedFood.board.dto.response.BoardPolicyResponse;
 import kwh.PublicCookedFood.board.dto.response.BoardSectionResponse;
 import kwh.PublicCookedFood.board.service.BoardPolicyService;
@@ -16,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.List;
 
 @RestController
@@ -77,13 +77,11 @@ public class AdminBoardController {
         return ResponseEntity.ok(BoardPolicyResponse.from(boardPolicy));
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, String>> handleConflict(IllegalStateException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
+    @PatchMapping("/policy/thumbnail-display-mode")
+    public ResponseEntity<BoardPolicyResponse> updateThumbnailDisplayMode(
+            @Valid @RequestBody ThumbnailDisplayModeUpdateRequest request
+    ) {
+        BoardPolicy boardPolicy = boardPolicyService.updateThumbnailDisplayMode(request.getThumbnailDisplayMode());
+        return ResponseEntity.ok(BoardPolicyResponse.from(boardPolicy));
     }
 }
