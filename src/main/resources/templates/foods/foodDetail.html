@@ -1,80 +1,124 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-
-    <style>
-
-        .inline-items {
-            display: flex;
-            align-items: center;
-        }
-
-        .inline-items h1 {
-            margin-right: 10px; /* 제목과 버튼 사이의 간격 */
-        }
-    </style>
+    <th:block th:replace="~{fragments/header :: headResources('레시피 상세')}"></th:block>
 </head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
 
-<body>
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel mb-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                <div>
+                    <h1 class="h3 mb-2" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목</h1>
+                    <p class="mb-0 text-white-50" th:text="${infoResponseDto.getSumry()}">요리 설명</p>
+                </div>
+                <div class="d-flex align-items-start gap-2" sec:authorize="isAuthenticated()">
+                    <form th:if="${isBookmarked}" th:action="@{/bookmarks/{recipeId}(recipeId=${infoResponseDto.recipeID})}" method="post">
+                        <input type="hidden" name="_method" value="delete">
+                        <button type="submit" class="btn btn-outline-light">북마크 해제</button>
+                    </form>
 
-<div th:insert="~{fragments/header}"></div>
-
-<div class="container col-lg-8 mx-auto p-4 py-md-5">
-    <main>
-        <div class="inline-items">
-            <h1 class="text-body-emphasis" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목입니다.</h1>
-
-            <form th:if="${isBookmarked}" th:action="@{/bookmarks/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
-                  method="post" sec:authorize="isAuthenticated()">
-                <input type="hidden" name="_method" value="delete"> <!-- Spring에서 DELETE 요청으로 처리 -->
-                <button type="submit" class="btn btn-dark">북마크 해제하기</button>
-            </form>
-
-            <form th:if="${!isBookmarked}" th:action="@{/bookmarks/{recipeId}(recipeId=${infoResponseDto.recipeID})}"
-                  method="post" sec:authorize="isAuthenticated()">
-                <button type="submit" class="btn btn-dark">북마크 추가</button>
-            </form>
-        </div>
-
-        <h6 th:text="${infoResponseDto.getSumry()}">요리 설명</h6>
-
-
-        <hr>
-
-        <div class="row g-5">
-            <div class="col-md-3">
-                <h2 class="text-body-emphasis">재료 목록</h2>
-
-
-                <div th:each="category : ${categories}" class="mb-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="align-middle" th:text="${category}"></h5>
-                        </div>
-                        <ul class="list-group list-group-flush">
-                            <li th:each="irdnts : ${irdntResponseDto}" th:if="${irdnts.getIrdntTYNM() == category}" class="list-group-item" th:text="${irdnts.getIrdntNM()} + ' ' + ${irdnts.getIrdntCPCTY()}"></li>
-                        </ul>
-                    </div>
+                    <form th:if="${!isBookmarked}" th:action="@{/bookmarks/{recipeId}(recipeId=${infoResponseDto.recipeID})}" method="post">
+                        <button type="submit" class="btn btn-light">북마크 추가</button>
+                    </form>
+                </div>
+                <div class="d-flex align-items-start gap-2" sec:authorize="!isAuthenticated()">
+                    <a class="btn btn-outline-light" th:href="@{/u/login}">로그인 후 북마크</a>
                 </div>
             </div>
+        </section>
 
-            <div class="col-md-9">
-                <h2 class="text-body-emphasis">조리법</h2>
-                <ul class="list-unstyled ps-0" th:each="crse : ${crseResponseDto}">
-                    <li>
-                        <p th:text="${crse.getCookingNO()} + '. ' + ${crse.getCookingDC()}"></p>
-                        <img th:if="${crse.getImgURL() != null and crse.getImgURL() != ' '}" th:src="@{${crse.getImgURL()}}" alt="이미지"/>
-                        <hr>
-                    </li>
-                </ul>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <section class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-3">재료 목록</h2>
+
+                    <div th:each="category : ${categories}" class="mb-3">
+                        <div class="surface-soft p-3 mb-2">
+                            <strong th:text="${category}">재료 카테고리</strong>
+                        </div>
+                        <ul class="list-group">
+                            <li th:each="irdnts : ${irdntResponseDto}" th:if="${irdnts.getIrdntTYNM() == category}" class="list-group-item d-flex justify-content-between">
+                                <span th:text="${irdnts.getIrdntNM()}">재료</span>
+                                <span class="text-muted-soft" th:text="${irdnts.getIrdntCPCTY()}">용량</span>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-8">
+                <section class="section-wrap p-4">
+                    <h2 class="h5 mb-3">조리 순서</h2>
+                    <div th:each="crse : ${crseResponseDto}" class="mb-4 pb-4 border-bottom">
+                        <p class="mb-2 fw-semibold" th:text="${crse.getCookingNO()} + '. ' + ${crse.getCookingDC()}">조리법</p>
+                        <img th:if="${crse.getImgURL() != null and crse.getImgURL() != ' '}" th:src="@{${crse.getImgURL()}}" alt="조리 이미지" class="img-fluid rounded-3 border">
+                    </div>
+                </section>
+
+                <section class="section-wrap p-4 mt-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h2 class="h5 mb-0">리뷰</h2>
+                        <span class="badge text-bg-light"
+                              th:text="|평점 ${reviewSummary != null ? reviewSummary.averageRating() : 0.0} (${reviewSummary != null ? reviewSummary.reviewCount() : 0})|">
+                            평점 0.0 (0)
+                        </span>
+                    </div>
+
+                    <div class="alert alert-success py-2" th:if="${reviewMessage != null}" th:text="${reviewMessage}"></div>
+                    <div class="alert alert-danger py-2" th:if="${reviewErrorMessage != null}" th:text="${reviewErrorMessage}"></div>
+
+                    <form sec:authorize="isAuthenticated()"
+                          th:action="@{/recipes/{id}/reviews(id=${infoResponseDto.recipeID})}"
+                          method="post"
+                          class="row g-2 mb-3">
+                        <div class="col-sm-3">
+                            <select class="form-select form-select-sm" name="rating">
+                                <option th:each="score : ${#numbers.sequence(5,1)}"
+                                        th:value="${score}"
+                                        th:selected="${myReview != null and myReview.rating() == score}"
+                                        th:text="|${score}점|">5점</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control form-control-sm"
+                                   name="contents"
+                                   maxlength="500"
+                                   placeholder="리뷰를 작성해보세요. (최대 500자)"
+                                   th:value="${myReview != null ? myReview.contents() : ''}">
+                        </div>
+                        <div class="col-12 d-grid d-sm-flex justify-content-sm-end">
+                            <button type="submit" class="btn btn-sm btn-soft">리뷰 저장</button>
+                        </div>
+                    </form>
+
+                    <div sec:authorize="!isAuthenticated()" class="alert alert-light border">
+                        리뷰 작성은 로그인 후 이용할 수 있습니다.
+                    </div>
+
+                    <div class="d-flex flex-column gap-2" th:if="${reviews != null and !reviews.isEmpty()}">
+                        <article class="surface-soft p-3" th:each="review : ${reviews}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong th:text="${review.userName()}">사용자</strong>
+                                <span class="small text-muted-soft"
+                                      th:text="${#temporals.format(review.regTime(), 'yyyy.MM.dd HH:mm')}">2026.02.24 13:00</span>
+                            </div>
+                            <div class="small mb-1" th:text="|평점 ${review.rating()}점|">평점 5점</div>
+                            <p class="mb-0"
+                               th:text="${review.contents() != null and !#strings.isEmpty(review.contents()) ? review.contents() : '리뷰 내용 없음'}">
+                                리뷰 내용
+                            </p>
+                        </article>
+                    </div>
+                    <p class="text-muted-soft mb-0" th:if="${reviews == null or reviews.isEmpty()}">아직 등록된 리뷰가 없습니다.</p>
+                </section>
             </div>
         </div>
-    </main>
-</div>
+    </div>
+</main>
 
-
-<div th:insert="~{fragments/footer}"></div>
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
 </body>
 </html>

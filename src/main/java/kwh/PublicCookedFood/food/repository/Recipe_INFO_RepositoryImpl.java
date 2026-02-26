@@ -24,9 +24,9 @@ public class Recipe_INFO_RepositoryImpl implements Recipe_INFO_RepositoryCustom 
     }
 
     @Override
-    public Page<Recipe_INFO> findRecipesByConditions(String type,
-                                                     String nation,
-                                                     String ingredient,
+    public Page<Recipe_INFO> findRecipesByConditions(List<String> type,
+                                                     List<String> nation,
+                                                     List<String> ingredient,
                                                      String keyword,
                                                      String search,
                                                      Pageable pageable) {
@@ -35,13 +35,13 @@ public class Recipe_INFO_RepositoryImpl implements Recipe_INFO_RepositoryCustom 
         BooleanBuilder builder = new BooleanBuilder();
 
         if (type != null && !type.isEmpty()) {
-            builder.and(recipeInfo.tyNM.eq(type));
+            builder.and(recipeInfo.tyNM.in(type));
         }
         if (nation != null && !nation.isEmpty()) {
-            builder.and(recipeInfo.nationNM.eq(nation));
+            builder.and(recipeInfo.nationNM.in(nation));
         }
         if (ingredient != null && !ingredient.isEmpty()) {
-            builder.and(recipeInfo.irdntCODE.eq(ingredient));
+            builder.and(recipeInfo.irdntCODE.in(ingredient));
         }
         if (keyword != null && !keyword.isEmpty()) { // legacy parameter compatibility
             builder.and(

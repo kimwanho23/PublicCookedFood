@@ -72,9 +72,9 @@ public class RecipeService {
         return infoRepository.findAll(pageable).map(this::toInfoResponse); // 레시피 리스트 표시
     }
 
-    public Page<Recipe_INFO_ResponseDto> getFilteredRecipeList(String type,
-                                                               String nation,
-                                                               String ingredient,
+    public Page<Recipe_INFO_ResponseDto> getFilteredRecipeList(List<String> type,
+                                                               List<String> nation,
+                                                               List<String> ingredient,
                                                                String keyword,
                                                                String search,
                                                                Pageable pageable) {

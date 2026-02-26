@@ -1,10 +1,80 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <th:block th:replace="~{fragments/header :: headResources('PubCook')}"></th:block>
 </head>
-<body>
-<div th:insert="~{fragments/header}"></div>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel mb-4">
+            <h1 class="display-6 fw-semibold mb-2">공공 레시피와 커뮤니티</h1>
+            <p class="mb-0 text-white-50">레시피를 탐색하고, 게시판에서 나만의 팁을 공유해보세요.</p>
+        </section>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <article class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-2">레시피 탐색</h2>
+                    <p class="text-muted-soft mb-3">나라별, 재료별로 필터링해 원하는 레시피를 찾아보세요.</p>
+                    <a class="btn btn-brand" th:href="@{/recipes}">레시피 보러가기</a>
+                </article>
+            </div>
+            <div class="col-md-6">
+                <article class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-2">게시판</h2>
+                    <p class="text-muted-soft mb-3">요리 팁, 후기, 질문을 공유하고 추천 게시글도 확인하세요.</p>
+                    <a class="btn btn-soft" th:href="@{/boards}">게시판 보러가기</a>
+                </article>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-1">
+            <div class="col-lg-6">
+                <section class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-3">주간 인기 게시글</h2>
+                    <div class="alert alert-light border mb-0"
+                         th:if="${popularBoards == null or #lists.isEmpty(popularBoards)}">
+                        인기 게시글이 없습니다.
+                    </div>
+                    <ul class="list-group list-group-flush" th:if="${popularBoards != null and !#lists.isEmpty(popularBoards)}">
+                        <li class="list-group-item px-0" th:each="board : ${popularBoards}">
+                            <a th:href="@{/boards/{id}(id=${board.id})}" class="text-decoration-none">
+                                <strong th:text="${board.title}">게시글 제목</strong>
+                            </a>
+                            <div class="small text-muted-soft mt-1"
+                                 th:text="|추천 ${board.likeCount != null ? board.likeCount : 0} · 댓글 ${board.commentCount != null ? board.commentCount : 0}|">
+                                추천 0 · 댓글 0
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+            <div class="col-lg-6">
+                <section class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-3">레시피 리뷰 랭킹</h2>
+                    <div class="alert alert-light border mb-0"
+                         th:if="${recipeRankings == null or #lists.isEmpty(recipeRankings)}">
+                        레시피 리뷰 랭킹이 없습니다.
+                    </div>
+                    <ul class="list-group list-group-flush" th:if="${recipeRankings != null and !#lists.isEmpty(recipeRankings)}">
+                        <li class="list-group-item px-0" th:each="rank : ${recipeRankings}">
+                            <a th:href="@{/recipes/{id}(id=${rank.recipeId()})}" class="text-decoration-none">
+                                <strong th:text="${rank.recipeName()}">레시피명</strong>
+                            </a>
+                            <div class="small text-muted-soft mt-1"
+                                 th:text="|리뷰 ${rank.reviewCount()} · 평점 ${rank.averageRating()}|">
+                                리뷰 0 · 평점 0.0
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
 </body>
 </html>

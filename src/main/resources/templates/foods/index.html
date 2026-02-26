@@ -1,219 +1,696 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-
+    <th:block th:replace="~{fragments/header :: headResources('레시피 목록')}"></th:block>
 </head>
-<body>
-<div th:insert="~{fragments/header}"></div>
-<div class="container px-4 py-5" id="featured-3">
-    <div class="my-3 p-3 bg-body rounded shadow-sm">
-        <h3 class="border-bottom pb-2 mb-0" th:text="카테고리">카테고리입니다</h3>
-        <h4>
-            <div th:each="category : ${categories}" class="d-flex text-body-secondary pt-3">
-                <div class="pb-3 mb-0 small lh-sm border-bottom w-100">
-                    <div class="d-flex justify-content-between">
-                        <small th:class="'d-inline-flex mb-3 px-2 py-1 fw-semibold text-dark bg-light border border-dark rounded-2'"
-                               th:text="${category.title}">카테고리 제목</small>
-                    </div>
-                    <span th:each="item : ${category.items}">
-                        <a th:name="category" th:value="${item}"
-                           th:href="@{/recipes(
-                                type=${category.param == 'type' ? item : (selectedType != null and !#strings.isEmpty(selectedType) ? selectedType : null)},
-                                nation=${category.param == 'nation' ? item : (selectedNation != null and !#strings.isEmpty(selectedNation) ? selectedNation : null)},
-                                ingredient=${category.param == 'ingredient' ? item : (selectedIngredient != null and !#strings.isEmpty(selectedIngredient) ? selectedIngredient : null)},
-                                search=${selectedSearch != null and !#strings.isEmpty(selectedSearch) ? selectedSearch : null}
-                           )}"
-                           class="badge bg-dark-subtle text-black rounded-pill"
-                           style="text-decoration-line: none">
-                            <span th:text="${item}">카테고리 항목</span>
-                        </a>
-                    </span>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container" id="featured-3">
+        <section class="hero-panel hero-panel-recipe mb-4">
+            <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
+                <div>
+                    <h1 class="display-title h3 mb-2">오늘 뭐 먹지? 레시피 탐색</h1>
+                    <p class="mb-0 text-white-50">국가, 분류, 재료 기준으로 공공 레시피를 큐레이션해서 보여드립니다.</p>
                 </div>
-            </div>
-        </h4>
-    </div>
-
-    <div id="recipeResults" th:fragment="recipeResults">
-        <div th:if="${queryErrorMsg != null}" class="alert alert-warning" th:text="${queryErrorMsg}"></div>
-
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-            <div class="col" th:each="list : ${infoResponseDto}">
-                <div class="card shadow-sm">
-                    <a th:href="@{/recipes/{id}(id=${list.getRecipeID()})}" class="icon-link">
-                        <img th:src="@{${list.imgURL}}" alt="이미지" width="100%" height="300"/>
-                    </a>
-                    <div class="card-body">
-                        <p th:text="${list.getRecipeNMKO()}" class="card-text">요리 제목입니다.</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <p th:text="${list.getSumry()}">요리 소개글입니다.</p>
-                            <small class="text-muted" th:text="${list.getCalorie()}">칼로리</small>
-                        </div>
+                <div class="d-flex align-items-end gap-3 flex-wrap">
+                    <div>
+                        <p class="hero-number mb-0" th:text="${infoResponseDto != null ? infoResponseDto.getTotalElements() : 0}">0</p>
+                        <p class="hero-label mb-0">recipes indexed</p>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="b-example-divider"></div>
+        <section class="section-wrap recipe-ai-panel mb-3" id="recipeAiPanel">
+            <div class="recipe-filter-top mb-3">
+                <div>
+                    <h2 class="h6 mb-1">AI 추천</h2>
+                    <p class="text-muted-soft mb-0">조건을 입력하면 레시피를 자동으로 점수화해 추천합니다.</p>
+                </div>
+            </div>
 
-        <div th:if="${infoResponseDto.getTotalElements() > 0}">
-            <div th:replace="~{fragments/paginationFragment :: pagination('/recipes', ${startPage}, ${endPage}, ${currentPage}, ${hasPreviousGroup}, ${hasNextGroup}, ${selectedKeyword}, ${selectedSearch}, ${null}, ${selectedType}, ${selectedNation}, ${selectedIngredient})}"></div>
-        </div>
+            <form id="recipeAiRecommendForm" class="recipe-ai-form" autocomplete="off">
+                <div class="recipe-ai-grid">
+                    <div>
+                        <label for="aiQuery" class="filter-label mb-1">원하는 메뉴/상황</label>
+                        <input id="aiQuery" name="query" type="text" maxlength="200" class="form-control"
+                               placeholder="예: 자취생 저녁, 매콤한 국물요리">
+                    </div>
+                    <div>
+                        <label for="aiIncludeIngredients" class="filter-label mb-1">포함 재료 (쉼표 구분)</label>
+                        <input id="aiIncludeIngredients" name="includeIngredients" type="text" class="form-control"
+                               placeholder="예: 돼지고기, 김치">
+                    </div>
+                    <div>
+                        <label for="aiExcludeIngredients" class="filter-label mb-1">제외 재료 (쉼표 구분)</label>
+                        <input id="aiExcludeIngredients" name="excludeIngredients" type="text" class="form-control"
+                               placeholder="예: 견과류, 해산물">
+                    </div>
+                    <div>
+                        <label for="aiPreferredLevel" class="filter-label mb-1">난이도</label>
+                        <select id="aiPreferredLevel" name="preferredLevel" class="form-select">
+                            <option value="">상관없음</option>
+                            <option value="초보환영">초보환영</option>
+                            <option value="보통">보통</option>
+                            <option value="어려움">어려움</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="aiMaxCookingMinutes" class="filter-label mb-1">최대 조리시간 (분)</label>
+                        <input id="aiMaxCookingMinutes" name="maxCookingMinutes" type="number" min="1" max="600" class="form-control" placeholder="예: 30">
+                    </div>
+                    <div>
+                        <label for="aiServings" class="filter-label mb-1">최소 인분</label>
+                        <input id="aiServings" name="servings" type="number" min="1" max="20" class="form-control" placeholder="예: 2">
+                    </div>
+                    <div>
+                        <label for="aiLimit" class="filter-label mb-1">추천 개수</label>
+                        <input id="aiLimit" name="limit" type="number" min="1" max="20" value="5" class="form-control">
+                    </div>
+                </div>
 
-        <div class="d-flex justify-content-center">
-            <form th:action="@{/recipes}" method="get" class="d-inline-flex mb-3">
-                <input type="hidden" name="keyword" th:if="${selectedKeyword != null and !#strings.isEmpty(selectedKeyword)}" th:value="${selectedKeyword}">
-                <input type="hidden" name="type" th:if="${selectedType != null and !#strings.isEmpty(selectedType)}" th:value="${selectedType}">
-                <input type="hidden" name="nation" th:if="${selectedNation != null and !#strings.isEmpty(selectedNation)}" th:value="${selectedNation}">
-                <input type="hidden" name="ingredient" th:if="${selectedIngredient != null and !#strings.isEmpty(selectedIngredient)}" th:value="${selectedIngredient}">
-                <input type="text" name="search" th:value="${selectedSearch}" placeholder="레시피명 검색" class="form-control me-2">
-                <button type="submit" class="btn btn-primary col-auto">검색</button>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button id="recipeAiSubmitButton" type="submit" class="btn btn-brand">AI 추천 받기</button>
+                    <button id="recipeAiResetButton" type="button" class="btn btn-soft">입력 초기화</button>
+                </div>
             </form>
-        </div>
-    </div>
 
+            <div id="recipeAiStatus" class="recipe-ai-status mt-3 d-none" role="status" aria-live="polite"></div>
+            <div id="recipeAiResults" class="recipe-ai-results mt-3"></div>
+        </section>
 
-    <script>
-        (function () {
-            const pageRoot = document.getElementById('featured-3');
-            if (!pageRoot || !window.fetch || !window.history || !window.DOMParser) {
-                return;
-            }
+        <section class="section-wrap recipe-filter-panel mb-3">
+            <div class="recipe-filter-top mb-3">
+                <div>
+                    <h2 class="h6 mb-1">필터 및 검색</h2>
+                    <p class="text-muted-soft mb-0">여러 필터를 동시에 선택한 뒤 한 번에 적용할 수 있습니다.</p>
+                </div>
+                <a class="btn btn-sm btn-soft" th:href="@{/recipes}">전체 초기화</a>
+            </div>
 
-            const resultsSelector = '#recipeResults';
-            let pendingController = null;
+            <form th:action="@{/recipes}" method="get" class="recipe-filter-form">
+                <input type="hidden" name="keyword" th:if="${selectedKeyword != null and !#strings.isEmpty(selectedKeyword)}" th:value="${selectedKeyword}">
 
-            function isRecipesListUrl(url) {
-                return /^\/recipes\/?$/.test(url.pathname);
-            }
+                <div class="recipe-top-search mb-3">
+                    <input type="text" name="search" th:value="${selectedSearch}" placeholder="레시피명 검색" class="form-control" aria-label="레시피명 검색">
+                    <button type="submit" class="btn btn-brand">검색</button>
+                </div>
 
-            function normalizeQueryParams(url) {
-                const normalized = new URL(url.toString(), window.location.origin);
-                const params = new URLSearchParams(normalized.search);
-                for (const [key, value] of Array.from(params.entries())) {
-                    if (typeof value === 'string' && value.trim() === '') {
-                        params.delete(key);
+                <div class="mb-3">
+                    <p class="filter-label mb-2">현재 적용 필터</p>
+                    <div class="d-flex flex-wrap">
+                        <span class="chip-muted"
+                              th:if="${(selectedTypes == null or #lists.isEmpty(selectedTypes))
+                                   and (selectedNations == null or #lists.isEmpty(selectedNations))
+                                   and (selectedIngredients == null or #lists.isEmpty(selectedIngredients))
+                                   and (selectedSearch == null or #strings.isEmpty(selectedSearch))}">
+                            적용된 필터가 없습니다.
+                        </span>
+                        <button type="button"
+                                class="filter-chip is-active filter-chip-remove"
+                                th:each="typeItem : ${selectedTypes}"
+                                data-filter-name="type"
+                                th:attr="data-filter-value=${typeItem}">
+                            <span th:text="|유형 ${typeItem}|">유형</span>
+                            <span class="filter-chip-x" aria-hidden="true">x</span>
+                        </button>
+                        <button type="button"
+                                class="filter-chip is-active filter-chip-remove"
+                                th:each="nationItem : ${selectedNations}"
+                                data-filter-name="nation"
+                                th:attr="data-filter-value=${nationItem}">
+                            <span th:text="|국가 ${nationItem}|">국가</span>
+                            <span class="filter-chip-x" aria-hidden="true">x</span>
+                        </button>
+                        <button type="button"
+                                class="filter-chip is-active filter-chip-remove"
+                                th:each="ingredientItem : ${selectedIngredients}"
+                                data-filter-name="ingredient"
+                                th:attr="data-filter-value=${ingredientItem}">
+                            <span th:text="|재료 ${ingredientItem}|">재료</span>
+                            <span class="filter-chip-x" aria-hidden="true">x</span>
+                        </button>
+                        <button type="button"
+                                class="filter-chip is-active filter-chip-remove"
+                                th:if="${selectedSearch != null and !#strings.isEmpty(selectedSearch)}"
+                                data-filter-name="search">
+                            <span th:text="|검색 ${selectedSearch}|">검색</span>
+                            <span class="filter-chip-x" aria-hidden="true">x</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="recipe-category-grid mb-3">
+                    <article class="category-block" th:each="category : ${categories}">
+                        <div class="category-header d-flex align-items-center justify-content-between">
+                            <p class="filter-label mb-0" th:text="${category.title}">카테고리</p>
+                            <span class="category-count" th:text="|${#lists.size(category.items)}개|">0개</span>
+                        </div>
+                        <div class="filter-options">
+                            <label class="filter-option" th:each="item : ${category.items}">
+                                <input type="checkbox"
+                                       class="filter-checkbox"
+                                       th:name="${category.param}"
+                                       th:value="${item}"
+                                       th:checked="${(category.param == 'type' and selectedTypes != null and #lists.contains(selectedTypes, item))
+                                                or (category.param == 'nation' and selectedNations != null and #lists.contains(selectedNations, item))
+                                                or (category.param == 'ingredient' and selectedIngredients != null and #lists.contains(selectedIngredients, item))}">
+                                <span th:text="${item}">항목</span>
+                            </label>
+                        </div>
+                    </article>
+                </div>
+            </form>
+        </section>
+
+        <section id="recipeResults" th:fragment="recipeResults" class="recipe-results-shell">
+            <div th:if="${queryErrorMsg != null}" class="alert alert-warning" th:text="${queryErrorMsg}"></div>
+
+            <div class="section-wrap p-4">
+                <div class="results-toolbar mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">레시피 결과</h2>
+                        <span class="small text-muted-soft" th:if="${infoResponseDto != null}" th:text="|총 ${infoResponseDto.getTotalElements()}건|">총 0건</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-light border" th:if="${infoResponseDto == null or infoResponseDto.getTotalElements() == 0}">
+                    조건에 맞는 레시피가 없습니다. 필터를 바꾸거나 검색어를 지워보세요.
+                </div>
+
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-xxl-3 g-4 recipe-grid" th:if="${infoResponseDto != null and infoResponseDto.getTotalElements() > 0}">
+                    <div class="col" th:each="list : ${infoResponseDto}">
+                        <article class="recipe-card recipe-card-clickable"
+                                 tabindex="0"
+                                 role="link"
+                                 th:attr="data-recipe-url=@{/recipes/{id}(id=${list.getRecipeID()})}">
+                            <a th:href="@{/recipes/{id}(id=${list.getRecipeID()})}" class="recipe-card-link">
+                                <div class="recipe-thumb-link">
+                                    <img th:src="@{${list.imgURL}}" alt="음식 이미지" class="recipe-thumb">
+                                </div>
+                                <div class="p-3">
+                                    <p class="recipe-kicker" th:text="${list.getTyNM() != null and !#strings.isEmpty(list.getTyNM()) ? list.getTyNM() : 'Recipe'}">타입</p>
+                                    <p class="recipe-title" th:text="${list.getRecipeNMKO()}">요리 제목</p>
+                                    <p class="recipe-summary" th:text="${list.getSumry() != null and !#strings.isEmpty(list.getSumry()) ? list.getSumry() : '요약 정보가 없습니다.'}">요리 소개</p>
+                                    <div class="recipe-meta d-flex flex-wrap gap-2">
+                                        <span class="meta-pill" th:text="${list.getNationNM() != null and !#strings.isEmpty(list.getNationNM()) ? list.getNationNM() : '미분류'}">국가</span>
+                                        <span class="meta-pill" th:text="${list.getCalorie() != null and !#strings.isEmpty(list.getCalorie()) ? list.getCalorie() : '칼로리 정보 없음'}">칼로리</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${infoResponseDto != null and infoResponseDto.getTotalElements() > 0}" class="section-wrap p-3 mt-3">
+                <div th:replace="~{fragments/paginationFragment :: pagination('/recipes', ${startPage}, ${endPage}, ${currentPage}, ${totalPages}, ${hasPreviousGroup}, ${hasNextGroup}, ${selectedKeyword}, ${selectedSearch}, ${null}, ${null}, ${selectedTypes}, ${selectedNations}, ${selectedIngredients})}"></div>
+            </div>
+        </section>
+
+        <script>
+            (function () {
+                const pageRoot = document.getElementById('featured-3');
+                if (!pageRoot || !window.fetch || !window.history || !window.DOMParser) {
+                    return;
+                }
+
+                const resultsSelector = '#recipeResults';
+                const filterSelector = '.recipe-filter-panel';
+                const heroCountSelector = '.hero-number';
+                const filterChangeDebounceMs = 180;
+                let pendingController = null;
+                let filterChangeTimer = null;
+
+                function isRecipesListUrl(url) {
+                    return /^\/recipes\/?$/.test(url.pathname);
+                }
+
+                function normalizeQueryParams(url) {
+                    const normalized = new URL(url.toString(), window.location.origin);
+                    const params = new URLSearchParams(normalized.search);
+                    for (const [key, value] of Array.from(params.entries())) {
+                        if (typeof value === 'string' && value.trim() === '') {
+                            params.delete(key);
+                        }
+                    }
+                    normalized.search = params.toString();
+                    return normalized;
+                }
+
+                function replaceSection(doc, selector) {
+                    const nextElement = doc.querySelector(selector);
+                    const currentElement = document.querySelector(selector);
+                    if (!nextElement || !currentElement) {
+                        return false;
+                    }
+                    currentElement.replaceWith(nextElement);
+                    return true;
+                }
+
+                function swapRecipeResults(html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const replacedResults = replaceSection(doc, resultsSelector);
+                    if (!replacedResults) {
+                        return false;
+                    }
+                    replaceSection(doc, filterSelector);
+
+                    const nextHeroCount = doc.querySelector(heroCountSelector);
+                    const currentHeroCount = document.querySelector(heroCountSelector);
+                    if (nextHeroCount && currentHeroCount) {
+                        currentHeroCount.textContent = nextHeroCount.textContent;
+                    }
+                    return true;
+                }
+
+                function fetchRecipeResults(url, pushState) {
+                    if (pendingController) {
+                        pendingController.abort();
+                    }
+                    pendingController = new AbortController();
+                    pageRoot.setAttribute('aria-busy', 'true');
+
+                    fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html'
+                        },
+                        signal: pendingController.signal
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error('Failed to load recipe results');
+                            }
+                            return response.text();
+                        })
+                        .then((html) => {
+                            const replaced = swapRecipeResults(html);
+                            if (!replaced) {
+                                window.location.href = url;
+                                return;
+                            }
+                            if (pushState) {
+                                window.history.pushState({foodsAjax: true}, '', url);
+                            }
+                        })
+                        .catch((error) => {
+                            if (error && error.name === 'AbortError') {
+                                return;
+                            }
+                            window.location.href = url;
+                        })
+                        .finally(() => {
+                            pageRoot.removeAttribute('aria-busy');
+                            pendingController = null;
+                        });
+                }
+
+                function submitFilterForm(filterForm) {
+                    if (!(filterForm instanceof HTMLFormElement)) {
+                        return;
+                    }
+                    if (filterChangeTimer) {
+                        window.clearTimeout(filterChangeTimer);
+                        filterChangeTimer = null;
+                    }
+                    if (typeof filterForm.requestSubmit === 'function') {
+                        filterForm.requestSubmit();
+                        return;
+                    }
+                    const submitEvent = new Event('submit', {bubbles: true, cancelable: true});
+                    if (filterForm.dispatchEvent(submitEvent)) {
+                        filterForm.submit();
                     }
                 }
-                normalized.search = params.toString();
-                return normalized;
-            }
 
-            function swapRecipeResults(html) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newResults = doc.querySelector(resultsSelector);
-                const currentResults = document.querySelector(resultsSelector);
-
-                if (!newResults || !currentResults) {
-                    return false;
-                }
-                currentResults.replaceWith(newResults);
-                return true;
-            }
-
-            function fetchRecipeResults(url, pushState) {
-                if (pendingController) {
-                    pendingController.abort();
-                }
-                pendingController = new AbortController();
-                pageRoot.setAttribute('aria-busy', 'true');
-
-                fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'text/html'
-                    },
-                    signal: pendingController.signal
-                })
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw new Error('Failed to load recipe results');
-                        }
-                        return response.text();
-                    })
-                    .then((html) => {
-                        const replaced = swapRecipeResults(html);
-                        if (!replaced) {
-                            window.location.href = url;
+                document.addEventListener('click', function (event) {
+                    const recipeCard = event.target.closest('.recipe-card-clickable[data-recipe-url]');
+                    if (recipeCard) {
+                        if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
                             return;
                         }
-                        if (pushState) {
-                            window.history.pushState({foodsAjax: true}, '', url);
-                        }
-                    })
-                    .catch((error) => {
-                        if (error && error.name === 'AbortError') {
+                        if (event.target.closest('a, button, input, select, textarea, label')) {
                             return;
                         }
-                        window.location.href = url;
-                    })
-                    .finally(() => {
-                        pageRoot.removeAttribute('aria-busy');
-                        pendingController = null;
+                        const targetUrl = recipeCard.getAttribute('data-recipe-url');
+                        if (!targetUrl) {
+                            return;
+                        }
+                        event.preventDefault();
+                        window.location.href = targetUrl;
+                        return;
+                    }
+
+                    const removeButton = event.target.closest('.filter-chip-remove');
+                    if (removeButton) {
+                        const filterForm = removeButton.closest('form.recipe-filter-form');
+                        if (!(filterForm instanceof HTMLFormElement)) {
+                            return;
+                        }
+                        const filterName = removeButton.getAttribute('data-filter-name');
+                        const filterValue = removeButton.getAttribute('data-filter-value');
+
+                        if (filterName === 'search') {
+                            const searchInput = filterForm.querySelector('input[name="search"]');
+                            if (searchInput instanceof HTMLInputElement) {
+                                searchInput.value = '';
+                            }
+                        } else if (filterName) {
+                            const checkboxes = filterForm.querySelectorAll('input[type="checkbox"]');
+                            for (const checkbox of checkboxes) {
+                                if (!(checkbox instanceof HTMLInputElement)) {
+                                    continue;
+                                }
+                                if (checkbox.name === filterName && checkbox.value === (filterValue || '')) {
+                                    checkbox.checked = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        event.preventDefault();
+                        submitFilterForm(filterForm);
+                        return;
+                    }
+
+                    const link = event.target.closest('a[href]');
+                    const currentResults = document.querySelector(resultsSelector);
+                    const currentFilters = document.querySelector(filterSelector);
+                    const inAjaxScope = !!(link && (
+                        (currentResults && currentResults.contains(link))
+                        || (currentFilters && currentFilters.contains(link))
+                    ));
+                    if (!inAjaxScope) {
+                        return;
+                    }
+                    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+                    if (link.target && link.target !== '_self') {
+                        return;
+                    }
+
+                    const url = new URL(link.href, window.location.origin);
+                    if (!isRecipesListUrl(url)) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    const normalizedUrl = normalizeQueryParams(url);
+                    fetchRecipeResults(normalizedUrl.toString(), true);
+                });
+
+                document.addEventListener('submit', function (event) {
+                    const form = event.target;
+                    const currentResults = document.querySelector(resultsSelector);
+                    const currentFilters = document.querySelector(filterSelector);
+                    const inAjaxScope = !!(form instanceof HTMLFormElement && (
+                        (currentResults && currentResults.contains(form))
+                        || (currentFilters && currentFilters.contains(form))
+                    ));
+                    if (!inAjaxScope) {
+                        return;
+                    }
+
+                    const method = (form.getAttribute('method') || 'get').toLowerCase();
+                    if (method !== 'get') {
+                        return;
+                    }
+
+                    const action = form.getAttribute('action') || window.location.pathname;
+                    const url = new URL(action, window.location.origin);
+                    if (!isRecipesListUrl(url)) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    const params = new URLSearchParams(new FormData(form));
+                    url.search = params.toString();
+                    const normalizedUrl = normalizeQueryParams(url);
+                    fetchRecipeResults(normalizedUrl.toString(), true);
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    const recipeCard = event.target.closest('.recipe-card-clickable[data-recipe-url]');
+                    if (!recipeCard) {
+                        return;
+                    }
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+                    if (event.target.closest('a, button, input, select, textarea, label')) {
+                        return;
+                    }
+                    const targetUrl = recipeCard.getAttribute('data-recipe-url');
+                    if (!targetUrl) {
+                        return;
+                    }
+                    event.preventDefault();
+                    window.location.href = targetUrl;
+                });
+
+                window.addEventListener('popstate', function () {
+                    const currentUrl = new URL(window.location.href);
+                    if (!isRecipesListUrl(currentUrl)) {
+                        return;
+                    }
+                    const normalizedUrl = normalizeQueryParams(currentUrl);
+                    fetchRecipeResults(normalizedUrl.toString(), false);
+                });
+
+                document.addEventListener('change', function (event) {
+                    const target = event.target;
+                    if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') {
+                        return;
+                    }
+                    const filterForm = target.closest('form.recipe-filter-form');
+                    if (!(filterForm instanceof HTMLFormElement)) {
+                        return;
+                    }
+                    if (filterChangeTimer) {
+                        window.clearTimeout(filterChangeTimer);
+                    }
+                    filterChangeTimer = window.setTimeout(function () {
+                        filterChangeTimer = null;
+                        submitFilterForm(filterForm);
+                    }, filterChangeDebounceMs);
+                });
+
+                const aiPanel = document.getElementById('recipeAiPanel');
+                const aiForm = document.getElementById('recipeAiRecommendForm');
+                const aiSubmitButton = document.getElementById('recipeAiSubmitButton');
+                const aiResetButton = document.getElementById('recipeAiResetButton');
+                const aiStatus = document.getElementById('recipeAiStatus');
+                const aiResults = document.getElementById('recipeAiResults');
+
+                function parseCsv(value) {
+                    if (typeof value !== 'string') {
+                        return [];
+                    }
+                    return value
+                        .split(',')
+                        .map(function (item) {
+                            return item.trim();
+                        })
+                        .filter(function (item) {
+                            return item.length > 0;
+                        });
+                }
+
+                function parseOptionalInt(value) {
+                    if (typeof value !== 'string' || value.trim() === '') {
+                        return null;
+                    }
+                    const parsed = Number.parseInt(value, 10);
+                    if (Number.isNaN(parsed)) {
+                        return null;
+                    }
+                    return parsed;
+                }
+
+                function escapeHtml(value) {
+                    if (value == null) {
+                        return '';
+                    }
+                    return String(value)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                }
+
+                function readCsrf() {
+                    const tokenMeta = document.querySelector('meta[name="_csrf"]');
+                    const headerMeta = document.querySelector('meta[name="_csrf_header"]');
+                    const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+                    const headerName = headerMeta ? headerMeta.getAttribute('content') : '';
+                    if (!token || !headerName) {
+                        return null;
+                    }
+                    return {token: token, headerName: headerName};
+                }
+
+                function setAiStatus(message, isError) {
+                    if (!aiStatus) {
+                        return;
+                    }
+                    if (!message) {
+                        aiStatus.textContent = '';
+                        aiStatus.classList.add('d-none');
+                        aiStatus.classList.remove('is-error');
+                        return;
+                    }
+                    aiStatus.textContent = message;
+                    aiStatus.classList.remove('d-none');
+                    aiStatus.classList.toggle('is-error', !!isError);
+                }
+
+                function renderAiResults(response) {
+                    if (!aiResults) {
+                        return;
+                    }
+                    const recommendations = response && Array.isArray(response.recommendations)
+                        ? response.recommendations
+                        : [];
+
+                    if (recommendations.length === 0) {
+                        aiResults.innerHTML = '<p class="chip-muted mb-0">추천 결과가 없습니다. 조건을 조금 완화해보세요.</p>';
+                        return;
+                    }
+
+                    const cardsHtml = recommendations.map(function (item) {
+                        const reason = item.reason ? item.reason : '요청 조건과 유사한 레시피';
+                        const summary = item.summary ? item.summary : '요약 정보가 없습니다.';
+                        const recipeUrl = item.recipeUrl ? item.recipeUrl : ('/recipes/' + item.recipeId);
+                        return (
+                            '<article class="recipe-ai-card">' +
+                            '<div class="recipe-ai-card-head">' +
+                            '<span class="recipe-ai-score">AI 점수 ' + escapeHtml(item.score) + '</span>' +
+                            '<a class="recipe-ai-link" href="' + escapeHtml(recipeUrl) + '">' + escapeHtml(item.recipeName) + '</a>' +
+                            '</div>' +
+                            '<p class="recipe-ai-summary">' + escapeHtml(summary) + '</p>' +
+                            '<div class="recipe-ai-meta">' +
+                            '<span class="meta-pill">' + escapeHtml(item.nationName || '미분류') + '</span>' +
+                            '<span class="meta-pill">' + escapeHtml(item.typeName || '미분류') + '</span>' +
+                            '<span class="meta-pill">' + escapeHtml(item.cookingTimeText || '시간 정보 없음') + '</span>' +
+                            '<span class="meta-pill">' + escapeHtml(item.calorieText || '칼로리 정보 없음') + '</span>' +
+                            '</div>' +
+                            '<p class="recipe-ai-reason mb-0">추천 이유: ' + escapeHtml(reason) + '</p>' +
+                            '</article>'
+                        );
+                    }).join('');
+
+                    aiResults.innerHTML = (
+                        '<div class="recipe-ai-summary-row">' +
+                        '<strong>추천 ' + recommendations.length + '건</strong>' +
+                        '<span class="text-muted-soft small">후보 ' + (response.totalCandidates || recommendations.length) + '건 중</span>' +
+                        '</div>' +
+                        '<div class="recipe-ai-result-grid">' + cardsHtml + '</div>'
+                    );
+                }
+
+                if (aiForm && aiPanel && aiSubmitButton && aiResults && aiResetButton) {
+                    aiForm.addEventListener('submit', function (event) {
+                        event.preventDefault();
+
+                        const formData = new FormData(aiForm);
+                        const payload = {
+                            query: formData.get('query') || null,
+                            includeIngredients: parseCsv(formData.get('includeIngredients') || ''),
+                            excludeIngredients: parseCsv(formData.get('excludeIngredients') || ''),
+                            preferredLevel: formData.get('preferredLevel') || null,
+                            maxCookingMinutes: parseOptionalInt(formData.get('maxCookingMinutes') || ''),
+                            servings: parseOptionalInt(formData.get('servings') || ''),
+                            limit: parseOptionalInt(formData.get('limit') || '')
+                        };
+
+                        if (!payload.query
+                            && payload.includeIngredients.length === 0
+                            && payload.excludeIngredients.length === 0
+                            && !payload.preferredLevel
+                            && !payload.maxCookingMinutes
+                            && !payload.servings) {
+                            setAiStatus('최소 1개 이상의 조건을 입력해주세요.', true);
+                            aiResults.innerHTML = '';
+                            return;
+                        }
+
+                        if (!payload.limit) {
+                            payload.limit = 5;
+                        }
+
+                        aiPanel.setAttribute('aria-busy', 'true');
+                        aiSubmitButton.disabled = true;
+                        setAiStatus('AI가 레시피를 분석하고 있습니다...', false);
+                        aiResults.innerHTML = '';
+
+                        const headers = {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        };
+                        const csrf = readCsrf();
+                        if (csrf) {
+                            headers[csrf.headerName] = csrf.token;
+                        }
+
+                        fetch('/api/ai/recipes/recommend', {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify(payload)
+                        })
+                            .then(function (response) {
+                                return response.text().then(function (bodyText) {
+                                    let jsonBody = null;
+                                    if (bodyText) {
+                                        try {
+                                            jsonBody = JSON.parse(bodyText);
+                                        } catch (ignore) {
+                                            jsonBody = null;
+                                        }
+                                    }
+                                    if (!response.ok) {
+                                        const message = jsonBody && jsonBody.message
+                                            ? jsonBody.message
+                                            : 'AI 추천 요청 중 오류가 발생했습니다.';
+                                        throw new Error(message);
+                                    }
+                                    return jsonBody || {};
+                                });
+                            })
+                            .then(function (data) {
+                                renderAiResults(data);
+                                setAiStatus('추천 결과를 불러왔습니다.', false);
+                            })
+                            .catch(function (error) {
+                                const message = error && error.message
+                                    ? error.message
+                                    : 'AI 추천 요청 중 오류가 발생했습니다.';
+                                setAiStatus(message, true);
+                                aiResults.innerHTML = '';
+                            })
+                            .finally(function () {
+                                aiPanel.removeAttribute('aria-busy');
+                                aiSubmitButton.disabled = false;
+                            });
                     });
-            }
 
-            document.addEventListener('click', function (event) {
-                const link = event.target.closest('a[href]');
-                if (!link || !pageRoot.contains(link)) {
-                    return;
+                    aiResetButton.addEventListener('click', function () {
+                        aiForm.reset();
+                        setAiStatus('', false);
+                        aiResults.innerHTML = '';
+                    });
                 }
-                if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-                    return;
-                }
-                if (link.target && link.target !== '_self') {
-                    return;
-                }
+            })();
+        </script>
+    </div>
+</main>
 
-                const url = new URL(link.href, window.location.origin);
-                if (!isRecipesListUrl(url)) {
-                    return;
-                }
-
-                event.preventDefault();
-                const normalizedUrl = normalizeQueryParams(url);
-                fetchRecipeResults(normalizedUrl.toString(), true);
-            });
-
-            document.addEventListener('submit', function (event) {
-                const form = event.target;
-                if (!(form instanceof HTMLFormElement) || !pageRoot.contains(form)) {
-                    return;
-                }
-
-                const method = (form.getAttribute('method') || 'get').toLowerCase();
-                if (method !== 'get') {
-                    return;
-                }
-
-                const action = form.getAttribute('action') || window.location.pathname;
-                const url = new URL(action, window.location.origin);
-                if (!isRecipesListUrl(url)) {
-                    return;
-                }
-
-                event.preventDefault();
-                const params = new URLSearchParams(new FormData(form));
-                url.search = params.toString();
-                const normalizedUrl = normalizeQueryParams(url);
-                fetchRecipeResults(normalizedUrl.toString(), true);
-            });
-
-            window.addEventListener('popstate', function () {
-                const currentUrl = new URL(window.location.href);
-                if (!isRecipesListUrl(currentUrl)) {
-                    return;
-                }
-                const normalizedUrl = normalizeQueryParams(currentUrl);
-                fetchRecipeResults(normalizedUrl.toString(), false);
-            });
-        })();
-    </script>
-</div>
-
-<div th:insert="~{fragments/footer}"></div>
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
 </body>
 </html>
