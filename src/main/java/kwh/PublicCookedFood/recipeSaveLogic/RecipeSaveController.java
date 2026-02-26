@@ -78,7 +78,7 @@ public class RecipeSaveController {
             }
 
             List<Recipe_CRSE> entities = allRows.stream()
-                    .map(Recipe_CRSE_ResponseDto::toEntity)
+                    .map(this::toCrseEntity)
                     .toList();
             log.info(String.valueOf(entities.size()));
             crseRepository.saveAll(entities);
@@ -118,7 +118,7 @@ public class RecipeSaveController {
             }
 
             List<Recipe_INFO> entities = allRows.stream()
-                    .map(Recipe_INFO_ResponseDto::toEntity)
+                    .map(this::toInfoEntity)
                     .toList();
             log.info(String.valueOf(entities.size()));
             infoRepository.saveAll(entities);
@@ -158,7 +158,7 @@ public class RecipeSaveController {
             }
 
             List<Recipe_IRDNT> entities = allRows.stream()
-                    .map(Recipe_IRDNT_ResponseDto::toEntity)
+                    .map(this::toIrdntEntity)
                     .toList();
             log.info(String.valueOf(entities.size()));
             irdntRepository.saveAll(entities);
@@ -187,6 +187,49 @@ public class RecipeSaveController {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode rootNode = objectMapper.readTree(initialData);
         return rootNode.path(IRDNT_URL).path("totalCnt").asInt();
+    }
+
+    private Recipe_CRSE toCrseEntity(Recipe_CRSE_ResponseDto dto) {
+        return Recipe_CRSE.builder()
+                .rowNUM(dto.getRowNUM())
+                .recipeID(dto.getRecipeID())
+                .cookingNO(dto.getCookingNO())
+                .cookingDC(dto.getCookingDC())
+                .stepTIP(dto.getStepTIP())
+                .imgURL(dto.getImgURL())
+                .build();
+    }
+
+    private Recipe_INFO toInfoEntity(Recipe_INFO_ResponseDto dto) {
+        return Recipe_INFO.builder()
+                .rowNUM(dto.getRowNUM())
+                .recipeID(dto.getRecipeID())
+                .recipeNMKO(dto.getRecipeNMKO())
+                .sumry(dto.getSumry())
+                .nationCODE(dto.getNationCODE())
+                .nationNM(dto.getNationNM())
+                .tyCODE(dto.getTyCODE())
+                .tyNM(dto.getTyNM())
+                .cookingTIME(dto.getCookingTIME())
+                .calorie(dto.getCalorie())
+                .qnt(dto.getQnt())
+                .levelNM(dto.getLevelNM())
+                .irdntCODE(dto.getIrdntCODE())
+                .pcNM(dto.getPcNM())
+                .imgURL(dto.getImgURL())
+                .build();
+    }
+
+    private Recipe_IRDNT toIrdntEntity(Recipe_IRDNT_ResponseDto dto) {
+        return Recipe_IRDNT.builder()
+                .rowNUM(dto.getRowNUM())
+                .recipeID(dto.getRecipeID())
+                .irdntSN(dto.getIrdntSN())
+                .irdntNM(dto.getIrdntNM())
+                .irdntCPCTY(dto.getIrdntCPCTY())
+                .irdntTYCODE(dto.getIrdntTYCODE())
+                .irdntTYNM(dto.getIrdntTYNM())
+                .build();
     }
 
 }

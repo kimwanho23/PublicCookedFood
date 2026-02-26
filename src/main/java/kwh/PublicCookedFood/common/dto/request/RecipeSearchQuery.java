@@ -5,19 +5,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+import java.util.Objects;
+
 @Getter
 @Setter
 @NoArgsConstructor
 public class RecipeSearchQuery {
 
-    @Size(max = 50, message = "분류 필터는 50자 이하로 입력해주세요.")
-    private String type;
+    private List<@Size(max = 50, message = "분류 필터는 50자 이하로 입력해주세요.") String> type;
 
-    @Size(max = 50, message = "음식별 필터는 50자 이하로 입력해주세요.")
-    private String nation;
+    private List<@Size(max = 50, message = "음식별 필터는 50자 이하로 입력해주세요.") String> nation;
 
-    @Size(max = 50, message = "재료별 필터는 50자 이하로 입력해주세요.")
-    private String ingredient;
+    private List<@Size(max = 50, message = "재료별 필터는 50자 이하로 입력해주세요.") String> ingredient;
 
     @Size(max = 50, message = "카테고리 필터는 50자 이하로 입력해주세요.")
     private String keyword;
@@ -29,16 +29,16 @@ public class RecipeSearchQuery {
         return normalize(keyword);
     }
 
-    public String normalizedType() {
-        return normalize(type);
+    public List<String> normalizedType() {
+        return normalizeList(type);
     }
 
-    public String normalizedNation() {
-        return normalize(nation);
+    public List<String> normalizedNation() {
+        return normalizeList(nation);
     }
 
-    public String normalizedIngredient() {
-        return normalize(ingredient);
+    public List<String> normalizedIngredient() {
+        return normalizeList(ingredient);
     }
 
     public String normalizedSearch() {
@@ -51,5 +51,17 @@ public class RecipeSearchQuery {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private List<String> normalizeList(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+        return values.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .distinct()
+                .toList();
     }
 }

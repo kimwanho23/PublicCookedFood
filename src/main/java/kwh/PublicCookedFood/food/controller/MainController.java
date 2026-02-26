@@ -5,9 +5,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import kwh.PublicCookedFood.common.Paging;
 import kwh.PublicCookedFood.common.dto.request.RecipeSearchQuery;
+import kwh.PublicCookedFood.board.domain.Board;
+import kwh.PublicCookedFood.board.service.BoardService;
 import kwh.PublicCookedFood.food.dto.response.RecipeCategoryGroupResponse;
+import kwh.PublicCookedFood.food.dto.response.RecipeRankingResponse;
 import kwh.PublicCookedFood.food.dto.response.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.service.RecipeService;
+import kwh.PublicCookedFood.food.service.RecipeReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Arrays;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -32,13 +37,24 @@ public class MainController {
 
     private final RecipeService recipeService;
 
+    private final BoardService boardService;
+
+    private final RecipeReviewService recipeReviewService;
+
     @GetMapping("/")
     public String root() {
         return "redirect:/recipes";
     }
 
     @GetMapping("/main")
-    public String Home() {
+    public String Home(Model model) {
+        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
+        LocalDateTime monthAgo = LocalDateTime.now().minusDays(30);
+        List<Board> popularBoards = boardService.getPopularBoardsSince(weekAgo, 6);
+        List<RecipeRankingResponse> recipeRankings = recipeReviewService.getTopReviewRankings(monthAgo, 6);
+
+        model.addAttribute("popularBoards", popularBoards);
+        model.addAttribute("recipeRankings", recipeRankings);
         return "/foods/main";
     }
 
@@ -56,16 +72,16 @@ public class MainController {
             }
         }
 
-        String type = query.normalizedType();
-        String nation = query.normalizedNation();
-        String ingredient = query.normalizedIngredient();
+        List<String> type = query.normalizedType();
+        List<String> nation = query.normalizedNation();
+        List<String> ingredient = query.normalizedIngredient();
         String keyword = query.normalizedKeyword();
         String search = query.normalizedSearch();
 
         if (bindingResult.hasErrors()) {
-            type = null;
-            nation = null;
-            ingredient = null;
+            type = List.of();
+            nation = List.of();
+            ingredient = List.of();
             keyword = null;
             search = null;
             model.addAttribute("queryErrorMsg", "검색 조건이 유효하지 않아 기본 목록을 표시합니다.");
@@ -74,27 +90,25 @@ public class MainController {
         Page<Recipe_INFO_ResponseDto> infoResponseDto = getRecipeInfo(pageable, type, nation, ingredient, keyword, search); //레시피 필터링
         Paging.addPagingAttributes(model, infoResponseDto, pageable); //페이징 알고리즘
         model.addAttribute("infoResponseDto", infoResponseDto);
-        model.addAttribute("selectedType", type);
-        model.addAttribute("selectedNation", nation);
-        model.addAttribute("selectedIngredient", ingredient);
+        model.addAttribute("selectedTypes", type);
+        model.addAttribute("selectedNations", nation);
+        model.addAttribute("selectedIngredients", ingredient);
         model.addAttribute("selectedKeyword", keyword);
         model.addAttribute("selectedSearch", search);
 
-        if (!ajaxRequest) {
-            List<RecipeCategoryGroupResponse> categories = createCategories(); //카테고리 목록
-            model.addAttribute("categories", categories);
-        }
+        List<RecipeCategoryGroupResponse> categories = createCategories(); //카테고리 목록
+        model.addAttribute("categories", categories);
 
         if (ajaxRequest) {
-            return "foods/index :: recipeResults";
+            return "/foods/index";
         }
         return "/foods/index";
     }
 
     private Page<Recipe_INFO_ResponseDto> getRecipeInfo(Pageable pageable,
-                                                        String type,
-                                                        String nation,
-                                                        String ingredient,
+                                                        List<String> type,
+                                                        List<String> nation,
+                                                        List<String> ingredient,
                                                         String keyword,
                                                         String search) {
         if ((type == null || type.isEmpty())
