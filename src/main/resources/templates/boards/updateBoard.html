@@ -1,50 +1,180 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-
+    <th:block th:replace="~{fragments/header :: headResources('게시글 수정')}"></th:block>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
 </head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
 
-<body>
-<div th:insert="~{fragments/header}"></div>
+<main class="page-shell">
+    <div class="container" style="max-width: 980px;">
+        <section class="hero-panel mb-4">
+            <h1 class="h4 mb-2">게시글 수정</h1>
+            <p class="mb-0 text-white-50">내용을 수정한 뒤 저장하면 즉시 반영됩니다.</p>
+        </section>
 
-<div class="container">
-    <form th:action="@{/boards/{id}(id=${boardDto.getId()})}" th:object="${boardDto}" style="padding: 70px;" method="post">
-        <input type="hidden" name="_method" value="patch"/>
+        <section class="section-wrap p-4">
+            <form th:action="@{/boards/{id}(id=${boardDto.getId()})}" th:object="${boardDto}" method="post" th:attr="data-board-id=${boardDto.getId()}">
+                <input type="hidden" name="_method" value="patch">
 
-        <div th:if="${#fields.hasGlobalErrors()}">
-            <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>
-        </div>
+                <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
+                    <p class="mb-1" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>
+                </div>
 
-        <div class="form-floating form-group mb-4">
-            <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="제목" th:value="*{title}" th:errorclass="field-error">
-            <label for="title">제목</label>
-            <div class="field-error" th:errors="*{title}"></div>
-        </div>
+                <div class="mb-3">
+                    <label for="title" class="form-label">제목</label>
+                    <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="제목을 입력하세요" th:errorclass="field-error">
+                    <div class="field-error" th:errors="*{title}"></div>
+                </div>
 
-        <div class="form-floating form-group mb-4">
-            <select id="sectionId" th:field="*{sectionId}" class="form-select" th:errorclass="field-error">
-                <option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.sectionName}">게시판 탭</option>
-            </select>
-            <label for="sectionId">게시판 탭</label>
-            <div class="field-error" th:errors="*{sectionId}"></div>
-        </div>
+                <div class="mb-3">
+                    <label for="sectionId" class="form-label">게시판 탭</label>
+                    <select id="sectionId" th:field="*{sectionId}" class="form-select" th:errorclass="field-error">
+                        <option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.sectionName}">게시판 탭</option>
+                    </select>
+                    <div class="field-error" th:errors="*{sectionId}"></div>
+                </div>
 
-        <div class="mb-4">
-            <textarea style="height: 500px" id="summernote" th:value="*{contents}" th:field="*{contents}" class="form-control" th:errorclass="field-error" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-            <label for="summernote"></label>
-            <div class="field-error" th:errors="*{contents}"></div>
-        </div>
+                <div class="mb-3">
+                    <label for="summernote" class="form-label">내용</label>
+                    <textarea id="summernote" th:field="*{contents}" class="form-control" th:errorclass="field-error" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+                    <div class="field-error" th:errors="*{contents}"></div>
+                    <div class="form-text">멘션은 <code>@닉네임</code> 형태로 입력하면 알림이 전달됩니다.</div>
+                </div>
 
-        <script>
-            $('#summernote').summernote({
-                placeholder: 'Hello stand alone ui',
-                tabsize: 3,
-                height: 800,
+                <div class="d-flex justify-content-end gap-2">
+                    <a class="btn btn-outline-secondary" th:href="@{/boards/{id}(id=${boardDto.getId()})}">취소</a>
+                    <button type="submit" class="btn btn-brand">수정 완료</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <script>
+        var MAX_IMAGE_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+        var currentUploadCount = 0;
+        var imagePickerInput = null;
+        var activeEditorTarget = null;
+        var formElement = document.querySelector('form[data-board-id]');
+        var draftStorageKey = 'boardDraft:edit:' + (formElement && formElement.getAttribute('data-board-id')
+            ? formElement.getAttribute('data-board-id')
+            : 'unknown');
+        var draftSaveTimer = null;
+
+        function setEditorUploading(uploading) {
+            var editor = document.querySelector('#summernote + .note-editor');
+            if (!editor) {
+                return;
+            }
+            editor.classList.toggle('is-uploading', !!uploading);
+        }
+
+        function handlePasteAsPlainText(e) {
+            var clipboardEvent = e && (e.originalEvent || e);
+            var clipboard = clipboardEvent && clipboardEvent.clipboardData;
+            if (!clipboard || typeof clipboard.getData !== 'function') {
+                return;
+            }
+
+            var text = clipboard.getData('text/plain');
+            if (typeof text !== 'string') {
+                return;
+            }
+
+            e.preventDefault();
+            if (document.queryCommandSupported && document.queryCommandSupported('insertText')) {
+                document.execCommand('insertText', false, text);
+                return;
+            }
+
+            var selection = window.getSelection();
+            if (!selection || !selection.rangeCount) {
+                return;
+            }
+
+            selection.deleteFromDocument();
+            selection.getRangeAt(0).insertNode(document.createTextNode(text));
+            selection.collapseToEnd();
+        }
+
+        function ensureImagePickerInput() {
+            if (imagePickerInput) {
+                return imagePickerInput;
+            }
+
+            imagePickerInput = document.createElement('input');
+            imagePickerInput.type = 'file';
+            imagePickerInput.accept = 'image/*';
+            imagePickerInput.multiple = true;
+            imagePickerInput.className = 'd-none';
+            imagePickerInput.id = 'summernoteImagePicker';
+            document.body.appendChild(imagePickerInput);
+
+            imagePickerInput.addEventListener('change', function () {
+                var files = imagePickerInput.files;
+                if (!files || files.length === 0 || !activeEditorTarget) {
+                    imagePickerInput.value = '';
+                    return;
+                }
+                for (var i = 0; i < files.length; i++) {
+                    uploadFile(files[i], activeEditorTarget);
+                }
+                imagePickerInput.value = '';
+            });
+            return imagePickerInput;
+        }
+
+        function openImagePicker(editorElement) {
+            if (currentUploadCount > 0) {
+                window.alert('이미지 업로드가 진행 중입니다. 잠시만 기다려주세요.');
+                return;
+            }
+            activeEditorTarget = editorElement;
+            ensureImagePickerInput().click();
+        }
+
+        function bindInsertImageTrigger(editorElement) {
+            var editorShell = window.jQuery(editorElement).next('.note-editor');
+            if (!editorShell.length) {
+                return;
+            }
+
+            editorShell.off('mousedown.boardImageInsert');
+            editorShell.on('mousedown.boardImageInsert', '.note-btn[data-event="showImageDialog"]', function (event) {
+                event.preventDefault();
+            });
+
+            editorShell.off('click.boardImageInsert');
+            editorShell.on('click.boardImageInsert', '.note-btn[data-event="showImageDialog"]', function (event) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                openImagePicker(editorElement);
+            });
+        }
+
+        function initializeBoardSummernote() {
+            if (typeof window.jQuery !== 'function') {
+                console.error('[BoardEditor] jQuery is not loaded.');
+                return;
+            }
+            if (typeof window.jQuery.fn.summernote !== 'function') {
+                console.error('[BoardEditor] Summernote plugin is not loaded.');
+                return;
+            }
+
+            var editorElement = document.getElementById('summernote');
+            if (!editorElement) {
+                return;
+            }
+
+            window.jQuery(editorElement).summernote({
+                placeholder: '내용을 입력하세요.',
+                tabsize: 2,
+                height: 520,
+                dialogsInBody: true,
                 toolbar: [
                     ['style', ['style']],
                     ['font', ['bold', 'underline', 'clear']],
@@ -52,28 +182,26 @@
                     ['para', ['ul', 'ol', 'paragraph']],
                     ['table', ['table']],
                     ['insert', ['link', 'picture', 'video']],
-                    ['view', ['fullscreen', 'codeview', 'help']]
+                    ['view', ['fullscreen', 'codeview']]
                 ],
                 callbacks: {
-                    onPaste: function(e) {
-                        e.preventDefault();
-
-                        // Clipboard API 사용
-                        navigator.clipboard.readText().then(function(text) {
-                            // 현재 선택 영역에 텍스트를 삽입
-                            var selection = window.getSelection();
-                            if (!selection.rangeCount) return;
-
-                            selection.deleteFromDocument(); // 기존의 내용을 삭제
-                            selection.getRangeAt(0).insertNode(document.createTextNode(text));
-
-                            // 커서를 텍스트의 끝으로 이동
-                            selection.collapseToEnd();
-                        }).catch(function(err) {
-                            console.error('Failed to read clipboard contents: ', err);
-                        });
+                    onPaste: function (e) {
+                        handlePasteAsPlainText(e);
                     },
-                    onImageUpload: function(files) {
+                    onInit: function () {
+                        bindInsertImageTrigger(editorElement);
+                    },
+                    onChange: function () {
+                        scheduleDraftSave(editorElement);
+                    },
+                    onImageUpload: function (files) {
+                        if (!files || files.length === 0) {
+                            return;
+                        }
+                        if (currentUploadCount > 0) {
+                            window.alert('이미지 업로드가 진행 중입니다. 잠시 후 다시 시도해주세요.');
+                            return;
+                        }
                         for (var i = 0; i < files.length; i++) {
                             uploadFile(files[i], this);
                         }
@@ -81,44 +209,271 @@
                 }
             });
 
-            function uploadFile(file, el) {
-                var data = new FormData();
-                data.append("file", file);
+            bindInsertImageTrigger(editorElement);
+            bindDraftEvents(editorElement);
+            restoreDraft(editorElement);
 
-                $.ajax({
-                    data: data,
-                    type: "POST",
-                    url: '/api/images',
-                    cache: false,
-                    contentType: false,
-                    processData: false,
-                    enctype: 'multipart/form-data',
-                    success: function(url) {
-                        $(el).summernote('insertImage', url, function ($image) {
-                        });
-                    },
-                    error: function(xhr) {
-                        if (xhr.status === 401) {
-                            alert('로그인이 필요합니다. 다시 로그인해주세요.');
-                            return;
-                        }
-                        if (xhr.status === 403) {
-                            alert('이미지 업로드 권한이 없습니다.');
-                            return;
-                        }
-                        alert('이미지 업로드에 실패했습니다.');
+            console.info('[BoardEditor] Summernote initialized.');
+        }
+
+        function getDraftPayload(editorElement) {
+            var titleInput = document.getElementById('title');
+            var sectionInput = document.getElementById('sectionId');
+            var html = window.jQuery(editorElement).summernote('code');
+            return {
+                title: titleInput ? titleInput.value : '',
+                sectionId: sectionInput ? sectionInput.value : '',
+                contents: typeof html === 'string' ? html : '',
+                savedAt: new Date().toISOString()
+            };
+        }
+
+        function hasMeaningfulDraft(payload) {
+            if (!payload) {
+                return false;
+            }
+            var text = payload.contents ? payload.contents.replace(/<[^>]*>/g, '').replace(/\s+/g, '') : '';
+            return !!((payload.title && payload.title.trim()) || (payload.sectionId && payload.sectionId.trim()) || text);
+        }
+
+        function saveDraft(editorElement) {
+            if (!window.localStorage) {
+                return;
+            }
+            var payload = getDraftPayload(editorElement);
+            try {
+                if (!hasMeaningfulDraft(payload)) {
+                    window.localStorage.removeItem(draftStorageKey);
+                    return;
+                }
+                window.localStorage.setItem(draftStorageKey, JSON.stringify(payload));
+            } catch (ignored) {
+            }
+        }
+
+        function scheduleDraftSave(editorElement) {
+            if (draftSaveTimer) {
+                window.clearTimeout(draftSaveTimer);
+            }
+            draftSaveTimer = window.setTimeout(function () {
+                saveDraft(editorElement);
+            }, 400);
+        }
+
+        function bindDraftEvents(editorElement) {
+            var titleInput = document.getElementById('title');
+            var sectionInput = document.getElementById('sectionId');
+            var form = document.querySelector('form[data-board-id]');
+
+            if (titleInput) {
+                titleInput.addEventListener('input', function () {
+                    scheduleDraftSave(editorElement);
+                });
+            }
+            if (sectionInput) {
+                sectionInput.addEventListener('change', function () {
+                    scheduleDraftSave(editorElement);
+                });
+            }
+            if (form) {
+                form.addEventListener('submit', function () {
+                    if (!window.localStorage) {
+                        return;
+                    }
+                    try {
+                        window.localStorage.removeItem(draftStorageKey);
+                    } catch (ignored) {
                     }
                 });
             }
+        }
 
-        </script>
-        <button type="submit" class="w-100 btn btn-lg btn-dark">글쓰기</button>
+        function restoreDraft(editorElement) {
+            if (!window.localStorage) {
+                return;
+            }
+            var raw = null;
+            try {
+                raw = window.localStorage.getItem(draftStorageKey);
+            } catch (ignored) {
+                return;
+            }
+            if (!raw) {
+                return;
+            }
 
-        <p class="mt-5 mb-3 text-muted">©2024 DataPortal</p>
+            var draft = null;
+            try {
+                draft = JSON.parse(raw);
+            } catch (ignored) {
+                return;
+            }
+            if (!hasMeaningfulDraft(draft)) {
+                return;
+            }
 
-    </form>
-</div>
+            if (!window.confirm('임시 저장된 수정 내용이 있습니다. 복원할까요?')) {
+                return;
+            }
+
+            var titleInput = document.getElementById('title');
+            var sectionInput = document.getElementById('sectionId');
+            if (titleInput && typeof draft.title === 'string') {
+                titleInput.value = draft.title;
+            }
+            if (sectionInput && typeof draft.sectionId === 'string' && draft.sectionId) {
+                sectionInput.value = draft.sectionId;
+            }
+            if (typeof draft.contents === 'string') {
+                window.jQuery(editorElement).summernote('code', draft.contents);
+            }
+        }
+
+        function resolveImageUrl(response) {
+            var raw = response;
+            if (raw == null) {
+                return null;
+            }
+
+            if (typeof raw === 'object') {
+                if (typeof raw.url === 'string') {
+                    raw = raw.url;
+                } else if (typeof raw.fileUrl === 'string') {
+                    raw = raw.fileUrl;
+                } else {
+                    return null;
+                }
+            }
+
+            raw = String(raw).trim();
+            if (!raw) {
+                return null;
+            }
+
+            try {
+                var parsed = JSON.parse(raw);
+                if (typeof parsed === 'string') {
+                    raw = parsed;
+                } else if (parsed && typeof parsed.url === 'string') {
+                    raw = parsed.url;
+                } else if (parsed && typeof parsed.fileUrl === 'string') {
+                    raw = parsed.fileUrl;
+                }
+            } catch (ignored) {
+                // plain text response
+            }
+
+            if (!raw) {
+                return null;
+            }
+
+            try {
+                return new URL(raw, window.location.origin).toString();
+            } catch (ignored) {
+                return null;
+            }
+        }
+
+        function resolveUploadErrorMessage(xhr) {
+            if (!xhr) {
+                return '이미지 업로드에 실패했습니다.';
+            }
+            if (xhr.status === 401) {
+                return '로그인이 필요합니다. 다시 로그인해주세요.';
+            }
+            if (xhr.status === 403) {
+                return '이미지 업로드 권한이 없습니다.';
+            }
+            if (xhr.status === 413) {
+                return '이미지 용량이 너무 큽니다.';
+            }
+            if (xhr.status >= 500) {
+                return '서버 오류로 이미지 업로드에 실패했습니다.';
+            }
+
+            var responseText = (xhr.responseText || '').trim();
+            if (!responseText) {
+                return '이미지 업로드에 실패했습니다.';
+            }
+
+            try {
+                var parsed = JSON.parse(responseText);
+                if (parsed && typeof parsed.message === 'string' && parsed.message.trim() !== '') {
+                    return parsed.message;
+                }
+            } catch (ignored) {
+                // text response
+            }
+            return responseText;
+        }
+
+        function uploadFile(file, el, retryCount) {
+            if (!file || !file.type || !file.type.startsWith('image/')) {
+                alert('이미지 파일만 업로드할 수 있습니다.');
+                return;
+            }
+            if (file.size > MAX_IMAGE_UPLOAD_SIZE_BYTES) {
+                alert('이미지는 10MB 이하만 업로드할 수 있습니다.');
+                return;
+            }
+            var attempt = typeof retryCount === 'number' ? retryCount : 0;
+
+            var data = new FormData();
+            data.append('file', file);
+            var csrfToken = window.jQuery('meta[name="_csrf"]').attr('content');
+            var csrfHeader = window.jQuery('meta[name="_csrf_header"]').attr('content');
+            var requestHeaders = {
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            if (csrfToken && csrfHeader) {
+                requestHeaders[csrfHeader] = csrfToken;
+            }
+
+            currentUploadCount += 1;
+            setEditorUploading(true);
+            console.info('[BoardEditor] Image upload started:', file.name);
+
+            window.jQuery.ajax({
+                data: data,
+                type: 'POST',
+                url: '/api/images',
+                headers: requestHeaders,
+                dataType: 'text',
+                cache: false,
+                contentType: false,
+                processData: false,
+                enctype: 'multipart/form-data',
+                success: function (response) {
+                    var imageUrl = resolveImageUrl(response);
+                    if (!imageUrl) {
+                        alert('이미지 URL 처리에 실패했습니다.');
+                        return;
+                    }
+                    window.jQuery(el).summernote('insertImage', imageUrl, function ($image) {
+                        $image.attr('loading', 'lazy');
+                    });
+                    console.info('[BoardEditor] Image upload succeeded:', file.name);
+                },
+                error: function (xhr) {
+                    console.error('[BoardEditor] Image upload failed:', xhr ? xhr.status : 'unknown', file.name);
+                    var errorMessage = resolveUploadErrorMessage(xhr);
+                    if (attempt < 1 && window.confirm(errorMessage + '\n다시 시도할까요?')) {
+                        uploadFile(file, el, attempt + 1);
+                        return;
+                    }
+                    alert(errorMessage);
+                },
+                complete: function () {
+                    currentUploadCount = Math.max(0, currentUploadCount - 1);
+                    setEditorUploading(currentUploadCount > 0);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeBoardSummernote);
+    </script>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
 </body>
-
-
 </html>

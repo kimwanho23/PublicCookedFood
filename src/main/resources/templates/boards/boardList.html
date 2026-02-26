@@ -1,242 +1,330 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-
+    <th:block th:replace="~{fragments/header :: headResources('게시판')}"></th:block>
 </head>
-<body>
-<div th:insert="~{fragments/header}"></div>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
 
-
-
-<div class="container" id="board-page-root">
-    <div id="boardResults" th:fragment="boardResults">
-        <div th:if="${queryErrorMsg != null}" class="alert alert-warning" th:text="${queryErrorMsg}"></div>
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h4 class="mb-1" th:text="${boardPageTitle}">게시판</h4>
-                <small class="text-muted" th:if="${isFeaturedPage}" th:text="'추천수 ' + ${featuredLikeThreshold} + ' 이상 게시물'">추천 기준</small>
+<main class="page-shell">
+    <div class="container" id="board-page-root">
+        <section class="hero-panel hero-panel-board mb-4">
+            <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
+                <div>
+                    <h1 class="display-title h3 mb-2">커뮤니티 게시판</h1>
+                    <p class="mb-0 text-white-50">
+                        질문, 후기, 요리 팁을 읽기 편한 피드 형태로 확인하세요.
+                    </p>
+                </div>
+                <div class="d-flex align-items-end gap-3 flex-wrap">
+                    <div>
+                        <p class="hero-number mb-0" th:text="${boardList != null ? boardList.getTotalElements() : 0}">0</p>
+                        <p class="hero-label mb-0">posts in view</p>
+                    </div>
+                    <span class="hero-badge" th:if="${isFeaturedPage}" th:text="|추천 ${featuredLikeThreshold}개 이상|">추천 기준</span>
+                </div>
             </div>
-            <a class="btn btn-outline-danger btn-sm"
-               th:if="${!isFeaturedPage}"
-               th:href="@{/boards/featured(section=${activeSection != null and !#strings.isEmpty(activeSection) ? activeSection : null}, search=${search != null and !#strings.isEmpty(search) ? search : null})}">
-                추천 게시물 보기
-            </a>
-            <a class="btn btn-outline-secondary btn-sm"
-               th:if="${isFeaturedPage}"
-               th:href="@{/boards(section=${activeSection != null and !#strings.isEmpty(activeSection) ? activeSection : null}, search=${search != null and !#strings.isEmpty(search) ? search : null})}">
-                전체 게시판 보기
-            </a>
-        </div>
+        </section>
 
-        <ul class="nav nav-tabs mb-3">
-            <li class="nav-item">
-                <a class="nav-link"
-                   th:classappend="${activeSection == null ? 'active' : ''}"
-                   th:href="@{${boardListPath}(search=${search != null and !#strings.isEmpty(search) ? search : null})}">
-                    전체
-                </a>
-            </li>
-            <li class="nav-item" th:each="section : ${sections}">
-                <a class="nav-link"
-                   th:classappend="${activeSection == section.sectionKey ? 'active' : ''}"
-                   th:href="@{${boardListPath}(section=${section.sectionKey}, search=${search != null and !#strings.isEmpty(search) ? search : null})}"
-                   th:text="${section.sectionName}">
-                    게시판 탭
-                </a>
-            </li>
-        </ul>
+        <section id="boardResults" th:fragment="boardResults" class="recipe-results-shell" th:attr="data-thumbnail-display-mode=${thumbnailDisplayMode}">
+            <div th:if="${queryErrorMsg != null}" class="alert alert-warning" th:text="${queryErrorMsg}"></div>
 
-        <table class="table table-hover text-center">
-            <thead class="table-dark">
-            <tr class="text-nowrap">
-                <th scope="col" style="width: 6%;">번호</th>
-                <th scope="col" style="width: 12%;">탭</th>
-                <th scope="col" style="width: 48%;">제목</th>
-                <th scope="col" style="width: 11%;">작성자</th>
-                <th scope="col" style="width: 11%;">작성일</th>
-                <th scope="col" style="width: 6%;">조회수</th>
-                <th scope="col" style="width: 6%;">추천수</th>
-            </tr>
-            </thead>
-            <tbody th:each="board : ${boardList}" th:if="${board.state != null and board.state.active}">
-            <tr th:onclick="|location.href='@{/boards/{id}(id=${board.id})}'|" style="cursor: pointer">
-                <th th:text="${boardList.getTotalElements() -  (boardList.number * boardList.size) - boardStat.index}">번호</th>
-                <td th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</td>
-                <td th:text="${board.title.length() > 30 ? board.title.substring(0, 30) + '...' + ' [' + board.commentCount + ']' : board.title + ' [' + board.commentCount + ']'}">제목</td>
-                <td th:text="${board.user.name.length() > 7 ? board.user.name.substring(0, 7) + '...' : board.user.name}" >작성자</td>
-                <td th:text="${#temporals.format(board.regTime, 'yyyy.MM.dd') == #dates.format(#dates.createNow(),'yyyy.MM.dd') ? #temporals.format(board.regTime, 'HH:mm') : #temporals.format(board.regTime, 'yyyy.MM.dd')}">작성일</td>
-                <td th:text="${board.views}" >조회수</td>
-                <td th:text="${board.likeCount}">추천 수</td>
-            </tr>
-            </tbody>
-        </table>
+            <div class="section-wrap p-4 mb-3">
+                <div class="board-toolbar mb-3">
+                    <div>
+                        <h2 class="h5 mb-1" th:text="${boardPageTitle}">게시판</h2>
+                        <small class="text-muted-soft" th:if="${isFeaturedPage}" th:text="|추천수 ${featuredLikeThreshold} 이상 게시물|">추천 기준</small>
+                    </div>
 
-        <button id="writeButton" sec:authorize="isAuthenticated()" type="button" class="btn btn-dark" th:onclick="|location.href='@{/boards/new}'|">글쓰기
-        </button>
+                    <div class="board-actions">
+                        <a class="btn btn-soft btn-sm"
+                           th:if="${!isFeaturedPage}"
+                           th:href="@{/boards/featured(section=${activeSection != null and !#strings.isEmpty(activeSection) ? activeSection : null}, search=${search != null and !#strings.isEmpty(search) ? search : null}, orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null})}">
+                            추천 게시물
+                        </a>
+                        <a class="btn btn-outline-secondary btn-sm"
+                           th:if="${isFeaturedPage}"
+                           th:href="@{/boards(section=${activeSection != null and !#strings.isEmpty(activeSection) ? activeSection : null}, search=${search != null and !#strings.isEmpty(search) ? search : null}, orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null})}">
+                            전체 게시물
+                        </a>
+                        <button id="writeButton" sec:authorize="isAuthenticated()" type="button" class="btn btn-brand btn-sm" th:onclick="|location.href='@{/boards/new}'|">글쓰기</button>
+                        <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-brand btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">글쓰기</button>
+                    </div>
+                </div>
 
-        <!-- Button trigger modal -->
-        <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#loginModal">
-           글쓰기
-        </button>
+                <div class="board-control-row mb-3">
+                    <ul class="nav nav-pills board-tabs flex-wrap gap-2 mb-0">
+                        <li class="nav-item">
+                            <a class="nav-link"
+                               th:classappend="${activeSection == null ? ' active' : ''}"
+                               th:href="@{${boardListPath}(search=${search != null and !#strings.isEmpty(search) ? search : null}, orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null})}">
+                                전체
+                            </a>
+                        </li>
+                        <li class="nav-item" th:each="section : ${sections}">
+                            <a class="nav-link"
+                               th:classappend="${activeSection == section.sectionKey ? ' active' : ''}"
+                               th:href="@{${boardListPath}(section=${section.sectionKey}, search=${search != null and !#strings.isEmpty(search) ? search : null}, orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null})}"
+                               th:text="${section.sectionName}">
+                                게시판 탭
+                            </a>
+                        </li>
+                    </ul>
 
+                    <div class="board-control-tools">
+                        <form th:action="@{${boardListPath}}" method="get" class="board-search-form" role="search" aria-label="게시판 검색">
+                            <input type="hidden" name="section" th:if="${activeSection != null and !#strings.isEmpty(activeSection)}" th:value="${activeSection}">
+                            <input type="hidden" name="orderBy" th:if="${orderBy != null and !#strings.isEmpty(orderBy)}" th:value="${orderBy}">
+                            <input type="text" name="search" th:value="${search}" placeholder="제목 검색" class="form-control form-control-sm">
+                            <button type="submit" class="btn btn-soft btn-sm">검색</button>
+                        </form>
 
-        <div th:if="${boardList.getTotalElements() > 0}">
-            <div th:replace="~{fragments/paginationFragment :: pagination(${boardListPath}, ${startPage}, ${endPage}, ${currentPage}, ${hasPreviousGroup}, ${hasNextGroup}, ${keyword}, ${search}, ${activeSection}, ${null}, ${null}, ${null})}"></div>
-        </div>
+                        <form th:if="${!isFeaturedPage}" th:action="@{${boardListPath}}" method="get" class="board-sort-form">
+                            <input type="hidden" name="section" th:if="${activeSection != null and !#strings.isEmpty(activeSection)}" th:value="${activeSection}">
+                            <input type="hidden" name="search" th:if="${search != null and !#strings.isEmpty(search)}" th:value="${search}">
+                            <label for="boardOrderBy" class="visually-hidden">정렬</label>
+                            <select id="boardOrderBy" name="orderBy" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                                <option th:value="recent" th:selected="${orderBy == null}">최신순</option>
+                                <option th:value="views" th:selected="${orderBy == 'views'}">조회순</option>
+                                <option th:value="likes" th:selected="${orderBy == 'likes'}">추천순</option>
+                                <option th:value="comments" th:selected="${orderBy == 'comments'}">댓글순</option>
+                            </select>
+                        </form>
+                    </div>
+                </div>
 
+                <div class="alert alert-light border" th:if="${boardList.getTotalElements() == 0}">
+                    <span>등록된 게시글이 없습니다. 첫 글을 작성해보세요.</span>
+                </div>
 
-        <div class="d-flex justify-content-center">
-            <form th:action="@{${boardListPath}}" method="get" class="d-inline-flex mb-3">
-                <input type="hidden" name="section" th:if="${activeSection != null and !#strings.isEmpty(activeSection)}" th:value="${activeSection}">
-                <input type="text" name="search" th:value="${search}" placeholder="제목 검색" class="form-control me-2">
-                <button type="submit" class="btn btn-primary col-auto">검색</button>
-            </form>
-        </div>
-    </div>
+                <div class="board-feed" th:if="${boardList.getTotalElements() > 0}">
+                    <div class="board-item"
+                         th:classappend="${thumbnailDisplayMode == 'HOVER' and boardThumbnailMap[board.id] != null} ? ' board-item-hover' : ''"
+                         th:each="board, boardStat : ${boardList}"
+                         th:if="${board.state != null and board.state.active}">
+                        <a class="board-row"
+                           th:classappend="${thumbnailDisplayMode == 'LEFT' and boardThumbnailMap[board.id] != null} ? ' board-row-with-thumb' : (${thumbnailDisplayMode == 'HOVER' and boardThumbnailMap[board.id] != null} ? ' board-row-hover-mobile' : '')"
+                           th:href="@{/boards/{id}(id=${board.id})}">
+                            <div class="board-row-thumb"
+                                 th:if="${(thumbnailDisplayMode == 'LEFT' or thumbnailDisplayMode == 'HOVER') and boardThumbnailMap[board.id] != null}">
+                                <img th:src="@{${boardThumbnailMap[board.id]}}" alt="게시글 썸네일">
+                            </div>
+                            <div class="board-row-body">
+                                <div class="board-row-top">
+                                    <span class="board-index" th:text="${boardList.getTotalElements() - (boardList.number * boardList.size) - boardStat.index}">1</span>
+                                    <span class="badge text-bg-light" th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</span>
+                                    <span class="badge text-bg-warning" th:if="${featuredLikeThreshold != null and board.likeCount != null and board.likeCount >= featuredLikeThreshold}">추천글</span>
+                                    <span class="board-date" th:text="${#temporals.format(board.regTime, 'yyyy.MM.dd') == #dates.format(#dates.createNow(),'yyyy.MM.dd') ? #temporals.format(board.regTime, 'HH:mm') : #temporals.format(board.regTime, 'yyyy.MM.dd')}">작성일</span>
+                                </div>
 
-    <script>
-        (function () {
-            const pageRoot = document.getElementById('board-page-root');
-            if (!pageRoot || !window.fetch || !window.history || !window.DOMParser) {
-                return;
-            }
+                                <h3 class="board-row-title">
+                                    <span class="board-title-prefix" th:if="${thumbnailDisplayMode != 'LEFT'}">
+                                        <span class="board-title-icon board-title-icon-star"
+                                              th:if="${featuredLikeThreshold != null and board.likeCount != null and board.likeCount >= featuredLikeThreshold}"
+                                              title="추천글"
+                                              aria-label="추천글">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792a.513.513 0 0 1 .927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.523 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="board-title-icon board-title-icon-image"
+                                              th:if="${boardHasImageMap != null and boardHasImageMap[board.id]}"
+                                              title="이미지 첨부"
+                                              aria-label="이미지 첨부">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                <path d="M14.002 3a2 2 0 0 1 2 2v6.586l-3-3-2 2L7 6.586 1 12.586V5a2 2 0 0 1 2-2h11z"/>
+                                                <path d="M1 14h14a1 1 0 0 0 1-1v-.586l-3-3-2 2L7 7.414 1 13.414V13a1 1 0 0 0 1 1z"/>
+                                                <path d="M4.5 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                                            </svg>
+                                        </span>
+                                    </span>
+                                    <span th:text="${(board.title != null and board.title.length() > 58 ? board.title.substring(0, 58) + '...' : board.title) + ' [' + (board.commentCount != null ? board.commentCount : 0) + ']'}">제목</span>
+                                </h3>
 
-            const resultsSelector = '#boardResults';
-            let pendingController = null;
+                                <div class="board-row-meta">
+                                    <span class="board-meta-pill board-meta-author-link"
+                                          th:if="${board.user != null and board.user.id != null}"
+                                          style="cursor: pointer;"
+                                          th:attr="data-profile-url=@{/u/{userId}(userId=${board.user.id})}"
+                                          th:text="|작성자 ${(board.user.name != null and board.user.name.length() > 7) ? board.user.name.substring(0, 7) + '...' : (board.user.name != null ? board.user.name : '알 수 없음')}|">작성자</span>
+                                    <span class="board-meta-pill"
+                                          th:if="${board.user == null or board.user.id == null}"
+                                          th:text="|작성자 ${board.user != null and board.user.name != null ? board.user.name : '알 수 없음'}|">작성자</span>
+                                    <span class="board-meta-pill" th:text="|조회 ${board.views != null ? board.views : 0}|">조회</span>
+                                    <span class="board-meta-pill" th:text="|추천 ${board.likeCount != null ? board.likeCount : 0}|">추천</span>
+                                </div>
+                            </div>
+                        </a>
+                        <div class="board-hover-rail" th:if="${thumbnailDisplayMode == 'HOVER' and boardThumbnailMap[board.id] != null}">
+                            <div class="board-hover-card">
+                                <img class="board-hover-card-image" th:src="@{${boardThumbnailMap[board.id]}}" alt="게시글 썸네일 미리보기">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            function isBoardListUrl(url) {
-                return /^\/boards(\/featured)?\/?$/.test(url.pathname);
-            }
+            <div th:if="${boardList.getTotalElements() > 0}" class="section-wrap p-3">
+                <div th:replace="~{fragments/paginationFragment :: pagination(${boardListPath}, ${startPage}, ${endPage}, ${currentPage}, ${totalPages}, ${hasPreviousGroup}, ${hasNextGroup}, ${keyword}, ${search}, ${activeSection}, ${orderBy}, ${null}, ${null}, ${null})}"></div>
+            </div>
 
-            function normalizeQueryParams(url) {
-                const normalized = new URL(url.toString(), window.location.origin);
-                const params = new URLSearchParams(normalized.search);
-                for (const [key, value] of Array.from(params.entries())) {
-                    if (typeof value === 'string' && value.trim() === '') {
-                        params.delete(key);
+            <div th:replace="~{fragments/loginFragment :: loginModal}"></div>
+        </section>
+
+        <script>
+            (function () {
+                const pageRoot = document.getElementById('board-page-root');
+                if (!pageRoot || !window.fetch || !window.history || !window.DOMParser) {
+                    return;
+                }
+
+                const resultsSelector = '#boardResults';
+                let pendingController = null;
+
+                function isBoardListUrl(url) {
+                    return /^\/boards(?:\/featured)?\/?$/.test(url.pathname);
+                }
+
+                function normalizeQueryParams(url) {
+                    const normalized = new URL(url.toString(), window.location.origin);
+                    const params = new URLSearchParams(normalized.search);
+                    for (const [key, value] of Array.from(params.entries())) {
+                        if (typeof value === 'string' && value.trim() === '') {
+                            params.delete(key);
+                        }
                     }
+                    normalized.search = params.toString();
+                    return normalized;
                 }
-                normalized.search = params.toString();
-                return normalized;
-            }
 
-            function swapBoardResults(html) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newResults = doc.querySelector(resultsSelector);
-                const currentResults = document.querySelector(resultsSelector);
+                function swapBoardResults(html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newResults = doc.querySelector(resultsSelector);
+                    const currentResults = document.querySelector(resultsSelector);
 
-                if (!newResults || !currentResults) {
-                    return false;
+                    if (!newResults || !currentResults) {
+                        return false;
+                    }
+                    currentResults.replaceWith(newResults);
+                    return true;
                 }
-                currentResults.replaceWith(newResults);
-                return true;
-            }
 
-            function fetchBoardResults(url, pushState) {
-                if (pendingController) {
-                    pendingController.abort();
-                }
-                pendingController = new AbortController();
-                pageRoot.setAttribute('aria-busy', 'true');
+                function fetchBoardResults(url, pushState) {
+                    if (pendingController) {
+                        pendingController.abort();
+                    }
+                    pendingController = new AbortController();
+                    pageRoot.setAttribute('aria-busy', 'true');
 
-                fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'text/html'
-                    },
-                    signal: pendingController.signal
-                })
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw new Error('Failed to load board results');
-                        }
-                        return response.text();
+                    fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html'
+                        },
+                        signal: pendingController.signal
                     })
-                    .then((html) => {
-                        const replaced = swapBoardResults(html);
-                        if (!replaced) {
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error('Failed to load board results');
+                            }
+                            return response.text();
+                        })
+                        .then((html) => {
+                            const replaced = swapBoardResults(html);
+                            if (!replaced) {
+                                window.location.href = url;
+                                return;
+                            }
+                            if (pushState) {
+                                window.history.pushState({boardAjax: true}, '', url);
+                            }
+                        })
+                        .catch((error) => {
+                            if (error && error.name === 'AbortError') {
+                                return;
+                            }
                             window.location.href = url;
-                            return;
+                        })
+                        .finally(() => {
+                            pageRoot.removeAttribute('aria-busy');
+                            pendingController = null;
+                        });
+                }
+
+                document.addEventListener('click', function (event) {
+                    const authorLink = event.target.closest('.board-meta-author-link[data-profile-url]');
+                    if (authorLink) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const profileUrl = authorLink.getAttribute('data-profile-url');
+                        if (profileUrl) {
+                            window.location.href = profileUrl;
                         }
-                        if (pushState) {
-                            window.history.pushState({boardAjax: true}, '', url);
-                        }
-                    })
-                    .catch((error) => {
-                        if (error && error.name === 'AbortError') {
-                            return;
-                        }
-                        window.location.href = url;
-                    })
-                    .finally(() => {
-                        pageRoot.removeAttribute('aria-busy');
-                        pendingController = null;
-                    });
-            }
+                        return;
+                    }
 
-            document.addEventListener('click', function (event) {
-                const link = event.target.closest('a[href]');
-                if (!link || !pageRoot.contains(link)) {
-                    return;
-                }
-                if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-                    return;
-                }
-                if (link.target && link.target !== '_self') {
-                    return;
-                }
+                    const link = event.target.closest('a[href]');
+                    const currentResults = document.querySelector(resultsSelector);
+                    if (!link || !currentResults || !currentResults.contains(link)) {
+                        return;
+                    }
+                    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+                    if (link.target && link.target !== '_self') {
+                        return;
+                    }
 
-                const url = new URL(link.href, window.location.origin);
-                if (!isBoardListUrl(url)) {
-                    return;
-                }
+                    const url = new URL(link.href, window.location.origin);
+                    if (!isBoardListUrl(url)) {
+                        return;
+                    }
 
-                event.preventDefault();
-                const normalizedUrl = normalizeQueryParams(url);
-                fetchBoardResults(normalizedUrl.toString(), true);
-            });
+                    event.preventDefault();
+                    const normalizedUrl = normalizeQueryParams(url);
+                    fetchBoardResults(normalizedUrl.toString(), true);
+                });
 
-            document.addEventListener('submit', function (event) {
-                const form = event.target;
-                if (!(form instanceof HTMLFormElement) || !pageRoot.contains(form)) {
-                    return;
-                }
+                document.addEventListener('submit', function (event) {
+                    const form = event.target;
+                    const currentResults = document.querySelector(resultsSelector);
+                    if (!(form instanceof HTMLFormElement) || !currentResults || !currentResults.contains(form)) {
+                        return;
+                    }
 
-                const method = (form.getAttribute('method') || 'get').toLowerCase();
-                if (method !== 'get') {
-                    return;
-                }
+                    const method = (form.getAttribute('method') || 'get').toLowerCase();
+                    if (method !== 'get') {
+                        return;
+                    }
 
-                const action = form.getAttribute('action') || window.location.pathname;
-                const url = new URL(action, window.location.origin);
-                if (!isBoardListUrl(url)) {
-                    return;
-                }
+                    const action = form.getAttribute('action') || window.location.pathname;
+                    const url = new URL(action, window.location.origin);
+                    if (!isBoardListUrl(url)) {
+                        return;
+                    }
 
-                event.preventDefault();
-                const params = new URLSearchParams(new FormData(form));
-                url.search = params.toString();
-                const normalizedUrl = normalizeQueryParams(url);
-                fetchBoardResults(normalizedUrl.toString(), true);
-            });
+                    event.preventDefault();
+                    const params = new URLSearchParams(new FormData(form));
+                    url.search = params.toString();
+                    const normalizedUrl = normalizeQueryParams(url);
+                    fetchBoardResults(normalizedUrl.toString(), true);
+                });
 
-            window.addEventListener('popstate', function () {
-                const currentUrl = new URL(window.location.href);
-                if (!isBoardListUrl(currentUrl)) {
-                    return;
-                }
-                const normalizedUrl = normalizeQueryParams(currentUrl);
-                fetchBoardResults(normalizedUrl.toString(), false);
-            });
-        })();
-    </script>
+                window.addEventListener('popstate', function () {
+                    const currentUrl = new URL(window.location.href);
+                    if (!isBoardListUrl(currentUrl)) {
+                        return;
+                    }
+                    const normalizedUrl = normalizeQueryParams(currentUrl);
+                    fetchBoardResults(normalizedUrl.toString(), false);
+                });
+            })();
+        </script>
+    </div>
+</main>
 
-    <div th:replace="~{fragments/loginFragment}"></div>
-</div>
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
 </body>
 </html>

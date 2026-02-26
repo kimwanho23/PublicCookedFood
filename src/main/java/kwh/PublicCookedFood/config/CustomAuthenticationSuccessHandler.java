@@ -3,6 +3,8 @@ package kwh.PublicCookedFood.config;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import kwh.PublicCookedFood.user.dto.CustomUserDetails;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
@@ -19,6 +21,7 @@ import java.net.URISyntaxException;
 
 // 커스텀 로그인 핸들러
 @Component
+@RequiredArgsConstructor
 public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private static final String PREV_PAGE_ATTRIBUTE = "prevPage";
@@ -29,13 +32,14 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
     private final RequestCache requestCache = new HttpSessionRequestCache();
-
-    public CustomAuthenticationSuccessHandler() {
-    }
+    private final AuthThrottleService authThrottleService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        authThrottleService.clearLoginFailures(request, resolveLoginEmail(request, authentication));
+
         SavedRequest savedRequest = requestCache.getRequest(request, response);
+        String savedRequestRedirectUrl = extractRedirectUrl(savedRequest);
         if (savedRequest != null) {
             requestCache.removeRequest(request, response);
         }
@@ -45,10 +49,36 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             request.getSession().removeAttribute(PREV_PAGE_ATTRIBUTE);
         }
 
-        String uri = redirectUri(request,
-                savedRequest != null ? savedRequest.getRedirectUrl() : null,
-                prevPage);
+        String uri = redirectUri(request, savedRequestRedirectUrl, prevPage);
         redirectStrategy.sendRedirect(request, response, uri); //로그인 시 이전 url로 리다이렉트
+    }
+
+    private String resolveLoginEmail(HttpServletRequest request, Authentication authentication) {
+        String requestedEmail = request.getParameter("email");
+        if (requestedEmail != null && !requestedEmail.isBlank()) {
+            return requestedEmail;
+        }
+        if (authentication == null) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof CustomUserDetails customUserDetails
+                && customUserDetails.getUser() != null) {
+            return customUserDetails.getUser().getEmail();
+        }
+        return null;
+    }
+
+    private String extractRedirectUrl(SavedRequest savedRequest) {
+        if (savedRequest == null) {
+            return null;
+        }
+
+        String method = savedRequest.getMethod();
+        if (method != null && !"GET".equalsIgnoreCase(method)) {
+            return null;
+        }
+        return savedRequest.getRedirectUrl();
     }
 
     private String redirectUri(HttpServletRequest request, String... candidates) {

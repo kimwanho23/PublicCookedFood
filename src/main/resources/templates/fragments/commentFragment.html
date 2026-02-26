@@ -1,62 +1,78 @@
-<!-- commentFragment.html -->
-
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
 <body>
 <div th:fragment="commentFragment(comment)">
-    <div class="card my-3 mx-3" th:if="${comment.state != null and comment.state.active}">
-        <div class="card-header hstack gap-3">
-        <img th:if="${comment.parentId != null}" th:src="@{../img/arrow-return-right.svg}" alt="답글"/>
-            <img th:src="@{../img/person-black.svg}"  alt="댓글 작성자"/>
-        <div th:text="${comment.id}">작성자</div>
-            <div class="ms-auto" th:text="${#temporals.format(comment.regTime, 'yyyy-MM-dd HH:mm:ss')}">작성 시간</div>
-            <div class="vr" sec:authorize="isAuthenticated()"></div>
+    <article class="comment-card my-3 ms-0"
+             th:if="${comment.state != null and comment.state.active}"
+             th:attr="id='comment-' + ${comment.id}">
+        <div class="p-3 border-bottom d-flex align-items-center gap-2">
+            <img th:if="${comment.parentId != null}" th:src="@{../img/arrow-return-right.svg}" alt="답글">
+            <img class="comment-author-avatar"
+                 th:if="${comment.profileImageUrl != null and !#strings.isEmpty(comment.profileImageUrl)}"
+                 th:src="${comment.profileImageUrl}"
+                 alt="댓글 작성자 프로필">
+            <img class="comment-author-avatar"
+                 th:if="${comment.profileImageUrl == null or #strings.isEmpty(comment.profileImageUrl)}"
+                 th:src="@{/img/person-black.svg}"
+                 alt="댓글 작성자 기본 프로필">
+            <a th:if="${comment.userId != null}"
+               class="fw-semibold nickname-link"
+               th:href="@{/u/{userId}(userId=${comment.userId})}"
+               th:text="${comment.name != null ? comment.name : '익명'}">작성자</a>
+            <strong th:if="${comment.userId == null}" th:text="${comment.name != null ? comment.name : '익명'}">작성자</strong>
+            <span class="ms-auto small text-muted-soft" th:text="${#temporals.format(comment.regTime, 'yyyy-MM-dd HH:mm:ss')}">작성 시간</span>
 
+            <a sec:authorize="isAuthenticated()"
+               th:if="${boardInteractionBlocked == null or !boardInteractionBlocked}"
+               class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" th:href="'#collapse' + ${comment.id}"
+               role="button" aria-expanded="false" th:aria-controls="'collapse' + ${comment.id}">답글</a>
 
-            <a sec:authorize="isAuthenticated()" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" th:href="'#collapse' + ${comment.id}"
-               role="button"  aria-expanded="false" th:aria-controls="'collapse' + ${comment.id}">답글
-            </a>
+            <form sec:authorize="isAuthenticated()"
+                  th:if="${currentUserId != null and comment.userId != currentUserId}"
+                  th:action="@{/u/blocks/{targetUserId}(targetUserId=${comment.userId})}"
+                  method="post">
+                <button type="submit" class="btn btn-soft-danger btn-action-danger btn-sm">차단</button>
+            </form>
 
-            <button sec:authorize="isAuthenticated()" th:if="${currentUserId != null and comment.userId == currentUserId}" type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteCommentModal' + ${comment.id}">삭제</button>
-
-
+            <button sec:authorize="isAuthenticated()" th:if="${currentUserId != null and comment.userId == currentUserId}"
+                    type="button" class="btn btn-soft-danger btn-action-danger btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteCommentModal' + ${comment.id}">삭제</button>
         </div>
-        <div class="card-body">
+
+        <div class="p-3">
             <span th:text="${comment.contents}" style="white-space: pre-wrap;"></span>
         </div>
-    </div>
+    </article>
 
-    <div class="card my-3 mx-3" th:if="${comment.state != null and comment.state.deleted and !comment.areAllRepliesDeleted()} ">
-        <div class="card-body">
-            <span th:text="'삭제된 댓글입니다.'" th:class="text-muted" style="white-space: pre-wrap;"></span>
-        </div>
-    </div>
+    <article class="comment-card my-3 ms-0"
+             th:if="${comment.state != null and comment.state.deleted and !comment.areAllRepliesDeleted()}"
+             th:attr="id='comment-' + ${comment.id}">
+        <div class="p-3 text-muted-soft">삭제된 댓글입니다.</div>
+    </article>
 
     <div th:replace="~{fragments/deleteCommentFragment :: deleteCommentModal(@{/boards/{id}/comments/{commentId}/delete(id=${boardDto.id}, commentId=${comment.id})}, ${comment.id})}"></div>
 
-    <div class="collapse my-3 mx-3" th:id="'collapse' + ${comment.id}">
+    <div class="collapse my-2" th:id="'collapse' + ${comment.id}" th:if="${boardInteractionBlocked == null or !boardInteractionBlocked}">
         <div class="ms-3">
             <form th:action="@{/boards/{id}/comments(id=${boardDto.getId()})}" method="post">
-                <input type="hidden" name="parentId" th:value="${comment.id}" />
-                <input type="hidden" name="boardId" th:value="${comment.boardId}" />
-                <div class="input-group width">
-                    <span class="input-group-text">답글 내용</span>
-                    <textarea class="form-control" name="contents" rows="4" aria-label="With textarea"></textarea>
+                <input type="hidden" name="parentId" th:value="${comment.id}">
+                <input type="hidden" name="boardId" th:value="${comment.boardId}">
+                <div class="input-group">
+                    <span class="input-group-text">답글</span>
+                    <textarea class="form-control"
+                              name="contents"
+                              rows="3"
+                              aria-label="With textarea"
+                              placeholder="@닉네임 으로 멘션할 수 있습니다."></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary mt-2">답글 달기</button>
+                <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요.</p>
+                <button type="submit" class="btn btn-soft btn-sm mt-2">답글 달기</button>
             </form>
         </div>
     </div>
 
-
-        <!-- 재귀적으로 대댓글을 출력 -->
-        <div th:each="reply : ${comment.replies}" style="margin-left: 20px;">
-            <!-- 개별 대댓글이 삭제되지 않은 경우에만 출력 -->
-            <div th:if="${reply.state == null or !reply.state.deleted}">
-                <div th:replace="~{this :: commentFragment(${reply})}"></div>
-            </div>
-        </div>
+    <div th:each="reply : ${comment.replies}" class="ms-3">
+        <div th:replace="~{this :: commentFragment(${reply})}"></div>
     </div>
-
 </div>
 </body>
 </html>

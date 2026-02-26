@@ -1,97 +1,338 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-
+    <th:block th:replace="~{fragments/header :: headResources('게시글 상세')}"></th:block>
 </head>
-<body>
-<div th:insert="~{fragments/header}"></div>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
 
-<div class="container">
-    <div class="list-unstyled ps-0 border-start border-end border-bottom border-top"  th:object="${boardDto}">
-        <div class="bg-light p-3 border-bottom">
-            <h3 th:text="${boardDto.title}"></h3>
-        </div>
+<main class="page-shell">
+    <div class="container">
+        <section class="section-wrap overflow-hidden" th:object="${boardDto}">
+            <div class="p-4 pb-0">
+                <div th:if="${reportSuccess != null}" class="alert alert-success py-2 mb-3" th:text="${reportSuccess}">신고 접수 완료</div>
+                <div th:if="${reportError != null}" class="alert alert-danger py-2 mb-3" th:text="${reportError}">신고 실패</div>
+                <div th:if="${commentError != null}" class="alert alert-danger py-2 mb-3" th:text="${commentError}">댓글 등록 실패</div>
+                <div th:if="${blockMessage != null}" class="alert alert-info py-2 mb-3" th:text="${blockMessage}">차단 상태 변경</div>
+            </div>
+            <header class="p-4 border-bottom bg-white">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="badge text-bg-light" th:text="${boardDto.sectionName != null ? boardDto.sectionName : '미분류'}">탭</span>
+                    <span class="text-muted-soft small" th:text="${#temporals.format(boardDto.regTime, 'yyyy.MM.dd HH:mm')}">작성일</span>
+                </div>
+                <h1 class="h4 mb-3" th:text="${boardDto.title}">게시글 제목</h1>
+                <div class="d-flex flex-wrap align-items-center gap-3 text-muted-soft small">
+                    <span class="d-inline-flex align-items-center gap-1">
+                        <img class="comment-author-avatar"
+                             th:if="${boardDto.userProfileImageUrl != null and !#strings.isEmpty(boardDto.userProfileImageUrl)}"
+                             th:src="${boardDto.userProfileImageUrl}"
+                             alt="작성자 프로필">
+                        <img class="comment-author-avatar"
+                             th:if="${boardDto.userProfileImageUrl == null or #strings.isEmpty(boardDto.userProfileImageUrl)}"
+                             th:src="@{/img/person-black.svg}"
+                             alt="작성자 기본 프로필">
+                        <a class="nickname-link"
+                           th:if="${boardDto.userId != null and boardDto.userName != null}"
+                           th:href="@{/u/{userId}(userId=${boardDto.userId})}"
+                           th:text="${boardDto.userName}">작성자</a>
+                        <span th:if="${boardDto.userId == null or boardDto.userName == null}"
+                              th:text="${boardDto.userName != null ? boardDto.userName : '알 수 없음'}">작성자</span>
+                    </span>
+                    <span th:text="|조회수 ${boardDto.views}|">조회수</span>
+                    <span th:text="|추천 ${likes}|">추천수</span>
+                    <span th:text="|스크랩 ${scraps}|">스크랩수</span>
+                </div>
+            </header>
 
-        <div class="hstack gap-3 p-3  border-bottom">
-            <img th:src="@{../img/person-black.svg}" alt="답글"/>
-            <span class="badge text-bg-secondary"
-                  th:text="${boardDto.sectionName != null ? boardDto.sectionName : '미분류'}">탭</span>
-            <span th:text="${boardDto.userName}"></span>
-            <span class="ms-auto" th:text="'조회수: ' + ${boardDto.views}"></span>
-            <div class="vr"></div>
-            <span th:text="'추천 ' + ${likes}"></span>
-        </div>
+            <div class="board-detail-content p-4 border-bottom">
+                <div th:utext="${boardDto.contents}" style="white-space: pre-wrap;"></div>
+            </div>
 
-        <div class="p-3 border-bottom">
-            <p th:utext="${boardDto.contents}" style="white-space: pre-wrap;"></p>
-        </div>
+            <div class="p-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-soft"
+                            data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <span th:text="|추천 ${likes}|"></span>
+                    </button>
 
-        <div class="hstack gap-3 p-3 border-bottom justify-content-center">
-            <!-- 로그인하지 않은 사용자는 로그인 페이지로 이동 -->
-            <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-outline-dark"
-                    data-bs-toggle="modal" data-bs-target="#loginModal">
-                <span th:utext="'추천<br>' + ${likes}"></span>
-            </button>
+                    <form id="likeForm" th:action="@{/boards/{id}/likes(id=${id})}" method="post" sec:authorize="isAuthenticated()">
+                        <input type="hidden" name="_method" value="put">
+                        <button type="submit" th:if="${myLike == null or !myLike}" class="btn btn-soft">
+                            <span th:text="|추천 ${likes}|"></span>
+                        </button>
+                    </form>
 
-            <!-- 로그인한 사용자는 추천 버튼을 클릭하면 추천 요청을 보냄 -->
-            <form id="likeForm" th:action="@{/boards/{id}/likes(id=${id})}" method="post" style="display:inline;" sec:authorize="isAuthenticated()">
-                <input type="hidden" name="_method" value="put"/>
-                <button type="submit" th:if="!${myLike}" class="btn btn-outline-dark">
-                    <span th:utext="'추천<br>' + ${likes}"></span>
-                </button>
-            </form>
+                    <button type="button" th:if="${myLike}" class="btn btn-soft" data-bs-toggle="modal" data-bs-target="#likeModal">
+                        <span th:text="|추천 ${likes}|"></span>
+                    </button>
 
-            <!-- 이미 추천한 경우 버튼을 비활성화 -->
-            <button type="button" th:if="${myLike}" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#likeModal">
-                <span th:utext="'추천<br>' + ${likes}"></span>
-            </button>
-        </div>
+                    <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-soft"
+                            data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <span th:text="|스크랩 ${scraps}|"></span>
+                    </button>
 
-        <div th:replace="~{fragments/loginFragment}"></div>
-        <div th:replace="~{fragments/likeFragment}"></div>
+                    <form th:if="${myScrap == null or !myScrap}" sec:authorize="isAuthenticated()"
+                          th:action="@{/boards/{id}/scraps(id=${id})}" method="post">
+                        <button type="submit" class="btn btn-soft">
+                            <span th:text="|스크랩 ${scraps}|"></span>
+                        </button>
+                    </form>
 
-        <div class="hstack gap-3 p-3 border-bottom" th:if="${currentUserId != null and currentUserId == boardDto.userId}" sec:authorize="isAuthenticated()">
-            <button type="button"  class="btn btn-outline-primary" th:onclick="|location.href='@{/boards/{id}/edit(id=${id})}'|">수정</button>
-            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#deleteModal">삭제</button>
-            <div th:replace="~{fragments/deleteFragment :: deleteModal(@{/boards/{id}/delete(id=${boardDto.id})})}"></div>
-        </div>
+                    <form th:if="${myScrap}" sec:authorize="isAuthenticated()"
+                          th:action="@{/boards/{id}/scraps/delete(id=${id})}" method="post">
+                        <input type="hidden" name="_method" value="patch">
+                        <button type="submit" class="btn btn-soft">
+                            <span th:text="|스크랩 취소 ${scraps}|"></span>
+                        </button>
+                    </form>
 
-        <div class="hstack gap-3 p-3 border-bottom">
-            <span th:text="'댓글: ' + (${commentsCount})">댓글</span>
-        </div>
+                    <button type="button"
+                            id="shareBoardButton"
+                            class="btn btn-soft"
+                            th:attr="data-share-url=@{/boards/{id}(id=${id})}">
+                        공유
+                    </button>
 
-        <div class="gap-3" th:each="comment : ${comments}">
-            <div th:replace="~{fragments/commentFragment :: commentFragment(${comment})}"></div>
+                    <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-soft-danger btn-action-danger"
+                            data-bs-toggle="modal" data-bs-target="#loginModal">
+                        신고
+                    </button>
 
-        </div>
+                    <button type="button"
+                            sec:authorize="isAuthenticated()"
+                            th:if="${currentUserId != null and currentUserId != boardDto.userId and (myReport == null or !myReport)}"
+                            class="btn btn-soft-danger btn-action-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#reportModal">
+                        신고
+                    </button>
 
+                    <button type="button"
+                            sec:authorize="isAuthenticated()"
+                            th:if="${currentUserId != null and currentUserId != boardDto.userId and myReport}"
+                            class="btn btn-soft-danger btn-action-danger"
+                            disabled>
+                        신고 완료
+                    </button>
 
-        <div class="container mt-2 border-bottom p-2" sec:authorize="isAuthenticated()">
-            <div class="comment-list">
-                <div class="p-2">
-                    <div class="bd-example m-0">
-                        <form th:action="@{/boards/{id}/comments(id=${boardDto.getId()})}" method="post">
-                            <div class="input-group width">
-                                <span class="input-group-text">댓글 내용</span>
-                                <textarea class="form-control" name="contents" rows="4" aria-label="With textarea"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary mt-2">댓글 달기</button>
-                        </form>
+                    <form sec:authorize="isAuthenticated()"
+                          th:if="${currentUserId != null and currentUserId != boardDto.userId and !myBlockedAuthor}"
+                          th:action="@{/u/blocks/{targetUserId}(targetUserId=${boardDto.userId})}"
+                          method="post">
+                        <button type="submit" class="btn btn-soft-danger btn-action-danger">작성자 차단</button>
+                    </form>
+
+                    <form sec:authorize="isAuthenticated()"
+                          th:if="${currentUserId != null and currentUserId != boardDto.userId and myBlockedAuthor}"
+                          th:action="@{/u/blocks/{targetUserId}(targetUserId=${boardDto.userId})}"
+                          method="post">
+                        <input type="hidden" name="_method" value="patch">
+                        <button type="submit" class="btn btn-soft">차단 해제</button>
+                    </form>
+                </div>
+
+                <div class="d-flex gap-2" th:if="${currentUserId != null and currentUserId == boardDto.userId}" sec:authorize="isAuthenticated()">
+                    <button type="button" class="btn btn-outline-secondary" th:onclick="|location.href='@{/boards/{id}/edit(id=${id})}'|">수정</button>
+                    <button type="button" class="btn btn-soft-danger btn-action-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">삭제</button>
+                </div>
+            </div>
+
+            <section class="p-4 border-bottom">
+                <h2 class="h6 mb-3" th:text="|댓글 ${commentsCount}개|">댓글</h2>
+                <div th:if="${commentsCount == 0}" class="text-muted-soft">첫 댓글을 남겨보세요.</div>
+                <div class="gap-3" th:each="comment : ${comments}">
+                    <div th:replace="~{fragments/commentFragment :: commentFragment(${comment})}"></div>
+                </div>
+            </section>
+
+            <section class="p-4" sec:authorize="isAuthenticated()" th:if="${boardInteractionBlocked == null or !boardInteractionBlocked}">
+                <h3 class="h6 mb-3">댓글 작성</h3>
+                <form th:action="@{/boards/{id}/comments(id=${boardDto.getId()})}" method="post">
+                    <div class="input-group">
+                        <span class="input-group-text">내용</span>
+                        <textarea class="form-control"
+                                  name="contents"
+                                  rows="4"
+                                  aria-label="With textarea"
+                                  placeholder="@닉네임 으로 멘션할 수 있습니다."></textarea>
                     </div>
+                    <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요.</p>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-brand mt-3">댓글 달기</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="p-4 text-muted-soft" sec:authorize="isAuthenticated()" th:if="${boardInteractionBlocked != null and boardInteractionBlocked}">
+                차단 관계인 사용자와는 댓글을 주고받을 수 없습니다.
+            </section>
+        </section>
+
+        <div th:replace="~{fragments/deleteFragment :: deleteModal(@{/boards/{id}/delete(id=${boardDto.id})})}"></div>
+        <div th:replace="~{fragments/loginFragment :: loginModal}"></div>
+        <div th:replace="~{fragments/likeFragment :: likeModal}"></div>
+        <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true" sec:authorize="isAuthenticated()">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form th:action="@{/boards/{id}/reports(id=${id})}" method="post">
+                        <div class="modal-header">
+                            <h2 class="modal-title fs-5" id="reportModalLabel">게시글 신고</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="reportReason" class="form-label">신고 사유</label>
+                            <select id="reportReason" name="reason" class="form-select" required>
+                                <option value="" selected disabled>사유를 선택하세요</option>
+                                <option th:each="reason : ${reportReasons}"
+                                        th:value="${reason.name()}"
+                                        th:text="${reason.label}">
+                                    신고 사유
+                                </option>
+                            </select>
+
+                            <label for="reportDetails" class="form-label mt-3">상세 내용 (선택)</label>
+                            <textarea id="reportDetails" name="details" class="form-control" rows="4"
+                                      maxlength="500"
+                                      placeholder="추가 설명이 필요하면 입력해주세요. (최대 500자)"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+                            <button type="submit" class="btn btn-soft-danger btn-action-danger">신고 제출</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-
     </div>
-</div>
+</main>
 
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const hash = window.location.hash || '';
+        if (hash.startsWith('#comment-')) {
+            const target = document.querySelector(hash);
+            if (target) {
+                target.classList.add('comment-focus');
+                setTimeout(function () {
+                    target.classList.remove('comment-focus');
+                }, 2200);
+            }
+        }
 
+        const shareButton = document.getElementById('shareBoardButton');
+        if (shareButton) {
+            shareButton.addEventListener('click', async function () {
+                const rawSharePath = shareButton.getAttribute('data-share-url') || window.location.pathname;
+                const shareUrl = new URL(rawSharePath, window.location.origin).toString();
+                const shareData = {
+                    title: document.title || '게시글 공유',
+                    url: shareUrl
+                };
 
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                        return;
+                    } catch (ignored) {
+                    }
+                }
 
-<script src="https://cdn.ckeditor.com/ckeditor5/34.0.0/classic/ckeditor.js"></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/34.0.0/classic/translations/ko.js"></script>
-<div th:insert="~{fragments/footer}"></div>
+                try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    window.alert('게시글 링크가 복사되었습니다.');
+                } catch (ignored) {
+                    window.prompt('아래 링크를 복사하세요.', shareUrl);
+                }
+            });
+        }
+
+        const reportModal = document.getElementById('reportModal');
+        if (reportModal) {
+            const reportReason = reportModal.querySelector('#reportReason');
+            const reportDetails = reportModal.querySelector('#reportDetails');
+            const reportForm = reportModal.querySelector('form');
+
+            function syncReportDetailsRequirement() {
+                if (!reportReason || !reportDetails) {
+                    return;
+                }
+                const needDetails = reportReason.value === 'OTHER';
+                reportDetails.required = needDetails;
+                reportDetails.placeholder = needDetails
+                    ? '기타 사유는 상세 설명을 반드시 입력해주세요. (최대 500자)'
+                    : '추가 설명이 필요하면 입력해주세요. (최대 500자)';
+            }
+
+            if (reportReason && reportDetails) {
+                reportReason.addEventListener('change', syncReportDetailsRequirement);
+                syncReportDetailsRequirement();
+            }
+
+            if (reportForm && reportReason && reportDetails) {
+                reportForm.addEventListener('submit', function (event) {
+                    if (reportReason.value === 'OTHER' && !reportDetails.value.trim()) {
+                        event.preventDefault();
+                        window.alert('기타 사유는 상세 내용을 입력해주세요.');
+                        reportDetails.focus();
+                    }
+                });
+            }
+        }
+
+        const contentRoot = document.querySelector('.board-detail-content');
+        if (!contentRoot) {
+            return;
+        }
+
+        const images = contentRoot.querySelectorAll('img[src]');
+        const localImagePaths = [];
+
+        images.forEach(function (img) {
+            const rawSrc = (img.getAttribute('src') || '').trim();
+            if (!rawSrc) {
+                return;
+            }
+
+            let pathName = '';
+            try {
+                pathName = new URL(rawSrc, window.location.origin).pathname || '';
+            } catch (ignored) {
+                return;
+            }
+
+            if (!pathName.startsWith('/images/')) {
+                return;
+            }
+
+            const originalViewUrl = '/api/images/original?url=' + encodeURIComponent(pathName);
+            localImagePaths.push(pathName);
+
+            img.style.cursor = 'zoom-in';
+            img.title = '원본 이미지 새 탭 열기';
+            img.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                window.open(originalViewUrl, '_blank', 'noopener,noreferrer');
+            });
+        });
+
+        if (new Set(localImagePaths).size > 0) {
+            const boardIdMatch = window.location.pathname.match(/^\/boards\/(\d+)(?:\/.*)?$/);
+            if (boardIdMatch && boardIdMatch[1]) {
+                const bulkDownloadWrapper = document.createElement('div');
+                bulkDownloadWrapper.className = 'p-4 border-bottom text-end';
+
+                const bulkDownloadLink = document.createElement('a');
+                bulkDownloadLink.className = 'btn btn-sm btn-outline-primary';
+                bulkDownloadLink.href = '/api/images/boards/' + encodeURIComponent(boardIdMatch[1]) + '/zip';
+                bulkDownloadLink.textContent = '이미지 일괄 다운로드 (ZIP)';
+
+                bulkDownloadWrapper.appendChild(bulkDownloadLink);
+                contentRoot.insertAdjacentElement('afterend', bulkDownloadWrapper);
+            }
+        }
+    });
+</script>
 </body>
 </html>

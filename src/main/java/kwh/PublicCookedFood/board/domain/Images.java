@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "images", indexes = {
-        @Index(name = "idx_images_post_id_status", columnList = "post_id, status"),
+        @Index(name = "idx_images_status_reg_time", columnList = "status, regTime"),
         @Index(name = "idx_images_url_status", columnList = "imgUrl, status")
 })
 public class Images extends BaseEntity {
@@ -26,14 +26,10 @@ public class Images extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; //ID
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", referencedColumnName = "id")
-    private Board board; // 게시글 번호
-
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String originalFilename; //원본 파일
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String savedFilename; // 저장 파일(서버)
 
     @Column(nullable = false, length = 500)
@@ -50,10 +46,9 @@ public class Images extends BaseEntity {
     private ImageStatus status;
 
     @Builder
-    public Images(Long id, Board board, String originalFilename, String savedFilename, String imgUrl,
+    public Images(Long id, String originalFilename, String savedFilename, String imgUrl,
                   String contentType, Long fileSize, ImageStatus status) {
         this.id = id;
-        this.board = board;
         this.originalFilename = originalFilename;
         this.savedFilename = savedFilename;
         this.imgUrl = imgUrl;
@@ -77,8 +72,7 @@ public class Images extends BaseEntity {
                 .build();
     }
 
-    public void attachTo(Board board) {
-        this.board = board;
+    public void attach() {
         this.status = ImageStatus.ATTACHED;
     }
 

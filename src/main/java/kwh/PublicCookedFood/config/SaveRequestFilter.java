@@ -19,13 +19,16 @@ public class SaveRequestFilter extends OncePerRequestFilter {
     private static final String HOME_PAGE_URI = "/recipes";
     private static final String LOGIN_PAGE_URI = "/u/login";
     private static final String SIGNUP_PAGE_URI = "/u/signup";
+    private static final String ACCOUNT_RECOVER_URI_PATTERN = "/u/account/**";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null && authentication.isAuthenticated() && !(authentication instanceof AnonymousAuthenticationToken)) {
-            if (new AntPathRequestMatcher(LOGIN_PAGE_URI).matches(request) || new AntPathRequestMatcher(SIGNUP_PAGE_URI).matches(request)) {
+            if (new AntPathRequestMatcher(LOGIN_PAGE_URI).matches(request)
+                    || new AntPathRequestMatcher(SIGNUP_PAGE_URI).matches(request)
+                    || new AntPathRequestMatcher(ACCOUNT_RECOVER_URI_PATTERN).matches(request)) {
                 response.sendRedirect(HOME_PAGE_URI);
                 return;
             }

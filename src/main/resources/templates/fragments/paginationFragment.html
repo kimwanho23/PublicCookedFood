@@ -2,60 +2,91 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Pagination</title>
 </head>
 <body>
-<div th:fragment="pagination(url, startPage, endPage, currentPage, hasPreviousGroup, hasNextGroup, keyword, search, section, type, nation, ingredient)">
-    <div class="d-flex gap-2 justify-content-center py-5">
-        <nav aria-label="Pagination">
-            <ul class="pagination">
-                <!-- Previous group button -->
-                <li class="page-item" th:classappend="${hasPreviousGroup} ? '' : 'disabled'">
-                    <a class="page-link"
-                       th:href="@{${url}(
+<div th:fragment="pagination(url, startPage, endPage, currentPage, totalPages, hasPreviousGroup, hasNextGroup, keyword, search, section, orderBy, type, nation, ingredient)">
+    <nav aria-label="Pagination" class="mt-2">
+        <ul class="pagination pc-pagination justify-content-center flex-wrap mb-0">
+            <li class="page-item" th:classappend="${currentPage > 0} ? '' : 'disabled'">
+                <a class="page-link page-link-nav"
+                   th:href="@{${url}(
+                            page=${1},
+                            keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
+                            search=${search != null and !#strings.isEmpty(search) ? search : null},
+                            section=${section != null and !#strings.isEmpty(section) ? section : null},
+                            orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null},
+                            type=${type != null and !#lists.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
+                       )}"
+                   th:attr="aria-disabled=${currentPage <= 0}">처음</a>
+            </li>
+
+            <li class="page-item" th:classappend="${hasPreviousGroup} ? '' : 'disabled'">
+                <a class="page-link page-link-nav"
+                   th:href="@{${url}(
                             page=${startPage > 10 ? startPage - 9 : 1},
                             keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
                             search=${search != null and !#strings.isEmpty(search) ? search : null},
                             section=${section != null and !#strings.isEmpty(section) ? section : null},
-                            type=${type != null and !#strings.isEmpty(type) ? type : null},
-                            nation=${nation != null and !#strings.isEmpty(nation) ? nation : null},
-                            ingredient=${ingredient != null and !#strings.isEmpty(ingredient) ? ingredient : null}
+                            orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null},
+                            type=${type != null and !#lists.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
                        )}"
-                       th:attr="aria-disabled=${!hasPreviousGroup}">Previous</a>
-                </li>
+                   th:attr="aria-disabled=${!hasPreviousGroup}">이전</a>
+            </li>
 
-                <!-- Page numbers -->
-                <li th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
-                    class="page-item" th:classappend="${pageNum == currentPage} ? 'active' : ''">
-                    <a class="page-link" th:href="@{${url}(
+            <li th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                class="page-item"
+                th:classappend="${pageNum == currentPage} ? 'active' : ''">
+                <a class="page-link"
+                   th:href="@{${url}(
                             page=${pageNum + 1},
                             keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
                             search=${search != null and !#strings.isEmpty(search) ? search : null},
                             section=${section != null and !#strings.isEmpty(section) ? section : null},
-                            type=${type != null and !#strings.isEmpty(type) ? type : null},
-                            nation=${nation != null and !#strings.isEmpty(nation) ? nation : null},
-                            ingredient=${ingredient != null and !#strings.isEmpty(ingredient) ? ingredient : null}
+                            orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null},
+                            type=${type != null and !#lists.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
                         )}"
-                       th:text="${pageNum + 1}">1</a>
-                </li>
+                   th:text="${pageNum + 1}">1</a>
+            </li>
 
-                <!-- Next group button -->
-                <li class="page-item" th:classappend="${hasNextGroup} ? '' : 'disabled'">
-                    <a class="page-link"
-                       th:href="@{${url}(
+            <li class="page-item" th:classappend="${hasNextGroup} ? '' : 'disabled'">
+                <a class="page-link page-link-nav"
+                   th:href="@{${url}(
                             page=${endPage + 2},
                             keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
                             search=${search != null and !#strings.isEmpty(search) ? search : null},
                             section=${section != null and !#strings.isEmpty(section) ? section : null},
-                            type=${type != null and !#strings.isEmpty(type) ? type : null},
-                            nation=${nation != null and !#strings.isEmpty(nation) ? nation : null},
-                            ingredient=${ingredient != null and !#strings.isEmpty(ingredient) ? ingredient : null}
+                            orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null},
+                            type=${type != null and !#lists.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
                        )}"
-                       th:attr="aria-disabled=${!hasNextGroup}">Next</a>
-                </li>
-            </ul>
-        </nav>
-    </div>
+                   th:attr="aria-disabled=${!hasNextGroup}">다음</a>
+            </li>
+
+            <li class="page-item"
+                th:classappend="${(totalPages != null and totalPages > 1 and currentPage < totalPages - 1) ? '' : 'disabled'}">
+                <a class="page-link page-link-nav"
+                   th:href="@{${url}(
+                            page=${(totalPages != null and totalPages > 0) ? totalPages : 1},
+                            keyword=${keyword != null and !#strings.isEmpty(keyword) ? keyword : null},
+                            search=${search != null and !#strings.isEmpty(search) ? search : null},
+                            section=${section != null and !#strings.isEmpty(section) ? section : null},
+                            orderBy=${orderBy != null and !#strings.isEmpty(orderBy) ? orderBy : null},
+                            type=${type != null and !#lists.isEmpty(type) ? type : null},
+                            nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
+                            ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
+                       )}"
+                   th:attr="aria-disabled=${totalPages == null or totalPages <= 1 or currentPage >= totalPages - 1}">마지막</a>
+            </li>
+        </ul>
+    </nav>
 </div>
 </body>
 </html>

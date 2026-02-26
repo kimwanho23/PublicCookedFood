@@ -20,6 +20,8 @@ public class CommentResponse {
 
     private String name;
 
+    private String profileImageUrl;
+
     private Long boardId;
 
     private String contents;
@@ -45,6 +47,9 @@ public class CommentResponse {
     }
 
     public boolean areAllRepliesDeleted() {
-        return isDeleted() && replies.stream().allMatch(CommentResponse::isDeleted);
+        if (!isDeleted()) {
+            return false;
+        }
+        return replies.stream().allMatch(reply -> reply.isDeleted() && reply.areAllRepliesDeleted());
     }
 }

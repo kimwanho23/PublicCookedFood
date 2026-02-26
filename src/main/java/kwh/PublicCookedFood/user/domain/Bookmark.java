@@ -32,5 +32,4 @@ public class Bookmark {
         this.user = user;
         this.recipeID = recipeID;
     }
-
 }
