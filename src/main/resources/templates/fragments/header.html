@@ -1,60 +1,758 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <link th:href="@{/css/bootstrap.min.css}"
-          href="../css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
-    <title>Title</title>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@100..900&display=swap');
-    </style>
-
-
+    <title>Header</title>
 </head>
-<body style="font-family: 'Noto Sans KR', sans-serif;">
+<body>
+<th:block th:fragment="headResources(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}">
+    <title th:text="${title != null ? title : 'PubCook'}">PubCook</title>
+    <script>
+        (function () {
+            const STORAGE_THEME_MODE = 'pubcook.theme.mode';
+            const STORAGE_FONT_SIZE = 'pubcook.ui.fontSize';
+            const STORAGE_LIST_DENSITY = 'pubcook.ui.listDensity';
+            const STORAGE_NOTIFICATION_UNREAD_ONLY_DEFAULT = 'pubcook.ui.notificationUnreadOnlyDefault';
+            const doc = document.documentElement;
+            const darkMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
-<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/recipes">PubCook</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+            function readStorage(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (error) {
+                    return null;
+                }
+            }
 
-        <div class="collapse navbar-collapse" id="navbarCollapse">
-            <ul class="navbar-nav me-auto mb-2 mb-md-0">
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/recipes">공공 레시피</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/boards">게시판</a>
-                </li>
-            </ul>
+            function writeStorage(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            }
 
-            <a sec:authorize="!isAuthenticated()" id="loginButton" th:href="@{/u/login}" style="display: inline;">
-                <button type="button" class="btn btn-dark" style="margin-right: 20px;">로그인</button>
+            function normalizeThemeMode(mode) {
+                return mode === 'light' || mode === 'dark' || mode === 'system' ? mode : 'system';
+            }
+
+            function normalizeFontSize(value) {
+                return value === 'large' ? 'large' : 'normal';
+            }
+
+            function normalizeListDensity(value) {
+                return value === 'compact' ? 'compact' : 'comfortable';
+            }
+
+            function normalizeUnreadOnlyDefault(value) {
+                return value === true || value === 'true';
+            }
+
+            function resolveTheme(mode) {
+                if (mode === 'light' || mode === 'dark') {
+                    return mode;
+                }
+                return darkMedia && darkMedia.matches ? 'dark' : 'light';
+            }
+
+            function readThemeMode() {
+                return normalizeThemeMode(readStorage(STORAGE_THEME_MODE));
+            }
+
+            function readUiSettings() {
+                return {
+                    fontSize: normalizeFontSize(readStorage(STORAGE_FONT_SIZE)),
+                    listDensity: normalizeListDensity(readStorage(STORAGE_LIST_DENSITY)),
+                    notificationUnreadOnlyDefault: normalizeUnreadOnlyDefault(readStorage(STORAGE_NOTIFICATION_UNREAD_ONLY_DEFAULT))
+                };
+            }
+
+            function applyThemeMode(mode, emitEvent) {
+                const normalizedMode = normalizeThemeMode(mode);
+                const resolvedTheme = resolveTheme(normalizedMode);
+                doc.setAttribute('data-theme-mode', normalizedMode);
+                doc.setAttribute('data-theme', resolvedTheme);
+                if (emitEvent) {
+                    window.dispatchEvent(new CustomEvent('pubcook-theme-change', {
+                        detail: {
+                            mode: normalizedMode,
+                            theme: resolvedTheme
+                        }
+                    }));
+                }
+            }
+
+            function applyUiSettings(settings, emitEvent) {
+                const normalized = {
+                    fontSize: normalizeFontSize(settings && settings.fontSize),
+                    listDensity: normalizeListDensity(settings && settings.listDensity),
+                    notificationUnreadOnlyDefault: normalizeUnreadOnlyDefault(settings && settings.notificationUnreadOnlyDefault)
+                };
+
+                doc.setAttribute('data-font-size', normalized.fontSize);
+                doc.setAttribute('data-density', normalized.listDensity);
+                doc.setAttribute(
+                    'data-notification-unread-only-default',
+                    normalized.notificationUnreadOnlyDefault ? 'true' : 'false'
+                );
+
+                if (emitEvent) {
+                    window.dispatchEvent(new CustomEvent('pubcook-ui-settings-change', {
+                        detail: normalized
+                    }));
+                }
+                return normalized;
+            }
+
+            function setThemeMode(mode) {
+                const normalizedMode = normalizeThemeMode(mode);
+                writeStorage(STORAGE_THEME_MODE, normalizedMode);
+                applyThemeMode(normalizedMode, true);
+            }
+
+            function updateUiSettings(partialSettings) {
+                const current = readUiSettings();
+                const next = {
+                    fontSize: partialSettings && partialSettings.fontSize != null
+                        ? normalizeFontSize(partialSettings.fontSize)
+                        : current.fontSize,
+                    listDensity: partialSettings && partialSettings.listDensity != null
+                        ? normalizeListDensity(partialSettings.listDensity)
+                        : current.listDensity,
+                    notificationUnreadOnlyDefault: partialSettings && partialSettings.notificationUnreadOnlyDefault != null
+                        ? normalizeUnreadOnlyDefault(partialSettings.notificationUnreadOnlyDefault)
+                        : current.notificationUnreadOnlyDefault
+                };
+
+                writeStorage(STORAGE_FONT_SIZE, next.fontSize);
+                writeStorage(STORAGE_LIST_DENSITY, next.listDensity);
+                writeStorage(
+                    STORAGE_NOTIFICATION_UNREAD_ONLY_DEFAULT,
+                    next.notificationUnreadOnlyDefault ? 'true' : 'false'
+                );
+                return applyUiSettings(next, true);
+            }
+
+            window.PubCookTheme = {
+                getMode: readThemeMode,
+                setMode: setThemeMode,
+                applyCurrent: function () {
+                    applyThemeMode(readThemeMode(), false);
+                }
+            };
+
+            window.PubCookSettings = {
+                getFontSize: function () {
+                    return readUiSettings().fontSize;
+                },
+                setFontSize: function (fontSize) {
+                    return updateUiSettings({fontSize: fontSize});
+                },
+                getListDensity: function () {
+                    return readUiSettings().listDensity;
+                },
+                setListDensity: function (density) {
+                    return updateUiSettings({listDensity: density});
+                },
+                isNotificationUnreadOnlyDefault: function () {
+                    return readUiSettings().notificationUnreadOnlyDefault;
+                },
+                setNotificationUnreadOnlyDefault: function (enabled) {
+                    return updateUiSettings({notificationUnreadOnlyDefault: enabled});
+                },
+                setAll: function (settings) {
+                    return updateUiSettings(settings || {});
+                },
+                getAll: readUiSettings,
+                applyCurrent: function () {
+                    applyUiSettings(readUiSettings(), false);
+                }
+            };
+
+            applyThemeMode(readThemeMode(), false);
+            applyUiSettings(readUiSettings(), false);
+
+            if (darkMedia) {
+                const onSystemThemeChanged = function () {
+                    if (readThemeMode() === 'system') {
+                        applyThemeMode('system', true);
+                    }
+                };
+                if (typeof darkMedia.addEventListener === 'function') {
+                    darkMedia.addEventListener('change', onSystemThemeChanged);
+                } else if (typeof darkMedia.addListener === 'function') {
+                    darkMedia.addListener(onSystemThemeChanged);
+                }
+            }
+        })();
+    </script>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/app-theme.css}" rel="stylesheet">
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</th:block>
+
+<header th:fragment="siteHeader" class="site-header sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark py-2">
+        <div class="container">
+            <a class="navbar-brand site-brand" th:href="@{/recipes}">
+                <span class="site-brand-mark">P</span>
+                <span class="site-brand-text">
+                    <strong>PubCook</strong>
+                    <small>Recipe Archive & Community</small>
+                </span>
             </a>
-            <form sec:authorize="isAuthenticated()" th:action="@{/u/logout}" method="post" style="display: inline;">
-                <div class="dropdown">
-                    <button type="button" class="btn btn-dark dropdown-toggle nav-item" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span th:text="${#authentication != null and #authentication.principal != null and #authentication.principal.user != null and #authentication.principal.user.name != null ? (#authentication.principal.user.name.length() > 7 ? #authentication.principal.user.name.substring(0, 7) + '...' : #authentication.principal.user.name) : '사용자'}"></span>
-                        <span><img th:src="@{/img/person.svg}" alt="user-image"/></span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end mx-0 shadow w-220px" data-bs-theme="light">
-                        <li><a class="dropdown-item d-flex gap-2 align-items-center" th:href="@{/bookmarks}">북마크</a></li>
-                        <li><a class="dropdown-item d-flex gap-2 align-items-center" href="#">나의 글</a></li>
-                        <li><a class="dropdown-item d-flex gap-2 align-items-center" th:href="@{/u/profile}">설정</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><button type="submit" class="dropdown-item dropdown-item-danger d-flex gap-2 align-items-center">로그아웃</button></li>
-                    </ul>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#siteNavbar"
+                    aria-controls="siteNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="siteNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 site-nav-list">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/recipes}">레시피 탐색</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/boards}">커뮤니티</a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a sec:authorize="!isAuthenticated()" class="btn btn-outline-light btn-sm" th:href="@{/u/login}">
+                        로그인
+                    </a>
+
+                    <th:block sec:authorize="isAuthenticated()">
+                        <div class="dropdown notification-dropdown">
+                            <button id="headerNotificationToggle"
+                                    type="button"
+                                    class="btn btn-outline-light btn-sm notification-toggle"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <span>알림</span>
+                                <span id="headerNotificationBadge" class="badge rounded-pill text-bg-danger ms-1 d-none">0</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end site-menu notification-menu p-0"
+                                 aria-labelledby="headerNotificationToggle">
+                                <div class="notification-menu-header">
+                                    <strong>알림</strong>
+                                    <div class="notification-header-controls">
+                                        <label class="notification-setting-toggle" for="headerNotificationEnabled">
+                                            <input id="headerNotificationEnabled" type="checkbox" class="form-check-input">
+                                            <span>수신</span>
+                                        </label>
+                                        <label class="notification-unread-toggle" for="headerNotificationUnreadOnly">
+                                            <input id="headerNotificationUnreadOnly" type="checkbox" class="form-check-input">
+                                            <span>읽지 않음만</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="headerNotificationList" class="notification-list">
+                                    <div class="notification-empty">새 알림이 없습니다.</div>
+                                </div>
+                                <div class="notification-menu-footer">
+                                    <button type="button" id="headerNotificationReadAll" class="btn btn-sm btn-soft">모두 읽음</button>
+                                    <button type="button" id="headerNotificationDeleteAll" class="btn btn-sm btn-soft-danger btn-action-danger">전체 삭제</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form th:action="@{/u/logout}" method="post" class="d-inline-flex">
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span th:text="${#authentication != null and #authentication.principal != null and #authentication.principal.user != null and #authentication.principal.user.name != null ? (#authentication.principal.user.name.length() > 7 ? #authentication.principal.user.name.substring(0, 7) + '...' : #authentication.principal.user.name) : '사용자'}"></span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end site-menu">
+                                    <li><a class="dropdown-item" th:href="@{/bookmarks}">북마크</a></li>
+                                    <li><a class="dropdown-item" th:href="@{/boards/scraps}">스크랩 글</a></li>
+                                    <li><a class="dropdown-item" th:href="@{/u/{userId}(userId=${#authentication.principal.user.id})}">내 프로필</a></li>
+                                    <li><a class="dropdown-item" th:href="@{/u/profile}">프로필 수정</a></li>
+                                    <li><a class="dropdown-item" th:href="@{/u/settings}">환경설정</a></li>
+                                    <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/boards/dashboard}">운영 대시보드</a></li>
+                                    <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/boards/policy}">게시판 정책</a></li>
+                                    <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/boards/reports(status='OPEN')}">신고 관리</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><button type="submit" class="dropdown-item text-danger">로그아웃</button></li>
+                                </ul>
+                            </div>
+                        </form>
+                    </th:block>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
+
+    <script sec:authorize="isAuthenticated()">
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.getElementById('headerNotificationToggle');
+            const badge = document.getElementById('headerNotificationBadge');
+            const list = document.getElementById('headerNotificationList');
+            const readAllButton = document.getElementById('headerNotificationReadAll');
+            const deleteAllButton = document.getElementById('headerNotificationDeleteAll');
+            const unreadOnlyToggle = document.getElementById('headerNotificationUnreadOnly');
+            const enabledToggle = document.getElementById('headerNotificationEnabled');
+            if (!toggle || !badge || !list || !readAllButton || !deleteAllButton || !unreadOnlyToggle || !enabledToggle) {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || '';
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || '';
+            const settingsApi = window.PubCookSettings;
+            let eventSource = null;
+            let reconnectTimer = null;
+            let unreadOnly = false;
+            let notificationEnabled = true;
+
+            function makeHeaders(includeCsrf) {
+                const headers = {'X-Requested-With': 'XMLHttpRequest'};
+                if (includeCsrf && csrfHeader && csrfToken) {
+                    headers[csrfHeader] = csrfToken;
+                }
+                return headers;
+            }
+
+            function formatDate(value) {
+                if (!value) {
+                    return '';
+                }
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return '';
+                }
+                return date.toLocaleString('ko-KR', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            function setBadgeCount(unreadCount) {
+                if (unreadCount > 0) {
+                    badge.classList.remove('d-none');
+                    badge.textContent = String(unreadCount > 99 ? '99+' : unreadCount);
+                    return;
+                }
+                badge.classList.add('d-none');
+                badge.textContent = '0';
+            }
+
+            function parseEventData(event) {
+                if (!event || !event.data) {
+                    return null;
+                }
+                try {
+                    return JSON.parse(event.data);
+                } catch (ignored) {
+                    return null;
+                }
+            }
+
+            function resolveSafeTargetPath(rawTargetPath) {
+                if (!rawTargetPath) {
+                    return '/boards';
+                }
+                try {
+                    const url = new URL(rawTargetPath, window.location.origin);
+                    if (url.origin !== window.location.origin) {
+                        return '/boards';
+                    }
+                    if (!url.pathname || !url.pathname.startsWith('/') || url.pathname.startsWith('//')) {
+                        return '/boards';
+                    }
+                    return url.pathname + (url.search || '') + (url.hash || '');
+                } catch (ignored) {
+                    return '/boards';
+                }
+            }
+
+            function getNotificationApiUrl() {
+                const params = new URLSearchParams({page: '0', size: '8'});
+                params.set('unreadOnly', unreadOnly ? 'true' : 'false');
+                return '/api/notifications?' + params.toString();
+            }
+
+            function readUnreadOnlyDefault() {
+                if (settingsApi && typeof settingsApi.isNotificationUnreadOnlyDefault === 'function') {
+                    return settingsApi.isNotificationUnreadOnlyDefault();
+                }
+                return document.documentElement.getAttribute('data-notification-unread-only-default') === 'true';
+            }
+
+            function applyUnreadOnlyPreference(enabled, refreshList) {
+                unreadOnly = enabled === true;
+                unreadOnlyToggle.checked = unreadOnly;
+                updateDeleteAllLabel();
+                if (refreshList) {
+                    void refreshNotifications();
+                }
+            }
+
+            function updateDeleteAllLabel() {
+                deleteAllButton.textContent = unreadOnly ? '읽지않음 삭제' : '전체 삭제';
+            }
+
+            function renderEmptyState() {
+                const empty = document.createElement('div');
+                empty.className = 'notification-empty';
+                empty.textContent = unreadOnly ? '읽지 않은 알림이 없습니다.' : '알림이 없습니다.';
+                list.appendChild(empty);
+            }
+
+            function createNotificationElement(notification) {
+                const row = document.createElement('div');
+                row.className = 'notification-item-row';
+                if (!notification.isRead) {
+                    row.classList.add('is-unread');
+                }
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'dropdown-item notification-item';
+                button.dataset.notificationId = String(notification.id);
+                button.dataset.targetPath = notification.targetPath || '/boards';
+
+                const title = document.createElement('div');
+                title.className = 'notification-item-title';
+                const actor = notification.actorName || '사용자';
+                switch (notification.type) {
+                    case 'COMMENT_REPLY':
+                        title.textContent = actor + '님이 내 댓글에 답글을 남겼습니다.';
+                        break;
+                    case 'COMMENT_MENTION':
+                        title.textContent = actor + '님이 댓글에서 나를 멘션했습니다.';
+                        break;
+                    case 'BOARD_MENTION':
+                        title.textContent = actor + '님이 게시글에서 나를 멘션했습니다.';
+                        break;
+                    case 'REPORT_RESOLVED':
+                        title.textContent = '신고한 게시글이 처리 완료되었습니다.';
+                        break;
+                    case 'REPORT_REJECTED':
+                        title.textContent = '신고한 게시글 처리 결과가 반려되었습니다.';
+                        break;
+                    default:
+                        title.textContent = actor + '님이 내 게시글에 댓글을 남겼습니다.';
+                        break;
+                }
+
+                const preview = document.createElement('div');
+                preview.className = 'notification-item-preview';
+                preview.textContent = notification.contentPreview || '';
+
+                const time = document.createElement('div');
+                time.className = 'notification-item-time';
+                time.textContent = formatDate(notification.regTime);
+
+                button.appendChild(title);
+                if (preview.textContent) {
+                    button.appendChild(preview);
+                }
+                button.appendChild(time);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'btn btn-sm btn-soft-danger btn-action-danger notification-item-delete';
+                deleteButton.dataset.notificationDeleteId = String(notification.id);
+                deleteButton.setAttribute('aria-label', '알림 삭제');
+                deleteButton.textContent = '삭제';
+
+                row.appendChild(button);
+                row.appendChild(deleteButton);
+                return row;
+            }
+
+            function renderNotifications(items) {
+                list.innerHTML = '';
+                if (!items || items.length === 0) {
+                    renderEmptyState();
+                    return;
+                }
+                items.forEach(function (item) {
+                    list.appendChild(createNotificationElement(item));
+                });
+            }
+
+            async function markAsRead(notificationId) {
+                const response = await fetch('/api/notifications/' + notificationId + '/read', {
+                    method: 'PATCH',
+                    headers: makeHeaders(true)
+                });
+                return response.ok;
+            }
+
+            async function deleteNotification(notificationId) {
+                const response = await fetch('/api/notifications/' + notificationId, {
+                    method: 'DELETE',
+                    headers: makeHeaders(true)
+                });
+                return response.ok;
+            }
+
+            async function deleteAllNotifications() {
+                const response = await fetch('/api/notifications?unreadOnly=' + (unreadOnly ? 'true' : 'false'), {
+                    method: 'DELETE',
+                    headers: makeHeaders(true)
+                });
+                return response.ok;
+            }
+
+            async function loadNotificationSetting() {
+                const response = await fetch('/api/notifications/setting', {
+                    method: 'GET',
+                    headers: makeHeaders(false)
+                });
+                if (!response.ok) {
+                    return notificationEnabled;
+                }
+                const payload = await response.json();
+                notificationEnabled = payload.enabled !== false;
+                enabledToggle.checked = notificationEnabled;
+                return notificationEnabled;
+            }
+
+            async function updateNotificationSetting(enabled) {
+                const response = await fetch('/api/notifications/setting?enabled=' + (enabled ? 'true' : 'false'), {
+                    method: 'PATCH',
+                    headers: makeHeaders(true)
+                });
+                if (!response.ok) {
+                    return false;
+                }
+                const payload = await response.json();
+                notificationEnabled = payload.enabled !== false;
+                enabledToggle.checked = notificationEnabled;
+
+                if (!notificationEnabled) {
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    if (reconnectTimer !== null) {
+                        window.clearTimeout(reconnectTimer);
+                        reconnectTimer = null;
+                    }
+                } else {
+                    connectNotificationStream();
+                }
+                return true;
+            }
+
+            async function refreshNotifications() {
+                const response = await fetch(getNotificationApiUrl(), {
+                    method: 'GET',
+                    headers: makeHeaders(false)
+                });
+                if (!response.ok) {
+                    return;
+                }
+                const payload = await response.json();
+                renderNotifications(payload.notifications || []);
+                setBadgeCount(payload.unreadCount || 0);
+            }
+
+            function scheduleReconnect() {
+                if (reconnectTimer !== null) {
+                    return;
+                }
+                reconnectTimer = window.setTimeout(function () {
+                    reconnectTimer = null;
+                    void (async function reconnectIfEnabled() {
+                        try {
+                            await loadNotificationSetting();
+                        } catch (ignored) {
+                        }
+                        if (!notificationEnabled) {
+                            return;
+                        }
+                        connectNotificationStream();
+                    })();
+                }, 4000);
+            }
+
+            function connectNotificationStream() {
+                if (typeof window.EventSource === 'undefined') {
+                    return;
+                }
+                if (!notificationEnabled) {
+                    return;
+                }
+                if (eventSource) {
+                    eventSource.close();
+                }
+                eventSource = new EventSource('/api/notifications/stream');
+
+                eventSource.addEventListener('connected', function (event) {
+                    const payload = parseEventData(event);
+                    if (payload && typeof payload.unreadCount === 'number') {
+                        setBadgeCount(payload.unreadCount);
+                    }
+                });
+
+                eventSource.addEventListener('notification', function (event) {
+                    const payload = parseEventData(event);
+                    if (payload && typeof payload.unreadCount === 'number') {
+                        setBadgeCount(payload.unreadCount);
+                    }
+                    void refreshNotifications();
+                });
+
+                eventSource.onerror = function () {
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    scheduleReconnect();
+                };
+            }
+
+            toggle.addEventListener('show.bs.dropdown', function () {
+                void refreshNotifications();
+            });
+
+            list.addEventListener('click', async function (event) {
+                const deleteTarget = event.target.closest('button[data-notification-delete-id]');
+                if (deleteTarget) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const notificationId = deleteTarget.dataset.notificationDeleteId;
+                    deleteTarget.disabled = true;
+                    try {
+                        const deleted = await deleteNotification(notificationId);
+                        if (deleted) {
+                            await refreshNotifications();
+                        }
+                    } finally {
+                        deleteTarget.disabled = false;
+                    }
+                    return;
+                }
+
+                const targetButton = event.target.closest('button[data-notification-id]');
+                if (!targetButton) {
+                    return;
+                }
+                event.preventDefault();
+                const notificationId = targetButton.dataset.notificationId;
+                const targetPath = resolveSafeTargetPath(targetButton.dataset.targetPath);
+                try {
+                    await markAsRead(notificationId);
+                } finally {
+                    window.location.href = targetPath;
+                }
+            });
+
+            readAllButton.addEventListener('click', async function () {
+                readAllButton.disabled = true;
+                try {
+                    const response = await fetch('/api/notifications/read-all', {
+                        method: 'PATCH',
+                        headers: makeHeaders(true)
+                    });
+                    if (response.ok) {
+                        await refreshNotifications();
+                    }
+                } finally {
+                    readAllButton.disabled = false;
+                }
+            });
+
+            deleteAllButton.addEventListener('click', async function () {
+                const confirmMessage = unreadOnly
+                    ? '읽지 않은 알림을 모두 삭제할까요?'
+                    : '모든 알림을 삭제할까요?';
+                if (!window.confirm(confirmMessage)) {
+                    return;
+                }
+
+                deleteAllButton.disabled = true;
+                try {
+                    const deleted = await deleteAllNotifications();
+                    if (deleted) {
+                        await refreshNotifications();
+                    }
+                } finally {
+                    deleteAllButton.disabled = false;
+                }
+            });
+
+            enabledToggle.addEventListener('change', async function () {
+                const requestedValue = enabledToggle.checked;
+                enabledToggle.disabled = true;
+                try {
+                    const updated = await updateNotificationSetting(requestedValue);
+                    if (!updated) {
+                        enabledToggle.checked = notificationEnabled;
+                        window.alert('알림 설정 변경에 실패했습니다.');
+                        return;
+                    }
+                    await refreshNotifications();
+                } finally {
+                    enabledToggle.disabled = false;
+                }
+            });
+
+            unreadOnlyToggle.addEventListener('change', function () {
+                const enabled = unreadOnlyToggle.checked;
+                applyUnreadOnlyPreference(enabled, true);
+                if (settingsApi && typeof settingsApi.setNotificationUnreadOnlyDefault === 'function') {
+                    settingsApi.setNotificationUnreadOnlyDefault(enabled);
+                }
+            });
+
+            window.addEventListener('pubcook-notification-setting', function (event) {
+                const enabled = !(event && event.detail && event.detail.enabled === false);
+                notificationEnabled = enabled;
+                enabledToggle.checked = enabled;
+                if (!enabled) {
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    if (reconnectTimer !== null) {
+                        window.clearTimeout(reconnectTimer);
+                        reconnectTimer = null;
+                    }
+                    return;
+                }
+                connectNotificationStream();
+            });
+
+            window.addEventListener('pubcook-ui-settings-change', function (event) {
+                const nextValue = event && event.detail && event.detail.notificationUnreadOnlyDefault;
+                if (typeof nextValue !== 'boolean' || unreadOnly === nextValue) {
+                    return;
+                }
+                applyUnreadOnlyPreference(nextValue, true);
+            });
+
+            window.addEventListener('beforeunload', function () {
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+                if (reconnectTimer !== null) {
+                    window.clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+            });
+
+            async function initializeNotifications() {
+                applyUnreadOnlyPreference(readUnreadOnlyDefault(), false);
+                await loadNotificationSetting();
+                if (notificationEnabled) {
+                    connectNotificationStream();
+                }
+                await refreshNotifications();
+            }
+
+            void initializeNotifications();
+        });
+    </script>
+</header>
 </body>
 </html>
