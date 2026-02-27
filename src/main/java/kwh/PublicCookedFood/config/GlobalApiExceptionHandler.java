@@ -3,6 +3,7 @@ package kwh.PublicCookedFood.config;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import kwh.PublicCookedFood.recipeSaveLogic.RecipeImportException;
 import kwh.PublicCookedFood.storage.StorageException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -76,6 +77,14 @@ public class GlobalApiExceptionHandler {
         log.error("Storage exception. uri={}", request.getRequestURI(), e);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                 defaultMessage(e.getMessage(), "파일 저장 중 오류가 발생했습니다."), request);
+    }
+
+    @ExceptionHandler(RecipeImportException.class)
+    public ResponseEntity<ApiErrorResponse> handleRecipeImportException(RecipeImportException e,
+                                                                        HttpServletRequest request) {
+        log.error("Recipe import exception. uri={}", request.getRequestURI(), e);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                defaultMessage(e.getMessage(), "레시피 데이터 동기화 중 오류가 발생했습니다."), request);
     }
 
     @ExceptionHandler(NoSuchElementException.class)

@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.user.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.food.repository.Recipe_INFO_Repository;
 import kwh.PublicCookedFood.user.domain.Bookmark;
@@ -23,10 +23,6 @@ public class BookmarkService {
     private final Recipe_INFO_Repository recipeInfoRepository;
     private final BookmarkRepository bookmarkRepository;
 
-    public List<Bookmark> findUserBookmarks(Users user) { //나의 북마크
-        return bookmarkRepository.findBookmarksByUserId(user.getId());
-    }
-
     public List<Bookmark> findUserBookmarks(Users user, String search) {
         String normalizedSearch = normalizeQueryText(search);
 
@@ -48,10 +44,7 @@ public class BookmarkService {
        try {
            return bookmarkRepository.findByUserAndRecipeID(user, recipe)
                    .map(existing -> existing)
-                   .orElseGet(() -> bookmarkRepository.save(Bookmark.builder()
-                           .user(user)
-                           .recipeID(recipe)
-                           .build()));
+                   .orElseGet(() -> bookmarkRepository.save(Bookmark.of(user, recipe)));
        } catch (DataIntegrityViolationException e) {
            // 동시에 중복 요청이 들어온 경우 unique 제약 충돌 후 기존 레코드 재조회
            return bookmarkRepository.findByUserAndRecipeID(user, recipe)

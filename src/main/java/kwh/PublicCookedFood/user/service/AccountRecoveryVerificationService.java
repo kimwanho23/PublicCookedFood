@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import kwh.PublicCookedFood.user.domain.Users;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -23,7 +22,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AccountRecoveryVerificationService {
 
     private static final String PASSWORD_RESET_CODE_SESSION_KEY = "passwordResetCodeState";
@@ -69,7 +67,6 @@ public class AccountRecoveryVerificationService {
             return true;
         } catch (MailException | IllegalStateException e) {
             clearPasswordResetCode(session);
-            log.warn("action=user.account_reset_password_code result=mail_failed email={}", user.getEmail(), e);
             throw new IllegalStateException("인증 코드 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
     }

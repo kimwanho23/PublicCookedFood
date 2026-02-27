@@ -6,19 +6,23 @@ import kwh.PublicCookedFood.config.oauth2.LoginUser;
 import kwh.PublicCookedFood.notification.dto.response.NotificationDeleteAllResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationListResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationReadAllResponse;
-import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationSettingResponse;
-import kwh.PublicCookedFood.notification.service.NotificationService;
+import kwh.PublicCookedFood.notification.facade.NotificationFacade;
 import kwh.PublicCookedFood.user.domain.Users;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
@@ -28,14 +32,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Tag(name = "Notification API")
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    private final NotificationFacade notificationFacade;
 
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@LoginUser Users user) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        return notificationService.subscribe(user.getId());
+        return notificationFacade.subscribe(user);
     }
 
     @GetMapping("")
@@ -44,57 +45,34 @@ public class NotificationController {
             @RequestParam(defaultValue = "false") boolean unreadOnly,
             @PageableDefault(page = 0, size = 20, sort = "regTime", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        Page<NotificationResponse> notifications = notificationService.getNotifications(user.getId(), pageable, unreadOnly);
-        long unreadCount = notificationService.getUnreadCount(user.getId());
-        return ResponseEntity.ok(NotificationListResponse.from(notifications, unreadCount));
+        return ResponseEntity.ok(notificationFacade.getNotifications(user, pageable, unreadOnly));
     }
 
     @GetMapping("/setting")
     public ResponseEntity<NotificationSettingResponse> getNotificationSetting(@LoginUser Users user) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        boolean enabled = notificationService.isNotificationEnabled(user.getId());
-        return ResponseEntity.ok(new NotificationSettingResponse(enabled));
+        return ResponseEntity.ok(notificationFacade.getNotificationSetting(user));
     }
 
     @PatchMapping("/setting")
     public ResponseEntity<NotificationSettingResponse> updateNotificationSetting(@LoginUser Users user,
                                                                                  @RequestParam boolean enabled) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        boolean updated = notificationService.updateNotificationEnabled(user.getId(), enabled);
-        return ResponseEntity.ok(new NotificationSettingResponse(updated));
+        return ResponseEntity.ok(notificationFacade.updateNotificationSetting(user, enabled));
     }
 
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<Void> markAsRead(@LoginUser Users user, @PathVariable @Positive Long notificationId) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        notificationService.markAsRead(user.getId(), notificationId);
+        notificationFacade.markAsRead(user, notificationId);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/read-all")
     public ResponseEntity<NotificationReadAllResponse> markAllAsRead(@LoginUser Users user) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        int updatedCount = notificationService.markAllAsRead(user.getId());
-        return ResponseEntity.ok(new NotificationReadAllResponse(updatedCount));
+        return ResponseEntity.ok(notificationFacade.markAllAsRead(user));
     }
 
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> deleteNotification(@LoginUser Users user, @PathVariable @Positive Long notificationId) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        notificationService.deleteNotification(user.getId(), notificationId);
+        notificationFacade.deleteNotification(user, notificationId);
         return ResponseEntity.noContent().build();
     }
 
@@ -103,10 +81,6 @@ public class NotificationController {
             @LoginUser Users user,
             @RequestParam(defaultValue = "false") boolean unreadOnly
     ) {
-        if (user == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        long deletedCount = notificationService.deleteAllNotifications(user.getId(), unreadOnly);
-        return ResponseEntity.ok(new NotificationDeleteAllResponse(deletedCount));
+        return ResponseEntity.ok(notificationFacade.deleteAllNotifications(user, unreadOnly));
     }
 }

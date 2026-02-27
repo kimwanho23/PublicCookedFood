@@ -3,18 +3,19 @@ package kwh.PublicCookedFood.user.controller;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.constraints.Positive;
 import kwh.PublicCookedFood.config.oauth2.LoginUser;
-import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.user.domain.Bookmark;
 import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.request.BookmarkCreateRequest;
-import kwh.PublicCookedFood.user.service.UserActivityLogService;
-import kwh.PublicCookedFood.user.service.BookmarkService;
+import kwh.PublicCookedFood.user.facade.BookmarkFacade;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -22,15 +23,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/bookmarks")
 @Validated
-@Slf4j
 @Hidden
 public class BookmarkController {
 
-    private final BookmarkService bookmarkService;
-
-    private final RecipeService recipeService;
-
-    private final UserActivityLogService userActivityLogService;
+    private final BookmarkFacade bookmarkFacade;
 
     @GetMapping("")
     public String bookmarkList(@LoginUser Users user,
@@ -40,7 +36,7 @@ public class BookmarkController {
             return "redirect:/u/login";
         }
 
-        List<Bookmark> userBookmarks = bookmarkService.findUserBookmarks(user, search);
+        List<Bookmark> userBookmarks = bookmarkFacade.getUserBookmarks(user, search);
 
         model.addAttribute("bookmarks", userBookmarks);
         model.addAttribute("selectedSearch", search == null ? "" : search.trim());
@@ -54,19 +50,7 @@ public class BookmarkController {
             return "redirect:/u/login";
         }
 
-        try {
-            BookmarkCreateRequest bookmarkDto = BookmarkCreateRequest.builder()
-                    .userId(user.getId())
-                    .recipeID(recipeId)
-                    .build();
-            bookmarkService.save(bookmarkDto);
-            userActivityLogService.record(
-                    user.getId(),
-                    "BOOKMARK_ADD",
-                    "recipeId=" + recipeId
-            );
-        } catch (IllegalArgumentException e) {
-            log.warn("북마크 저장 실패 userId={}, recipeId={}, reason={}", user.getId(), recipeId, e.getMessage());
+        if (!bookmarkFacade.addBookmark(user.getId(), recipeId)) {
             return "redirect:/recipes";
         }
         return "redirect:/recipes/" + recipeId;
@@ -78,15 +62,7 @@ public class BookmarkController {
             return "redirect:/u/login";
         }
 
-        try {
-            bookmarkService.delete(user, recipeService.getRecipeEntityByRecipeId(recipeId));
-            userActivityLogService.record(
-                    user.getId(),
-                    "BOOKMARK_REMOVE",
-                    "recipeId=" + recipeId
-            );
-        } catch (IllegalArgumentException e) {
-            log.warn("북마크 삭제 실패 userId={}, recipeId={}, reason={}", user.getId(), recipeId, e.getMessage());
+        if (!bookmarkFacade.removeBookmark(user, recipeId)) {
             return "redirect:/recipes";
         }
         return "redirect:/recipes/" + recipeId;

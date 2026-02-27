@@ -31,18 +31,14 @@ public class RecipeService {
                 .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
     }
 
-    public List<Recipe_CRSE_ResponseDto> getRecipe_CRSE(Long id){
+    public List<Recipe_CRSE_ResponseDto> getRecipeCrse(Long id){
         return crseRepository.findAllByRecipeIDOrderByCookingNOAsc(id)
                 .stream()
                 .map(this::toCrseResponse)
                 .toList(); //레시피 과정정보
     }
 
-    public Recipe_INFO_ResponseDto getRecipe_INFO(Long id){
-        return toInfoResponse(getRecipeEntityByRecipeId(id)); //모든 레시피 기본정보
-    }
-
-    public List<Recipe_IRDNT_ResponseDto> getRecipe_IRDNT(Long recipeId){
+    public List<Recipe_IRDNT_ResponseDto> getRecipeIrdnt(Long recipeId){
         return irdntRepository.findAllByRecipeIDOrderByIrdntTYCODEAsc(recipeId)
                 .stream()
                 .map(this::toIrdntResponse)
@@ -51,12 +47,12 @@ public class RecipeService {
 
     /////////////////   카테고리명   ////////////////////////
     @Cacheable("recipeNationCategories")
-    public List<String> getRecipeNation_NM(){
+    public List<String> getRecipeNationNames(){
         return normalizeCategoryValues(infoRepository.findDistinctNationNM());
     }
 
     @Cacheable("recipeTypeCategories")
-    public List<String> getRecipeTy_NM(){
+    public List<String> getRecipeTypeNames(){
         return normalizeCategoryValues(infoRepository.findDistinctTyNM());
     }
 
@@ -68,7 +64,7 @@ public class RecipeService {
 
     //////////////////// 전체 레시피 리스트 ///////////////////////////////
 
-    public Page<Recipe_INFO_ResponseDto> getAllRecipe_INFO(Pageable pageable) {
+    public Page<Recipe_INFO_ResponseDto> getAllRecipeInfo(Pageable pageable) {
         return infoRepository.findAll(pageable).map(this::toInfoResponse); // 레시피 리스트 표시
     }
 

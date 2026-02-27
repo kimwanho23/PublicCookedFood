@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.board.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Likes;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;

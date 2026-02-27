@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.board.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardScrap;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
@@ -68,7 +68,7 @@ public class BoardScrapService {
         boardScrapRepository.deleteByBoardIdAndUserId(boardId, userId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public boolean isScrapped(Long boardId, Long userId) {
         if (boardId == null || userId == null) {
             return false;
@@ -76,7 +76,7 @@ public class BoardScrapService {
         return boardScrapRepository.existsByBoardIdAndUserId(boardId, userId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public long getScrapCount(Long boardId) {
         if (boardId == null) {
             return 0L;
@@ -84,12 +84,7 @@ public class BoardScrapService {
         return boardScrapRepository.countByBoardId(boardId);
     }
 
-    @Transactional
-    public List<Board> getMyScrappedBoards(Long userId) {
-        return getMyScrappedBoards(userId, Set.of());
-    }
-
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Board> getMyScrappedBoards(Long userId, Collection<Long> blockedUserIds) {
         if (userId == null) {
             return List.of();
@@ -102,7 +97,7 @@ public class BoardScrapService {
                 blockedUserFilter.blockedUserIds());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<Board> getScrappedBoardsPage(Long userId, Pageable pageable, Collection<Long> blockedUserIds) {
         if (userId == null) {
             return Page.empty(pageable);

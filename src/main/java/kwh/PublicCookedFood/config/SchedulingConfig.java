@@ -15,19 +15,17 @@ public class SchedulingConfig {
 
     @Bean(name = "boardStatsExecutor")
     public Executor boardStatsExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setThreadNamePrefix("board-stats-");
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
-        executor.setQueueCapacity(200);
-        executor.initialize();
-        return executor;
+        return createExecutor("board-stats-");
     }
 
     @Bean(name = "recipeAiExecutor")
     public Executor recipeAiExecutor() {
+        return createExecutor("recipe-ai-");
+    }
+
+    private Executor createExecutor(String threadNamePrefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setThreadNamePrefix("recipe-ai-");
+        executor.setThreadNamePrefix(threadNamePrefix);
         executor.setCorePoolSize(2);
         executor.setMaxPoolSize(4);
         executor.setQueueCapacity(200);

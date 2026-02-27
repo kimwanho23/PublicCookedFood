@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.board.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardReport;
 import kwh.PublicCookedFood.board.domain.BoardReportReason;
@@ -97,15 +97,7 @@ public class BoardReportService {
         }
     }
 
-    @Transactional
-    public long getReportCount(Long boardId) {
-        if (boardId == null) {
-            return 0L;
-        }
-        return boardReportRepository.countByBoardId(boardId);
-    }
-
-    @Transactional
+    @Transactional(readOnly = true)
     public long getReportCountByStatus(BoardReportStatus status) {
         if (status == null) {
             return boardReportRepository.count();
@@ -113,7 +105,7 @@ public class BoardReportService {
         return boardReportRepository.countByStatus(status);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public boolean hasReported(Long boardId, Long reporterId) {
         if (boardId == null || reporterId == null) {
             return false;
@@ -121,17 +113,12 @@ public class BoardReportService {
         return boardReportRepository.existsByBoardIdAndReporterId(boardId, reporterId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<BoardReport> getReports(BoardReportStatus status, Pageable pageable) {
         if (status == null) {
             return boardReportRepository.findAllWithBoardAndReporter(pageable);
         }
         return boardReportRepository.findByStatusWithBoardAndReporter(status, pageable);
-    }
-
-    @Transactional
-    public void updateReportStatus(Long reportId, BoardReportStatus status) {
-        updateReportStatus(reportId, status, null, null);
     }
 
     @Transactional

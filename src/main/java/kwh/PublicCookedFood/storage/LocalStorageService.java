@@ -1,7 +1,8 @@
 package kwh.PublicCookedFood.storage;
 
+import kwh.PublicCookedFood.config.properties.ImageProcessingProperties;
+import kwh.PublicCookedFood.config.properties.StorageProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,18 +42,13 @@ public class LocalStorageService implements StorageService {
     private final int maxImageHeight;
     private final float jpegQuality;
 
-    public LocalStorageService(
-            @Value("${file.dir}") String fileDir,
-            @Value("${app.image.processing.enabled:true}") boolean imageProcessingEnabled,
-            @Value("${app.image.processing.max-width:1600}") int maxImageWidth,
-            @Value("${app.image.processing.max-height:1600}") int maxImageHeight,
-            @Value("${app.image.processing.jpeg-quality:0.85}") float jpegQuality
-    ) {
-        this.rootPath = resolveUploadPath(fileDir);
-        this.imageProcessingEnabled = imageProcessingEnabled;
-        this.maxImageWidth = Math.max(1, maxImageWidth);
-        this.maxImageHeight = Math.max(1, maxImageHeight);
-        this.jpegQuality = clampJpegQuality(jpegQuality);
+    public LocalStorageService(StorageProperties storageProperties,
+                               ImageProcessingProperties imageProcessingProperties) {
+        this.rootPath = StoragePathUtils.resolveUploadPath(storageProperties.dir());
+        this.imageProcessingEnabled = Boolean.TRUE.equals(imageProcessingProperties.enabled());
+        this.maxImageWidth = Math.max(1, imageProcessingProperties.maxWidth());
+        this.maxImageHeight = Math.max(1, imageProcessingProperties.maxHeight());
+        this.jpegQuality = clampJpegQuality(imageProcessingProperties.jpegQuality());
     }
 
     @Override
@@ -69,7 +65,7 @@ public class LocalStorageService implements StorageService {
         String savedFilename = UUID.randomUUID() + fileExtension;
 
         Path categoryDir = rootPath.resolve(category.getDirectoryName()).normalize();
-        Path targetPath = resolvePathUnderDirectory(categoryDir, savedFilename);
+        Path targetPath = StoragePathUtils.resolvePathUnderDirectory(categoryDir, savedFilename);
         if (targetPath == null) {
             throw new StorageException("저장 파일 경로를 확인할 수 없습니다.");
         }
@@ -104,13 +100,13 @@ public class LocalStorageService implements StorageService {
         }
 
         Path categoryDir = rootPath.resolve(category.getDirectoryName()).normalize();
-        Path targetPath = resolvePathUnderDirectory(categoryDir, savedFilename);
+        Path targetPath = StoragePathUtils.resolvePathUnderDirectory(categoryDir, savedFilename);
         if (targetPath == null) {
             log.warn("허용되지 않은 파일명으로 삭제 요청이 들어왔습니다. filename={}", savedFilename);
             return;
         }
         if (category == StorageCategory.IMAGE && !Files.exists(targetPath)) {
-            Path legacyPath = resolvePathUnderDirectory(rootPath, savedFilename); // 기존 이미지 저장 경로 호환
+            Path legacyPath = StoragePathUtils.resolvePathUnderDirectory(rootPath, savedFilename); // 기존 이미지 저장 경로 호환
             if (legacyPath != null) {
                 targetPath = legacyPath;
             }
@@ -269,7 +265,7 @@ public class LocalStorageService implements StorageService {
     }
 
     private void deleteOriginalImageCopies(Path categoryDir, String savedFilename) {
-        String baseName = extractBaseFilename(savedFilename);
+        String baseName = StoragePathUtils.extractBaseFilename(savedFilename);
         if (baseName.isBlank()) {
             return;
         }
@@ -289,47 +285,9 @@ public class LocalStorageService implements StorageService {
     }
 
     private String buildOriginalSavedFilename(String savedFilename, String originalExtension) {
-        String baseName = extractBaseFilename(savedFilename);
+        String baseName = StoragePathUtils.extractBaseFilename(savedFilename);
         String extension = (originalExtension == null || originalExtension.isBlank()) ? ".bin" : originalExtension;
         return baseName + ORIGINAL_IMAGE_SUFFIX + extension;
-    }
-
-    private String extractBaseFilename(String filename) {
-        if (filename == null || filename.isBlank()) {
-            return "";
-        }
-        String normalized = filename.replace('\\', '/');
-        int slashIndex = normalized.lastIndexOf('/');
-        String fileNameOnly = slashIndex >= 0 ? normalized.substring(slashIndex + 1) : normalized;
-        int dotIndex = fileNameOnly.lastIndexOf('.');
-        if (dotIndex <= 0) {
-            return fileNameOnly;
-        }
-        return fileNameOnly.substring(0, dotIndex);
-    }
-
-    private Path resolveUploadPath(String rawPath) {
-        if (rawPath == null || rawPath.isBlank()) {
-            throw new IllegalArgumentException("file.dir 값이 비어 있습니다.");
-        }
-
-        String normalized = rawPath.trim();
-        if (normalized.matches("^/[A-Za-z]:/.*")) {
-            normalized = normalized.substring(1);
-        }
-        return Path.of(normalized).toAbsolutePath().normalize();
-    }
-
-    private Path resolvePathUnderDirectory(Path baseDirectory, String filename) {
-        if (baseDirectory == null || filename == null || filename.isBlank()) {
-            return null;
-        }
-        String normalizedFilename = filename.trim();
-        if (normalizedFilename.contains("/") || normalizedFilename.contains("\\") || normalizedFilename.contains("\0")) {
-            return null;
-        }
-        Path resolved = baseDirectory.resolve(normalizedFilename).normalize();
-        return resolved.startsWith(baseDirectory) ? resolved : null;
     }
 
     private record OptimizedImage(byte[] bytes, String fileExtension, String contentType) {

@@ -5,7 +5,6 @@ import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.repository.UserBlockRepository;
 import kwh.PublicCookedFood.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,11 +14,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class UserBlockService {
 
     private final UserBlockRepository userBlockRepository;
@@ -36,11 +33,9 @@ public class UserBlockService {
         Users blocked = getUserById(blockedId);
         try {
             userBlockRepository.save(UserBlock.of(blocker, blocked));
-            log.info("action=user.block result=created blockerId={} blockedId={}", blockerId, blockedId);
             return true;
         } catch (DataIntegrityViolationException e) {
             if (userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId)) {
-                log.info("action=user.block result=skipped_duplicate blockerId={} blockedId={}", blockerId, blockedId);
                 return false;
             }
             throw e;
@@ -53,11 +48,7 @@ public class UserBlockService {
             return false;
         }
         long deletedCount = userBlockRepository.deleteByBlockerIdAndBlockedId(blockerId, blockedId);
-        if (deletedCount > 0) {
-            log.info("action=user.unblock result=removed blockerId={} blockedId={}", blockerId, blockedId);
-            return true;
-        }
-        return false;
+        return deletedCount > 0;
     }
 
     @Transactional(readOnly = true)
@@ -75,16 +66,6 @@ public class UserBlockService {
         }
         return userBlockRepository.existsByBlockerIdAndBlockedId(userAId, userBId)
                 || userBlockRepository.existsByBlockerIdAndBlockedId(userBId, userAId);
-    }
-
-    @Transactional(readOnly = true)
-    public Set<Long> getBlockedUserIds(Long blockerId) {
-        if (blockerId == null) {
-            return Collections.emptySet();
-        }
-        return userBlockRepository.findByBlockerId(blockerId).stream()
-                .map(userBlock -> userBlock.getBlocked().getId())
-                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Transactional(readOnly = true)
