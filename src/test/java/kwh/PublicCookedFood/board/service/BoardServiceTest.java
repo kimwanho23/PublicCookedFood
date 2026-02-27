@@ -66,11 +66,10 @@ class BoardServiceTest {
     }
 
     private Users createUser(String email) {
-        UserSaveDto userDto = UserSaveDto.builder()
-                .email(email)
-                .name("테스터")
-                .password("12345678")
-                .build();
+        UserSaveDto userDto = new UserSaveDto();
+        userDto.setEmail(email);
+        userDto.setName("테스터");
+        userDto.setPassword("12345678");
         return userService.save(Users.createUser(userDto, passwordEncoder));
     }
 }

@@ -28,11 +28,10 @@ class UsersServiceTest {
     }
 
     public Users createUser() {
-        UserSaveDto userDto = UserSaveDto.builder()
-                .email("test@email.com")
-                .name("홍길동")
-                .password("12345678")
-                .build();
+        UserSaveDto userDto = new UserSaveDto();
+        userDto.setEmail("test@email.com");
+        userDto.setName("홍길동");
+        userDto.setPassword("12345678");
         return Users.createUser(userDto, passwordEncoder);
     }
 
@@ -44,21 +43,4 @@ class UsersServiceTest {
 
         assertThat(users.getEmail()).isEqualTo(savedMember.getEmail());
     }
-
-
-/*    @Test
-    void loginTest(){ //로그인이 되었는가?
-        UserSaveDto userDto = UserSaveDto.builder()
-                .loginId("test12")
-                .name("홍길동")
-                .email("test@email.com")
-                .password("12345678")
-                .build();
-        Optional<Users> login = userService.login(userDto.getLoginId(), userDto.getPassword(), passwordEncoder);
-        System.out.println(userDto.getLoginId());
-        System.out.println(userDto.getPassword());
-        Assertions.assertThat(login.isPresent()).isTrue();
-
-    }*/
-
 }
