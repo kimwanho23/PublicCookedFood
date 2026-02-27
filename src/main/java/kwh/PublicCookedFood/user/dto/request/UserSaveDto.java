@@ -2,14 +2,17 @@ package kwh.PublicCookedFood.user.dto.request;
 
 import jakarta.validation.constraints.*;
 import kwh.PublicCookedFood.user.domain.Gender;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
 
 @Getter
+@Setter
+@NoArgsConstructor
 public class UserSaveDto {
     @NotBlank
     @Email
@@ -45,21 +48,4 @@ public class UserSaveDto {
     private String profileImageUrl;
 
     private String loginMethod;
-
-
-    @Builder
-    public UserSaveDto(String email, String password, String name, String phoneNumber, LocalDate birthDate,
-                       Gender gender, String address, String addressDetail, String profileImageUrl,
-                       String loginMethod) {
-        this.email = email;
-        this.password = password;
-        this.name = name;
-        this.phoneNumber = phoneNumber;
-        this.birthDate = birthDate;
-        this.gender = gender;
-        this.address = address;
-        this.addressDetail = addressDetail;
-        this.profileImageUrl = profileImageUrl;
-        this.loginMethod = loginMethod;
-    }
 }

@@ -1,14 +1,16 @@
 package kwh.PublicCookedFood.board.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardImage;
 import kwh.PublicCookedFood.board.domain.Images;
 import kwh.PublicCookedFood.board.domain.Images.ImageStatus;
 import kwh.PublicCookedFood.board.repository.BoardImageRepository;
 import kwh.PublicCookedFood.board.repository.ImagesRepository;
+import kwh.PublicCookedFood.config.properties.StorageProperties;
 import kwh.PublicCookedFood.storage.StorageCategory;
 import kwh.PublicCookedFood.storage.StorageException;
+import kwh.PublicCookedFood.storage.StoragePathUtils;
 import kwh.PublicCookedFood.storage.StorageService;
 import kwh.PublicCookedFood.storage.StoredResource;
 import lombok.RequiredArgsConstructor;
@@ -16,11 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,7 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,59 +55,16 @@ public class ImageService {
     private static final Set<ImageStatus> LINKABLE_IMAGE_STATUSES = Set.of(ImageStatus.TEMP, ImageStatus.ATTACHED);
     private static final String ORIGINAL_IMAGE_DIRECTORY = "original";
     private static final String ORIGINAL_IMAGE_SUFFIX = "_orig";
-    private static final String IMAGE_TABLE_NAME_LOOKUP_SQL = """
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = DATABASE()
-              AND LOWER(table_name) = 'images'
-            LIMIT 1
-            """;
-    private static final String IMAGE_POST_ID_TYPE_LOOKUP_SQL = """
-            SELECT column_type
-            FROM information_schema.columns
-            WHERE table_schema = DATABASE()
-              AND table_name = ?
-              AND column_name = 'post_id'
-            LIMIT 1
-            """;
-    private static final String IMAGE_POST_ID_NULLABLE_LOOKUP_SQL = """
-            SELECT is_nullable
-            FROM information_schema.columns
-            WHERE table_schema = DATABASE()
-              AND table_name = ?
-              AND column_name = 'post_id'
-            LIMIT 1
-            """;
-    private static final String TABLE_NAME_LOOKUP_SQL = """
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = DATABASE()
-              AND LOWER(table_name) = ?
-            LIMIT 1
-            """;
-    private static final String COLUMN_EXISTS_LOOKUP_SQL = """
-            SELECT COUNT(*)
-            FROM information_schema.columns
-            WHERE table_schema = DATABASE()
-              AND table_name = ?
-              AND column_name = ?
-            """;
-
     private final StorageService storageService;
     private final ImagesRepository imagesRepository;
     private final BoardImageRepository boardImageRepository;
-    private final JdbcTemplate jdbcTemplate;
-    private final AtomicBoolean legacySchemaChecked = new AtomicBoolean(false);
-    private final AtomicBoolean boardImageSchemaChecked = new AtomicBoolean(false);
-    @Value("${file.dir}")
-    private String fileDir;
-    @Value("${app.image.schema-auto-migrate:false}")
-    private boolean schemaAutoMigrateEnabled;
+    private final ImageSchemaService imageSchemaService;
+    private final StorageProperties storageProperties;
 
     @Transactional
     public String uploadTempImage(MultipartFile file) {
         validateImageFile(file);
-        ensureLegacyImagesSchemaCompatibleIfEnabled();
+        imageSchemaService.ensureLegacyImagesSchemaCompatibleIfEnabled();
         StoredResource stored = storageService.store(file, StorageCategory.IMAGE);
         try {
             Images savedImage = Images.createTemporary(
@@ -139,7 +95,7 @@ public class ImageService {
 
     @Transactional
     public void syncBoardImages(Board board, String htmlContent) {
-        ensureBoardImageSchemaCompatibleIfEnabled();
+        imageSchemaService.ensureBoardImageSchemaCompatibleIfEnabled();
         Set<String> currentImageUrls = extractLocalImageUrls(htmlContent);
         List<BoardImage> boardImages = boardImageRepository.findAllByBoardWithImage(board);
         Map<String, BoardImage> boardImageByUrl = boardImages.stream()
@@ -175,7 +131,7 @@ public class ImageService {
 
     @Transactional
     public void deleteBoardImages(Board board) {
-        ensureBoardImageSchemaCompatibleIfEnabled();
+        imageSchemaService.ensureBoardImageSchemaCompatibleIfEnabled();
         List<BoardImage> boardImages = boardImageRepository.findAllByBoardWithImage(board);
         for (BoardImage boardImage : boardImages) {
             Images image = boardImage.getImage();
@@ -188,7 +144,7 @@ public class ImageService {
 
     @Transactional
     public int deleteStaleTempImages(LocalDateTime cutoff, int batchSize) {
-        ensureBoardImageSchemaCompatibleIfEnabled();
+        imageSchemaService.ensureBoardImageSchemaCompatibleIfEnabled();
         if (cutoff == null || batchSize <= 0) {
             return 0;
         }
@@ -210,7 +166,7 @@ public class ImageService {
         return deletedCount;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<ImageDownloadResource> findOriginalImageForDownload(String imageUrl) {
         Optional<String> normalizedUrl = normalizeLocalImageUrl(imageUrl);
         if (normalizedUrl.isEmpty()) {
@@ -223,7 +179,7 @@ public class ImageService {
         }
 
         Images image = imageOptional.get();
-        Path uploadRootPath = resolveUploadPath(fileDir);
+        Path uploadRootPath = StoragePathUtils.resolveUploadPath(storageProperties.dir());
         Path imageDirectory = uploadRootPath.resolve(StorageCategory.IMAGE.getDirectoryName()).normalize();
         Path originalPath = findOriginalImagePath(imageDirectory, image.getSavedFilename(), image.getOriginalFilename());
         Path downloadPath = originalPath != null ? originalPath : resolveDisplayImagePath(uploadRootPath, imageDirectory, image.getSavedFilename());
@@ -237,7 +193,7 @@ public class ImageService {
         return Optional.of(new ImageDownloadResource(downloadPath, downloadFilename, contentType, fileSize));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<BoardImagesZipResource> findBoardImagesForZip(Long boardId, String htmlContent) {
         if (boardId == null) {
             return Optional.empty();
@@ -371,169 +327,8 @@ public class ImageService {
         return false;
     }
 
-    private void ensureLegacyImagesSchemaCompatible() {
-        if (legacySchemaChecked.get()) {
-            return;
-        }
-
-        synchronized (legacySchemaChecked) {
-            if (legacySchemaChecked.get()) {
-                return;
-            }
-
-            try {
-                String imagesTableName = querySingleValue(IMAGE_TABLE_NAME_LOOKUP_SQL);
-                if (imagesTableName == null) {
-                    legacySchemaChecked.set(true);
-                    return;
-                }
-
-                String postIdColumnType = querySingleValue(IMAGE_POST_ID_TYPE_LOOKUP_SQL, imagesTableName);
-                if (postIdColumnType == null) {
-                    legacySchemaChecked.set(true);
-                    return;
-                }
-
-                String isNullable = querySingleValue(IMAGE_POST_ID_NULLABLE_LOOKUP_SQL, imagesTableName);
-                if (!"NO".equalsIgnoreCase(isNullable)) {
-                    legacySchemaChecked.set(true);
-                    return;
-                }
-
-                String alterSql = "ALTER TABLE `" + imagesTableName + "` MODIFY COLUMN post_id " + postIdColumnType + " NULL";
-                jdbcTemplate.execute(alterSql);
-                log.info("Legacy schema migration applied: {}.post_id is now nullable.", imagesTableName);
-                legacySchemaChecked.set(true);
-            } catch (RuntimeException e) {
-                log.error("Failed to auto-migrate legacy images.post_id schema.", e);
-                throw new StorageException("DB 스키마 보정 실패: images.post_id를 NULL 허용으로 변경하지 못했습니다.", e);
-            }
-        }
-    }
-
-    private void ensureLegacyImagesSchemaCompatibleIfEnabled() {
-        if (!schemaAutoMigrateEnabled) {
-            return;
-        }
-        ensureLegacyImagesSchemaCompatible();
-    }
-
-    private void ensureBoardImageSchemaCompatible() {
-        if (boardImageSchemaChecked.get()) {
-            return;
-        }
-
-        synchronized (boardImageSchemaChecked) {
-            if (boardImageSchemaChecked.get()) {
-                return;
-            }
-
-            try {
-                String boardTableName = findTableName("board");
-                String imagesTableName = findTableName("images");
-                if (boardTableName == null || imagesTableName == null) {
-                    return;
-                }
-
-                String boardImageTableName = findTableName("board_image");
-                if (boardImageTableName == null) {
-                    String createSql = "CREATE TABLE board_image ("
-                            + "id BIGINT NOT NULL AUTO_INCREMENT, "
-                            + "board_id BIGINT NOT NULL, "
-                            + "image_id BIGINT NOT NULL, "
-                            + "regTime DATETIME(6) NULL, "
-                            + "updateTime DATETIME(6) NULL, "
-                            + "PRIMARY KEY (id), "
-                            + "CONSTRAINT uk_board_image_board_id_image_id UNIQUE (board_id, image_id), "
-                            + "INDEX idx_board_image_board_id (board_id), "
-                            + "INDEX idx_board_image_image_id (image_id), "
-                            + "CONSTRAINT fk_board_image_board FOREIGN KEY (board_id) REFERENCES "
-                            + quoteIdentifier(boardTableName) + " (id) ON DELETE CASCADE, "
-                            + "CONSTRAINT fk_board_image_image FOREIGN KEY (image_id) REFERENCES "
-                            + quoteIdentifier(imagesTableName) + " (id) ON DELETE CASCADE"
-                            + ")";
-                    jdbcTemplate.execute(createSql);
-                    boardImageTableName = "board_image";
-                    log.info("Legacy schema migration applied: board_image table created.");
-                }
-
-                backfillBoardImageLinks(boardImageTableName, boardTableName, imagesTableName);
-                boardImageSchemaChecked.set(true);
-            } catch (RuntimeException e) {
-                log.error("Failed to auto-migrate board_image schema.", e);
-                throw new StorageException("DB 스키마 보정 실패: board_image 테이블을 생성/보정하지 못했습니다.", e);
-            }
-        }
-    }
-
-    private void ensureBoardImageSchemaCompatibleIfEnabled() {
-        if (!schemaAutoMigrateEnabled) {
-            return;
-        }
-        ensureBoardImageSchemaCompatible();
-    }
-
-    private void backfillBoardImageLinks(String boardImageTableName, String boardTableName, String imagesTableName) {
-        if (!hasColumn(imagesTableName, "post_id")) {
-            return;
-        }
-
-        String insertSql = "INSERT INTO " + quoteIdentifier(boardImageTableName)
-                + " (board_id, image_id, regTime, updateTime) "
-                + "SELECT i.post_id, i.id, COALESCE(i.regTime, NOW()), COALESCE(i.updateTime, NOW()) "
-                + "FROM " + quoteIdentifier(imagesTableName) + " i "
-                + "JOIN " + quoteIdentifier(boardTableName) + " b ON b.id = i.post_id "
-                + "LEFT JOIN " + quoteIdentifier(boardImageTableName) + " bi "
-                + "ON bi.board_id = i.post_id AND bi.image_id = i.id "
-                + "WHERE i.post_id IS NOT NULL AND bi.id IS NULL";
-        jdbcTemplate.execute(insertSql);
-
-        String statusSyncSql = "UPDATE " + quoteIdentifier(imagesTableName) + " i "
-                + "JOIN " + quoteIdentifier(boardImageTableName) + " bi ON bi.image_id = i.id "
-                + "SET i.status = 'ATTACHED' "
-                + "WHERE i.status <> 'DELETED'";
-        jdbcTemplate.execute(statusSyncSql);
-    }
-
-    private String findTableName(String tableNameLowerCase) {
-        return querySingleValue(TABLE_NAME_LOOKUP_SQL, tableNameLowerCase);
-    }
-
-    private boolean hasColumn(String tableName, String columnName) {
-        Integer count = jdbcTemplate.queryForObject(COLUMN_EXISTS_LOOKUP_SQL, Integer.class, tableName, columnName);
-        return count != null && count > 0;
-    }
-
-    private String quoteIdentifier(String identifier) {
-        return "`" + identifier.replace("`", "``") + "`";
-    }
-
-    private String querySingleValue(String sql, Object... args) {
-        List<String> results = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString(1), args);
-        if (results.isEmpty()) {
-            return null;
-        }
-
-        String value = results.get(0);
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value;
-    }
-
-    private Path resolveUploadPath(String rawPath) {
-        if (rawPath == null || rawPath.isBlank()) {
-            throw new StorageException("file.dir 값이 비어 있습니다.");
-        }
-        String normalized = rawPath.trim();
-        if (normalized.matches("^/[A-Za-z]:/.*")) {
-            normalized = normalized.substring(1);
-        }
-        return Path.of(normalized).toAbsolutePath().normalize();
-    }
-
     private Path findOriginalImagePath(Path imageDirectory, String savedFilename, String originalFilename) {
-        String baseName = extractBaseFilename(savedFilename);
+        String baseName = StoragePathUtils.extractBaseFilename(savedFilename);
         if (baseName.isBlank()) {
             return null;
         }
@@ -545,7 +340,7 @@ public class ImageService {
 
         String originalExtension = extractExtension(originalFilename);
         if (!originalExtension.isBlank()) {
-            Path candidate = resolvePathUnderDirectory(originalDir, baseName + ORIGINAL_IMAGE_SUFFIX + originalExtension);
+            Path candidate = StoragePathUtils.resolvePathUnderDirectory(originalDir, baseName + ORIGINAL_IMAGE_SUFFIX + originalExtension);
             if (candidate != null && Files.isRegularFile(candidate)) {
                 return candidate;
             }
@@ -568,11 +363,11 @@ public class ImageService {
         if (savedFilename == null || savedFilename.isBlank()) {
             return null;
         }
-        Path imagePath = resolvePathUnderDirectory(imageDirectory, savedFilename);
+        Path imagePath = StoragePathUtils.resolvePathUnderDirectory(imageDirectory, savedFilename);
         if (imagePath != null && Files.isRegularFile(imagePath)) {
             return imagePath;
         }
-        Path legacyPath = resolvePathUnderDirectory(uploadRootPath, savedFilename);
+        Path legacyPath = StoragePathUtils.resolvePathUnderDirectory(uploadRootPath, savedFilename);
         if (legacyPath != null && Files.isRegularFile(legacyPath)) {
             return legacyPath;
         }
@@ -664,20 +459,6 @@ public class ImageService {
         }
     }
 
-    private String extractBaseFilename(String filename) {
-        if (filename == null || filename.isBlank()) {
-            return "";
-        }
-        String normalized = filename.replace('\\', '/');
-        int slashIndex = normalized.lastIndexOf('/');
-        String fileNameOnly = slashIndex >= 0 ? normalized.substring(slashIndex + 1) : normalized;
-        int dotIndex = fileNameOnly.lastIndexOf('.');
-        if (dotIndex <= 0) {
-            return fileNameOnly;
-        }
-        return fileNameOnly.substring(0, dotIndex);
-    }
-
     private String extractExtension(String filename) {
         if (filename == null || filename.isBlank()) {
             return "";
@@ -687,18 +468,6 @@ public class ImageService {
             return "";
         }
         return filename.substring(dotIndex).toLowerCase(Locale.ROOT);
-    }
-
-    private Path resolvePathUnderDirectory(Path baseDirectory, String filename) {
-        if (baseDirectory == null || filename == null || filename.isBlank()) {
-            return null;
-        }
-        String normalizedFilename = filename.trim();
-        if (normalizedFilename.contains("/") || normalizedFilename.contains("\\") || normalizedFilename.contains("\0")) {
-            return null;
-        }
-        Path resolved = baseDirectory.resolve(normalizedFilename).normalize();
-        return resolved.startsWith(baseDirectory) ? resolved : null;
     }
 
     public record ImageDownloadResource(Path filePath, String downloadFilename, String contentType, long fileSize) {

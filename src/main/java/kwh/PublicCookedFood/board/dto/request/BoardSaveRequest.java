@@ -1,6 +1,7 @@
 package kwh.PublicCookedFood.board.dto.request;
 
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,5 +42,32 @@ public class BoardSaveRequest {
         this.likesCount = likesCount;
         this.commentsCount = commentsCount;
         this.state = state;
+    }
+
+    public static BoardSaveRequest forCreate(BoardWriteRequest request, Long userId) {
+        return BoardSaveRequest.builder()
+                .title(request.getTitle())
+                .contents(request.getContents())
+                .userId(userId)
+                .sectionId(request.getSectionId())
+                .views(0L)
+                .likesCount(0L)
+                .commentsCount(0L)
+                .state(SoftDeleteState.ACTIVE)
+                .build();
+    }
+
+    public static BoardSaveRequest forUpdate(BoardUpdateRequest request, BoardDetailResponse existingBoard) {
+        return BoardSaveRequest.builder()
+                .id(existingBoard.getId())
+                .title(request.getTitle())
+                .contents(request.getContents())
+                .userId(existingBoard.getUserId())
+                .sectionId(request.getSectionId())
+                .views(existingBoard.getViews())
+                .likesCount(existingBoard.getLikesCount())
+                .commentsCount(existingBoard.getCommentsCount())
+                .state(existingBoard.getState())
+                .build();
     }
 }

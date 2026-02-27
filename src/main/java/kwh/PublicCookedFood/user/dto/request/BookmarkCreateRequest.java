@@ -23,4 +23,11 @@ public class BookmarkCreateRequest {
         this.userId = userId;
         this.recipeID = recipeID;
     }
+
+    public static BookmarkCreateRequest of(Long userId, Long recipeId) {
+        return BookmarkCreateRequest.builder()
+                .userId(userId)
+                .recipeID(recipeId)
+                .build();
+    }
 }

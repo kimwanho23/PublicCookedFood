@@ -5,7 +5,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kwh.PublicCookedFood.food.entity.QRecipe_INFO;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -14,14 +14,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
+@RequiredArgsConstructor
 public class Recipe_INFO_RepositoryImpl implements Recipe_INFO_RepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
-
-    @Autowired
-    public Recipe_INFO_RepositoryImpl(JPAQueryFactory queryFactory) {
-        this.queryFactory = queryFactory;
-    }
 
     @Override
     public Page<Recipe_INFO> findRecipesByConditions(List<String> type,

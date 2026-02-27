@@ -32,4 +32,11 @@ public class Bookmark {
         this.user = user;
         this.recipeID = recipeID;
     }
+
+    public static Bookmark of(Users user, Recipe_INFO recipe) {
+        return Bookmark.builder()
+                .user(user)
+                .recipeID(recipe)
+                .build();
+    }
 }

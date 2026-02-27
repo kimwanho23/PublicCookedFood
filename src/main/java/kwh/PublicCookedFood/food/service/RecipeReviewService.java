@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.food.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.food.dto.response.RecipeRankingResponse;
 import kwh.PublicCookedFood.food.dto.response.RecipeReviewResponse;
 import kwh.PublicCookedFood.food.dto.response.RecipeReviewSummaryResponse;
@@ -51,7 +51,7 @@ public class RecipeReviewService {
                 );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public RecipeReviewSummaryResponse getSummary(Long recipeId) {
         Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(recipeId)
                 .orElseThrow(() -> new IllegalArgumentException("레시피 정보를 찾을 수 없습니다."));
@@ -60,7 +60,7 @@ public class RecipeReviewService {
         return new RecipeReviewSummaryResponse(round(averageRating), reviewCount);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<RecipeReviewResponse> getRecentReviews(Long recipeId) {
         Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(recipeId)
                 .orElseThrow(() -> new IllegalArgumentException("레시피 정보를 찾을 수 없습니다."));
@@ -74,7 +74,7 @@ public class RecipeReviewService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public RecipeReviewResponse getMyReview(Long recipeId, Long userId) {
         if (recipeId == null || userId == null) {
             return null;
@@ -96,7 +96,7 @@ public class RecipeReviewService {
                 .orElse(null);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<RecipeRankingResponse> getTopReviewRankings(LocalDateTime since, int limit) {
         LocalDateTime baseline = since == null ? LocalDateTime.now().minusDays(7) : since;
         int normalizedLimit = limit <= 0 ? 10 : Math.min(limit, 30);

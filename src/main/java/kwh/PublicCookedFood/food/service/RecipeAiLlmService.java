@@ -2,9 +2,9 @@ package kwh.PublicCookedFood.food.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kwh.PublicCookedFood.config.properties.OpenAiProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -27,23 +27,11 @@ public class RecipeAiLlmService {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
-
-    @Value("${app.ai.openai.enabled:false}")
-    private boolean openAiEnabled;
-
-    @Value("${app.ai.openai.base-url:https://api.openai.com/v1}")
-    private String openAiBaseUrl;
-
-    @Value("${app.ai.openai.model:gpt-4o-mini}")
-    private String openAiModel;
-
-    @Value("${app.ai.openai.api-key:}")
-    private String openAiApiKey;
-
-    @Value("${app.ai.openai.temperature:0.2}")
-    private double temperature;
+    private final OpenAiProperties openAiProperties;
 
     public Optional<String> generateAnswer(String recipeDocument, String question) {
+        boolean openAiEnabled = Boolean.TRUE.equals(openAiProperties.enabled());
+        String openAiApiKey = openAiProperties.apiKey();
         if (!openAiEnabled || openAiApiKey == null || openAiApiKey.isBlank()) {
             return Optional.empty();
         }
@@ -54,6 +42,8 @@ public class RecipeAiLlmService {
             return Optional.empty();
         }
 
+        String openAiModel = openAiProperties.model();
+        double temperature = openAiProperties.temperature();
         Map<String, Object> requestBody = new LinkedHashMap<>();
         requestBody.put("model", openAiModel);
         requestBody.put("temperature", temperature);
@@ -97,7 +87,8 @@ public class RecipeAiLlmService {
     }
 
     private String resolveChatCompletionsUri() {
-        String normalized = openAiBaseUrl == null ? "https://api.openai.com/v1" : openAiBaseUrl.trim();
+        String openAiBaseUrl = openAiProperties.baseUrl();
+        String normalized = openAiBaseUrl == null ? "" : openAiBaseUrl.trim();
         if (normalized.endsWith("/")) {
             normalized = normalized.substring(0, normalized.length() - 1);
         }

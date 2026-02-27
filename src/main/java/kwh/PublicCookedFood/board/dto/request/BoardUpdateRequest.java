@@ -3,6 +3,7 @@ package kwh.PublicCookedFood.board.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,5 +33,18 @@ public class BoardUpdateRequest {
         this.title = title;
         this.contents = contents;
         this.sectionId = sectionId;
+    }
+
+    public static BoardUpdateRequest from(BoardDetailResponse boardDetail, Long fallbackSectionId) {
+        Long resolvedSectionId = boardDetail.getSectionId() != null
+                ? boardDetail.getSectionId()
+                : fallbackSectionId;
+
+        return BoardUpdateRequest.builder()
+                .id(boardDetail.getId())
+                .title(boardDetail.getTitle())
+                .contents(boardDetail.getContents())
+                .sectionId(resolvedSectionId)
+                .build();
     }
 }

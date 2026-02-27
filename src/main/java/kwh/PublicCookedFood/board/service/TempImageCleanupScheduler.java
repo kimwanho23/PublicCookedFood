@@ -1,8 +1,8 @@
 package kwh.PublicCookedFood.board.service;
 
+import kwh.PublicCookedFood.config.properties.ImageTempCleanupProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -14,21 +14,15 @@ import java.time.LocalDateTime;
 public class TempImageCleanupScheduler {
 
     private final ImageService imageService;
+    private final ImageTempCleanupProperties imageTempCleanupProperties;
 
-    @Value("${app.image.temp-cleanup.enabled:true}")
-    private boolean enabled;
-
-    @Value("${app.image.temp-cleanup.ttl-hours:24}")
-    private long ttlHours;
-
-    @Value("${app.image.temp-cleanup.batch-size:100}")
-    private int batchSize;
-
-    @Value("${app.image.temp-cleanup.max-batches-per-run:20}")
-    private int maxBatchesPerRun;
-
-    @Scheduled(cron = "${app.image.temp-cleanup.cron:0 0 * * * *}")
+    @Scheduled(cron = "${app.image.temp-cleanup.cron}")
     public void cleanupStaleTempImages() {
+        boolean enabled = Boolean.TRUE.equals(imageTempCleanupProperties.enabled());
+        long ttlHours = imageTempCleanupProperties.ttlHours();
+        int batchSize = imageTempCleanupProperties.batchSize();
+        int maxBatchesPerRun = imageTempCleanupProperties.maxBatchesPerRun();
+
         if (!enabled) {
             return;
         }

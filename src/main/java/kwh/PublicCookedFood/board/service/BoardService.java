@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.board.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardSection;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
@@ -43,14 +43,6 @@ public class BoardService {
     private final BoardPolicyService boardPolicyService;
     private final UserRepository userRepository;
 
-    public Page<Board> getBoardList(Pageable pageable, String sectionKey) {
-        return getBoardList(pageable, sectionKey, null);
-    }
-
-    public Page<Board> getBoardList(Pageable pageable, String sectionKey, Long authorId) {
-        return getBoardList(pageable, sectionKey, authorId, Set.of());
-    }
-
     public Page<Board> getBoardList(Pageable pageable, String sectionKey, Long authorId, Collection<Long> blockedUserIds) {
         BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
         return boardRepository.findAllByStateWithUser(
@@ -60,14 +52,6 @@ public class BoardService {
                 authorId,
                 sectionKey,
                 pageable);
-    }
-
-    public Page<Board> getFeaturedBoardList(Pageable pageable, String sectionKey) {
-        return getFeaturedBoardList(pageable, sectionKey, null);
-    }
-
-    public Page<Board> getFeaturedBoardList(Pageable pageable, String sectionKey, Long authorId) {
-        return getFeaturedBoardList(pageable, sectionKey, authorId, Set.of());
     }
 
     public Page<Board> getFeaturedBoardList(Pageable pageable,
@@ -89,20 +73,10 @@ public class BoardService {
     public BoardDetailResponse getBoardDetail(Long id){
         Board board = boardRepository.findByIdWithUserAndState(id, SoftDeleteState.ACTIVE)
                 .orElseThrow(() -> new NoSuchElementException("유효한 게시글을 찾을 수 없습니다."));
-        return toBoardDetailResponse(board);
+        return BoardDetailResponse.from(board);
     }
 
-    @Transactional
-    public Page<Board> findByKeyword(String search, String sectionKey, Pageable pageable) {
-        return findByKeyword(search, sectionKey, null, pageable);
-    }
-
-    @Transactional
-    public Page<Board> findByKeyword(String search, String sectionKey, Long authorId, Pageable pageable) {
-        return findByKeyword(search, sectionKey, authorId, Set.of(), pageable);
-    }
-
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<Board> findByKeyword(String search,
                                      String sectionKey,
                                      Long authorId,
@@ -119,17 +93,7 @@ public class BoardService {
                 pageable);
     }
 
-    @Transactional
-    public Page<Board> findFeaturedByKeyword(String search, String sectionKey, Pageable pageable) {
-        return findFeaturedByKeyword(search, sectionKey, null, pageable);
-    }
-
-    @Transactional
-    public Page<Board> findFeaturedByKeyword(String search, String sectionKey, Long authorId, Pageable pageable) {
-        return findFeaturedByKeyword(search, sectionKey, authorId, Set.of(), pageable);
-    }
-
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<Board> findFeaturedByKeyword(String search,
                                              String sectionKey,
                                              Long authorId,
@@ -242,23 +206,4 @@ public class BoardService {
     private record BlockedUserFilter(boolean excludeBlocked, Collection<Long> blockedUserIds) {
     }
 
-    private BoardDetailResponse toBoardDetailResponse(Board board) {
-        return BoardDetailResponse.builder()
-                .id(board.getId())
-                .title(board.getTitle())
-                .contents(board.getContents())
-                .userId(board.getUser() == null ? null : board.getUser().getId())
-                .userName(board.getUser() == null ? null : board.getUser().getName())
-                .userProfileImageUrl(board.getUser() == null ? null : board.getUser().getProfileImageUrl())
-                .sectionId(board.getSection() == null ? null : board.getSection().getId())
-                .sectionKey(board.getSection() == null ? null : board.getSection().getSectionKey())
-                .sectionName(board.getSection() == null ? null : board.getSection().getSectionName())
-                .views(board.getViews())
-                .likesCount(board.getLikeCount())
-                .commentsCount(board.getCommentCount())
-                .state(board.getState())
-                .regTime(board.getRegTime())
-                .updateTime(board.getUpdateTime())
-                .build();
-    }
 }

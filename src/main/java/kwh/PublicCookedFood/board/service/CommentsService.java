@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.board.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
@@ -90,10 +90,6 @@ public class CommentsService {
         return convertToDto(savedComment);
     }
 
-    public Long getCommentsCount(Long id){
-        return getCommentsCount(id, null);
-    }
-
     public Long getCommentsCount(Long id, Long viewerUserId) {
         Set<Long> blockedUserIds = userBlockService.getViewRestrictedUserIds(viewerUserId);
         if (blockedUserIds.isEmpty()) {
@@ -107,10 +103,6 @@ public class CommentsService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid comment ID"));
     }
 
-
-    public Page<CommentResponse> getCommentListWithReplies(Long postId, Pageable pageable) {
-        return getCommentListWithReplies(postId, pageable, null);
-    }
 
     public Page<CommentResponse> getCommentListWithReplies(Long postId, Pageable pageable, Long viewerUserId) {
         Set<Long> blockedUserIds = userBlockService.getViewRestrictedUserIds(viewerUserId);

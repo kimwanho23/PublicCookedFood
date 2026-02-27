@@ -1,5 +1,6 @@
 package kwh.PublicCookedFood.board.dto.response;
 
+import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
 import lombok.Builder;
 import lombok.Getter;
@@ -62,5 +63,25 @@ public class BoardDetailResponse {
         this.state = state;
         this.regTime = regTime;
         this.updateTime = updateTime;
+    }
+
+    public static BoardDetailResponse from(Board board) {
+        return BoardDetailResponse.builder()
+                .id(board.getId())
+                .title(board.getTitle())
+                .contents(board.getContents())
+                .userId(board.getUser() == null ? null : board.getUser().getId())
+                .userName(board.getUser() == null ? null : board.getUser().getName())
+                .userProfileImageUrl(board.getUser() == null ? null : board.getUser().getProfileImageUrl())
+                .sectionId(board.getSection() == null ? null : board.getSection().getId())
+                .sectionKey(board.getSection() == null ? null : board.getSection().getSectionKey())
+                .sectionName(board.getSection() == null ? null : board.getSection().getSectionName())
+                .views(board.getViews())
+                .likesCount(board.getLikeCount())
+                .commentsCount(board.getCommentCount())
+                .state(board.getState())
+                .regTime(board.getRegTime())
+                .updateTime(board.getUpdateTime())
+                .build();
     }
 }
