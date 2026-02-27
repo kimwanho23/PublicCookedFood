@@ -14,7 +14,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -77,19 +76,19 @@ class UserBlockServiceUnitTest {
     }
 
     @Test
-    void getBlockedUserIds_returnsBlockedUserIdSet() {
+    void getBlockedUsers_returnsBlockedUsers() {
         Users blocker = createUser(1L, "blocker@test.com");
         Users blockedA = createUser(2L, "blocked-a@test.com");
         Users blockedB = createUser(3L, "blocked-b@test.com");
 
-        when(userBlockRepository.findByBlockerId(1L)).thenReturn(List.of(
+        when(userBlockRepository.findByBlockerIdOrderByRegTimeDesc(1L)).thenReturn(List.of(
                 UserBlock.of(blocker, blockedA),
                 UserBlock.of(blocker, blockedB)));
 
-        Set<Long> blockedUserIds = userBlockService.getBlockedUserIds(1L);
+        List<Users> blockedUsers = userBlockService.getBlockedUsers(1L);
 
-        assertThat(blockedUserIds).containsExactlyInAnyOrder(2L, 3L);
-        verify(userBlockRepository).findByBlockerId(1L);
+        assertThat(blockedUsers).extracting(Users::getId).containsExactlyInAnyOrder(2L, 3L);
+        verify(userBlockRepository).findByBlockerIdOrderByRegTimeDesc(1L);
     }
 
     private Users createUser(Long id, String email) {

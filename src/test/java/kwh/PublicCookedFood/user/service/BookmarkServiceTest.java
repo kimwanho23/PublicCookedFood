@@ -38,7 +38,7 @@ class BookmarkServiceTest {
                     .build());
         }
 
-        assertThat(bookmarkService.findUserBookmarks(user)).hasSize(3);
+        assertThat(bookmarkService.findUserBookmarks(user, null)).hasSize(3);
     }
 
     @Test
@@ -51,15 +51,14 @@ class BookmarkServiceTest {
                 .userId(user.getId())
                 .build());
 
-        assertThat(bookmarkService.findUserBookmarks(user)).hasSize(1);
+        assertThat(bookmarkService.findUserBookmarks(user, null)).hasSize(1);
     }
 
     private Users createUser(String email) {
-        UserSaveDto userDto = UserSaveDto.builder()
-                .email(email)
-                .name("북마크테스터")
-                .password("12345678")
-                .build();
+        UserSaveDto userDto = new UserSaveDto();
+        userDto.setEmail(email);
+        userDto.setName("북마크테스터");
+        userDto.setPassword("12345678");
         return userService.save(Users.createUser(userDto, passwordEncoder));
     }
 
