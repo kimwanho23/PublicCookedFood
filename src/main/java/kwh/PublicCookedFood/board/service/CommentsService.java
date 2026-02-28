@@ -137,7 +137,17 @@ public class CommentsService {
                 .map(comment -> convertToDto(comment, repliesByParentId, postId))
                 .toList();
 
-        return new PageImpl<>(content, pageable, parentComments.getTotalElements());
+        long visibleParentCount = commentsRepository.findParentCommentsByBoardId(
+                        postId,
+                        SoftDeleteState.ACTIVE,
+                        SoftDeleteState.DELETED,
+                        blockedUserFilter.excludeBlocked(),
+                        blockedUserFilter.blockedUserIds())
+                .stream()
+                .filter(comment -> shouldDisplayComment(comment, repliesByParentId))
+                .count();
+
+        return new PageImpl<>(content, pageable, visibleParentCount);
     }
 
     private boolean shouldDisplayComment(Comments comment, Map<Long, List<Comments>> repliesByParentId) {
