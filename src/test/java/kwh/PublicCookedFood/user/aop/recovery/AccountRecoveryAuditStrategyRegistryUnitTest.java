@@ -13,9 +13,11 @@ class AccountRecoveryAuditStrategyRegistryUnitTest {
 
     @Test
     void constructor_throwsWhenDuplicateStrategyIsRegistered() {
-        assertThatThrownBy(() -> new AccountRecoveryAuditStrategyRegistry(List.of(
+        AccountRecoveryAuditStrategyRegistry registry = new AccountRecoveryAuditStrategyRegistry(List.of(
                 new FixedStrategy(AccountRecoveryAuditType.FIND_EMAIL_SUCCESS),
-                new FixedStrategy(AccountRecoveryAuditType.FIND_EMAIL_SUCCESS))))
+                new FixedStrategy(AccountRecoveryAuditType.FIND_EMAIL_SUCCESS)));
+
+        assertThatThrownBy(registry::initialize)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Duplicate recovery audit strategy");
     }
@@ -27,6 +29,7 @@ class AccountRecoveryAuditStrategyRegistryUnitTest {
                 EnumSet.complementOf(EnumSet.of(AccountRecoveryAuditType.RESET_PASSWORD_SUCCESS)));
         AccountRecoveryAuditStrategyRegistry registry = new AccountRecoveryAuditStrategyRegistry(List.of(strategy, fallbackStrategy));
         AccountRecoveryAuditArgs args = new AccountRecoveryAuditArgs(new Object[]{1L});
+        registry.initialize();
 
         registry.handle(AccountRecoveryAuditType.RESET_PASSWORD_SUCCESS, args);
 
@@ -38,7 +41,9 @@ class AccountRecoveryAuditStrategyRegistryUnitTest {
     @Test
     void constructor_throwsWhenStrategyIsMissing() {
         RecordingStrategy strategy = new RecordingStrategy(AccountRecoveryAuditType.RESET_PASSWORD_SUCCESS);
-        assertThatThrownBy(() -> new AccountRecoveryAuditStrategyRegistry(List.of(strategy)))
+        AccountRecoveryAuditStrategyRegistry registry = new AccountRecoveryAuditStrategyRegistry(List.of(strategy));
+
+        assertThatThrownBy(registry::initialize)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Missing recovery audit strategy");
     }
