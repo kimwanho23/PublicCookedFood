@@ -35,6 +35,16 @@ public interface CommentsRepository extends JpaRepository<Comments, Long> {
                                                                          @Param("blockedUserIds") Collection<Long> blockedUserIds,
                                                                          Pageable pageable);
 
+    @Query("SELECT c FROM Comments c " +
+            "WHERE c.board.id = :postId AND c.parent IS NULL " +
+            "AND (c.state = :activeState OR c.state = :deletedState) " +
+            "AND (:excludeBlocked = false OR c.user.id NOT IN :blockedUserIds)")
+    List<Comments> findParentCommentsByBoardId(@Param("postId") Long postId,
+                                               @Param("activeState") SoftDeleteState activeState,
+                                               @Param("deletedState") SoftDeleteState deletedState,
+                                               @Param("excludeBlocked") boolean excludeBlocked,
+                                               @Param("blockedUserIds") Collection<Long> blockedUserIds);
+
     Long countByBoardIdAndState(Long boardId, SoftDeleteState state);
 
     @Query("SELECT COUNT(c) FROM Comments c " +

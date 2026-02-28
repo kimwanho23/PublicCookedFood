@@ -35,13 +35,19 @@ public class BoardDetailController {
     private final BoardDetailFacade boardDetailFacade;
 
     @PatchMapping("/{id:[0-9]+}/comments/{commentId:[0-9]+}/delete")
-    public String deleteComment(@LoginUser Users user, @PathVariable Long id, @PathVariable Long commentId) {
+    public String deleteComment(@LoginUser Users user,
+                                @PathVariable Long id,
+                                @PathVariable Long commentId,
+                                RedirectAttributes redirectAttributes) {
         String loginRedirect = redirectIfUnauthenticated(user);
         if (loginRedirect != null) {
             return loginRedirect;
         }
 
-        boardDetailFacade.deleteComment(user, id, commentId);
+        BoardDetailFacade.OperationResult result = boardDetailFacade.deleteComment(user, id, commentId);
+        if (!result.success()) {
+            redirectAttributes.addFlashAttribute("commentError", result.message());
+        }
         return boardDetailRedirect(id);
     }
 

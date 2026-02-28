@@ -29,15 +29,16 @@ public class BoardInteractionFacade {
     private final BoardAuthorizationPolicy boardAuthorizationPolicy;
 
     @Transactional
-    public void deleteComment(Users actor, Long boardId, Long commentId) {
+    public BoardDetailFacade.OperationResult deleteComment(Users actor, Long boardId, Long commentId) {
         Comments comment = commentsService.getComment(commentId);
         if (!boardAuthorizationPolicy.canManageComment(actor, boardId, comment)) {
-            return;
+            return BoardDetailFacade.OperationResult.failure("댓글 삭제 권한이 없습니다.");
         }
 
         commentsService.deleteComment(commentId);
         boardService.updateCommentCounts(boardId);
         boardAuditPublisher.boardCommentDelete(actor.getId(), boardId, commentId);
+        return BoardDetailFacade.OperationResult.success("댓글이 삭제되었습니다.");
     }
 
     @Transactional

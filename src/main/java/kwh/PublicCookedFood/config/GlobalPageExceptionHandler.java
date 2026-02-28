@@ -3,6 +3,7 @@ package kwh.PublicCookedFood.config;
 import jakarta.servlet.http.HttpServletRequest;
 import kwh.PublicCookedFood.board.contoller.AdminBoardPageController;
 import kwh.PublicCookedFood.board.contoller.BoardController;
+import kwh.PublicCookedFood.board.contoller.BoardDetailController;
 import kwh.PublicCookedFood.food.controller.MainController;
 import kwh.PublicCookedFood.food.controller.RecipeController;
 import kwh.PublicCookedFood.user.controller.BookmarkController;
@@ -20,6 +21,7 @@ import java.util.NoSuchElementException;
         MainController.class,
         RecipeController.class,
         BoardController.class,
+        BoardDetailController.class,
         UserController.class,
         UserBlockController.class,
         BookmarkController.class,
@@ -61,8 +63,17 @@ public class GlobalPageExceptionHandler {
         if (requestUri.startsWith("/bookmarks")) {
             return "/recipes";
         }
-        if (requestUri.startsWith("/admin/boards")) {
+        if (requestUri.startsWith("/admin/boards/policy")) {
+            return "/admin/boards/policy";
+        }
+        if (requestUri.startsWith("/admin/boards/dashboard")) {
+            return "/admin/boards/dashboard";
+        }
+        if (requestUri.startsWith("/admin/boards/reports")) {
             return "/admin/boards/reports";
+        }
+        if (requestUri.startsWith("/admin/boards")) {
+            return "/admin/boards/dashboard";
         }
         if (requestUri.matches("^/u/\\d+(/(comments|scraps))?$")) {
             return "/boards";
