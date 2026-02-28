@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -95,10 +96,26 @@ public class Users {
         this.notificationEnabled = notificationEnabled == null || notificationEnabled;
         this.authority = authority;
         this.loginMethod = loginMethod;
-        this.bookmarks = bookmarks;
-        this.boards = boards;
-        this.comments = comments;
-        this.likes = likes;
+        this.bookmarks = bookmarks == null ? new ArrayList<>() : new ArrayList<>(bookmarks);
+        this.boards = boards == null ? new ArrayList<>() : new ArrayList<>(boards);
+        this.comments = comments == null ? new ArrayList<>() : new ArrayList<>(comments);
+        this.likes = likes == null ? new ArrayList<>() : new ArrayList<>(likes);
+    }
+
+    public List<Bookmark> getBookmarks() {
+        return Collections.unmodifiableList(bookmarks);
+    }
+
+    public List<Board> getBoards() {
+        return Collections.unmodifiableList(boards);
+    }
+
+    public List<Comments> getComments() {
+        return Collections.unmodifiableList(comments);
+    }
+
+    public List<Likes> getLikes() {
+        return Collections.unmodifiableList(likes);
     }
 
     public Users update(String name) {

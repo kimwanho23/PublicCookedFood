@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+
 @Service
 @RequiredArgsConstructor
 public class BoardDetailFacade {
@@ -24,8 +26,8 @@ public class BoardDetailFacade {
         return boardDetailQueryFacade.loadBoardDetail(boardId, user, pageable);
     }
 
-    public void deleteComment(Users actor, Long boardId, Long commentId) {
-        boardInteractionFacade.deleteComment(actor, boardId, commentId);
+    public OperationResult deleteComment(Users actor, Long boardId, Long commentId) {
+        return boardInteractionFacade.deleteComment(actor, boardId, commentId);
     }
 
     public OperationResult addComment(Users actor,
@@ -64,6 +66,16 @@ public class BoardDetailFacade {
                                       Page<CommentResponse> comments,
                                       Long commentsCount,
                                       BoardReportReason[] reportReasons) {
+        public BoardDetailViewData {
+            reportReasons = reportReasons == null
+                    ? new BoardReportReason[0]
+                    : Arrays.copyOf(reportReasons, reportReasons.length);
+        }
+
+        @Override
+        public BoardReportReason[] reportReasons() {
+            return Arrays.copyOf(reportReasons, reportReasons.length);
+        }
     }
 
     public record OperationResult(boolean success,

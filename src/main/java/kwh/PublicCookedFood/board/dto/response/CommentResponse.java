@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Getter
@@ -51,5 +52,20 @@ public class CommentResponse {
             return false;
         }
         return replies.stream().allMatch(reply -> reply.isDeleted() && reply.areAllRepliesDeleted());
+    }
+
+    public List<CommentResponse> getReplies() {
+        if (replies == null || replies.isEmpty()) {
+            return List.of();
+        }
+        return Collections.unmodifiableList(new ArrayList<>(replies));
+    }
+
+    public void setReplies(List<CommentResponse> replies) {
+        if (replies == null || replies.isEmpty()) {
+            this.replies = new ArrayList<>();
+            return;
+        }
+        this.replies = new ArrayList<>(replies);
     }
 }

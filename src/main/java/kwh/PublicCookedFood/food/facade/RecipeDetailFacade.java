@@ -75,6 +75,12 @@ public class RecipeDetailFacade {
                                        RecipeReviewSummaryResponse reviewSummary,
                                        List<RecipeReviewResponse> reviews,
                                        RecipeReviewResponse myReview) {
+        public RecipeDetailViewData {
+            categories = categories == null ? List.of() : List.copyOf(categories);
+            irdntResponseDto = irdntResponseDto == null ? List.of() : List.copyOf(irdntResponseDto);
+            crseResponseDto = crseResponseDto == null ? List.of() : List.copyOf(crseResponseDto);
+            reviews = reviews == null ? List.of() : List.copyOf(reviews);
+        }
     }
 
     public record ReviewUpsertResult(boolean success,

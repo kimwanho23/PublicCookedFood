@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
@@ -80,28 +81,10 @@ public class BoardImageFacade {
                 .filename(zipResource.zipFilename(), StandardCharsets.UTF_8)
                 .build();
 
-        StreamingResponseBody body = outputStream -> {
-            try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
-                for (ImageService.ZipImageEntry entry : zipResource.entries()) {
-                    if (entry == null || entry.filePath() == null || entry.entryName() == null || entry.entryName().isBlank()) {
-                        continue;
-                    }
-                    if (!Files.isRegularFile(entry.filePath())) {
-                        continue;
-                    }
-                    zipOutputStream.putNextEntry(new ZipEntry(entry.entryName()));
-                    try (InputStream inputStream = Files.newInputStream(entry.filePath())) {
-                        inputStream.transferTo(zipOutputStream);
-                    }
-                    zipOutputStream.closeEntry();
-                }
-            }
-        };
-
         return Optional.of(new BoardImagesZipViewData(
                 ZIP_CONTENT_TYPE,
                 disposition.toString(),
-                body
+                zipResource.entries()
         ));
     }
 
@@ -113,6 +96,34 @@ public class BoardImageFacade {
 
     public record BoardImagesZipViewData(String contentType,
                                          String contentDisposition,
-                                         StreamingResponseBody body) {
+                                         List<ImageService.ZipImageEntry> entries) {
+        public BoardImagesZipViewData {
+            entries = entries == null ? List.of() : List.copyOf(entries);
+        }
+
+        @Override
+        public List<ImageService.ZipImageEntry> entries() {
+            return List.copyOf(entries);
+        }
+
+        public StreamingResponseBody body() {
+            return outputStream -> {
+                try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
+                    for (ImageService.ZipImageEntry entry : entries) {
+                        if (entry == null || entry.filePath() == null || entry.entryName() == null || entry.entryName().isBlank()) {
+                            continue;
+                        }
+                        if (!Files.isRegularFile(entry.filePath())) {
+                            continue;
+                        }
+                        zipOutputStream.putNextEntry(new ZipEntry(entry.entryName()));
+                        try (InputStream inputStream = Files.newInputStream(entry.filePath())) {
+                            inputStream.transferTo(zipOutputStream);
+                        }
+                        zipOutputStream.closeEntry();
+                    }
+                }
+            };
+        }
     }
 }

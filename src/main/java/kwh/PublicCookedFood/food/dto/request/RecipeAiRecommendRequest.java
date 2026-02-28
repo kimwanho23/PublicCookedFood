@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -53,16 +55,48 @@ public class RecipeAiRecommendRequest {
     @Max(value = 20, message = "추천 개수는 20 이하로 입력해주세요.")
     private Integer limit;
 
+    public List<String> getIncludeIngredients() {
+        return includeIngredients == null ? null : Collections.unmodifiableList(includeIngredients);
+    }
+
+    public void setIncludeIngredients(List<String> includeIngredients) {
+        this.includeIngredients = toMutableCopy(includeIngredients);
+    }
+
     public List<String> normalizedIncludeIngredients() {
         return normalizeList(includeIngredients);
+    }
+
+    public List<String> getExcludeIngredients() {
+        return excludeIngredients == null ? null : Collections.unmodifiableList(excludeIngredients);
+    }
+
+    public void setExcludeIngredients(List<String> excludeIngredients) {
+        this.excludeIngredients = toMutableCopy(excludeIngredients);
     }
 
     public List<String> normalizedExcludeIngredients() {
         return normalizeList(excludeIngredients);
     }
 
+    public List<String> getPreferredTypes() {
+        return preferredTypes == null ? null : Collections.unmodifiableList(preferredTypes);
+    }
+
+    public void setPreferredTypes(List<String> preferredTypes) {
+        this.preferredTypes = toMutableCopy(preferredTypes);
+    }
+
     public List<String> normalizedPreferredTypes() {
         return normalizeList(preferredTypes);
+    }
+
+    public List<String> getPreferredNations() {
+        return preferredNations == null ? null : Collections.unmodifiableList(preferredNations);
+    }
+
+    public void setPreferredNations(List<String> preferredNations) {
+        this.preferredNations = toMutableCopy(preferredNations);
     }
 
     public List<String> normalizedPreferredNations() {
@@ -116,5 +150,12 @@ public class RecipeAiRecommendRequest {
                 .map(value -> value.toLowerCase(Locale.ROOT))
                 .distinct()
                 .toList();
+    }
+
+    private List<String> toMutableCopy(List<String> values) {
+        if (values == null) {
+            return null;
+        }
+        return new ArrayList<>(values);
     }
 }

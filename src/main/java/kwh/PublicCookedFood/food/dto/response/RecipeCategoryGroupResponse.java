@@ -13,7 +13,7 @@ public class RecipeCategoryGroupResponse {
     public RecipeCategoryGroupResponse(String title, String param, List<String> items) {
         this.title = title;
         this.param = param;
-        this.items = items;
+        this.items = items == null ? List.of() : List.copyOf(items);
     }
 
     public String getTitle() {
@@ -25,6 +25,6 @@ public class RecipeCategoryGroupResponse {
     }
 
     public List<String> getItems() {
-        return items;
+        return List.copyOf(items);
     }
 }

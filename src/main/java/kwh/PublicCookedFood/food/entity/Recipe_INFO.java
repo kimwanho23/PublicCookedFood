@@ -8,6 +8,7 @@ import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -95,10 +96,14 @@ public class Recipe_INFO {
         this.irdntCODE = irdntCODE;
         this.pcNM = pcNM;
         this.imgURL = imgURL;
-        this.bookmarks = bookmarks;
+        this.bookmarks = bookmarks == null ? new ArrayList<>() : new ArrayList<>(bookmarks);
     }
 
     public Recipe_INFO() {
 
+    }
+
+    public List<Bookmark> getBookmarks() {
+        return Collections.unmodifiableList(bookmarks);
     }
 }

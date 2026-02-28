@@ -18,6 +18,7 @@ public class BoardSectionService {
 
     private static final String DEFAULT_SECTION_KEY = "general";
     private static final String DEFAULT_SECTION_NAME = "자유";
+    private static final Integer DEFAULT_DISPLAY_ORDER = 0;
 
     private final BoardSectionRepository boardSectionRepository;
     private final BoardRepository boardRepository;
@@ -50,7 +51,7 @@ public class BoardSectionService {
         BoardSection section = BoardSection.builder()
                 .sectionKey(normalizedKey)
                 .sectionName(sectionName.trim())
-                .displayOrder(displayOrder == null ? 0 : displayOrder)
+                .displayOrder(displayOrder == null ? DEFAULT_DISPLAY_ORDER : displayOrder)
                 .active(true)
                 .build();
         return boardSectionRepository.save(section);
