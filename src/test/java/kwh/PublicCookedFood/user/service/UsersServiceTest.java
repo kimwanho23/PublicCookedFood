@@ -1,46 +1,63 @@
 package kwh.PublicCookedFood.user.service;
 
+import kwh.PublicCookedFood.user.domain.Role;
 import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.request.UserSaveDto;
-import org.junit.jupiter.api.AfterEach;
+import kwh.PublicCookedFood.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class UsersServiceTest {
 
-    @Autowired
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
     private UserService userService;
-
-    @Autowired
-    PasswordEncoder passwordEncoder;
-
-
-    @AfterEach
-    public void clearStore() {
-
-    }
-
-    public Users createUser() {
-        UserSaveDto userDto = new UserSaveDto();
-        userDto.setEmail("test@email.com");
-        userDto.setName("홍길동");
-        userDto.setPassword("12345678");
-        return Users.createUser(userDto, passwordEncoder);
-    }
 
     @Test
     @DisplayName("회원가입 테스트")
-    public void saveMemberTest() {
-        Users users = createUser();
+    void saveMemberTest() {
+        Users users = createUser("test@email.com");
+        when(userRepository.findByEmail("test@email.com")).thenReturn(Optional.empty());
+        when(userRepository.saveAndFlush(users)).thenReturn(users);
+
         Users savedMember = userService.save(users);
 
-        assertThat(users.getEmail()).isEqualTo(savedMember.getEmail());
+        assertThat(savedMember.getEmail()).isEqualTo("test@email.com");
+        verify(userRepository).findByEmail("test@email.com");
+        verify(userRepository).saveAndFlush(users);
+    }
+
+    @Test
+    void saveMemberTest_throwsWhenDuplicateEmailExists() {
+        Users existing = createUser("dup@email.com");
+        Users incoming = createUser("dup@email.com");
+        when(userRepository.findByEmail("dup@email.com")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> userService.save(incoming))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("이미 가입된 이메일");
+    }
+
+    private Users createUser(String email) {
+        return Users.builder()
+                .email(email)
+                .name("홍길동")
+                .password("encoded-password")
+                .authority(Role.USER)
+                .loginMethod("Current")
+                .build();
     }
 }
