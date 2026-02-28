@@ -30,7 +30,7 @@ public class MainController {
     }
 
     @GetMapping("/main")
-    public String Home(Model model) {
+    public String home(Model model) {
         RecipeMainFacade.HomeViewData data = recipeMainFacade.loadHomeData();
         model.addAttribute("popularBoards", data.popularBoards());
         model.addAttribute("recipeRankings", data.recipeRankings());
