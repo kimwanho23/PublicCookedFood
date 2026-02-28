@@ -14,7 +14,6 @@ import kwh.PublicCookedFood.storage.StoragePathUtils;
 import kwh.PublicCookedFood.storage.StorageService;
 import kwh.PublicCookedFood.storage.StoredResource;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -43,7 +42,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ImageService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
@@ -474,6 +472,14 @@ public class ImageService {
     }
 
     public record BoardImagesZipResource(String zipFilename, List<ZipImageEntry> entries) {
+        public BoardImagesZipResource {
+            entries = entries == null ? List.of() : List.copyOf(entries);
+        }
+
+        @Override
+        public List<ZipImageEntry> entries() {
+            return List.copyOf(entries);
+        }
     }
 
     public record ZipImageEntry(Path filePath, String entryName) {

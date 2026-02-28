@@ -10,4 +10,12 @@ public record RecipeAiRecommendResponse(
         int returnedCount,
         List<RecipeAiRecommendItemResponse> recommendations
 ) {
+    public RecipeAiRecommendResponse {
+        recommendations = recommendations == null ? List.of() : List.copyOf(recommendations);
+    }
+
+    @Override
+    public List<RecipeAiRecommendItemResponse> recommendations() {
+        return List.copyOf(recommendations);
+    }
 }

@@ -110,6 +110,11 @@ public class BoardFacade {
                                     int featuredLikeThreshold,
                                     String boardPageTitle,
                                     String queryErrorMsg) {
+        public BoardListViewData {
+            boardThumbnailMap = boardThumbnailMap == null ? Map.of() : Map.copyOf(boardThumbnailMap);
+            boardHasImageMap = boardHasImageMap == null ? Map.of() : Map.copyOf(boardHasImageMap);
+            sections = sections == null ? List.of() : List.copyOf(sections);
+        }
     }
 
     public record BoardManageContext(BoardDetailResponse board,

@@ -9,6 +9,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -60,7 +61,11 @@ public class Comments extends BaseEntity {
         this.contents = contents;
         this.parent = parent;
         this.state = state == null ? SoftDeleteState.ACTIVE : state;
-        this.replies = replies;
+        this.replies = replies == null ? new ArrayList<>() : new ArrayList<>(replies);
+    }
+
+    public List<Comments> getReplies() {
+        return Collections.unmodifiableList(replies);
     }
 
 

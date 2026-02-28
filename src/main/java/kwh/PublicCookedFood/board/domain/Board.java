@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -76,8 +77,16 @@ public class Board extends BaseEntity {
         this.commentCount = commentCount;
         this.state = state == null ? SoftDeleteState.ACTIVE : state;
         this.hiddenByReport = hiddenByReport;
-        this.likes = likes;
-        this.comments = comments;
+        this.likes = likes == null ? new ArrayList<>() : new ArrayList<>(likes);
+        this.comments = comments == null ? new ArrayList<>() : new ArrayList<>(comments);
+    }
+
+    public List<Likes> getLikes() {
+        return Collections.unmodifiableList(likes);
+    }
+
+    public List<Comments> getComments() {
+        return Collections.unmodifiableList(comments);
     }
 
     public void updateHiddenByReport(boolean hiddenByReport) {

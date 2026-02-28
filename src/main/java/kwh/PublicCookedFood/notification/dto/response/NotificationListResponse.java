@@ -12,6 +12,15 @@ public record NotificationListResponse(
         long totalElements,
         int totalPages
 ) {
+    public NotificationListResponse {
+        notifications = notifications == null ? List.of() : List.copyOf(notifications);
+    }
+
+    @Override
+    public List<NotificationResponse> notifications() {
+        return List.copyOf(notifications);
+    }
+
     public static NotificationListResponse from(Page<NotificationResponse> pageResult, long unreadCount) {
         return new NotificationListResponse(
                 pageResult.getContent(),

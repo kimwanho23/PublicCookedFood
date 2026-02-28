@@ -66,6 +66,11 @@ public class BoardAdminFacade {
                                     List<?> popularBoards,
                                     List<?> reviewRankings,
                                     List<UserActivityLog> recentActivities) {
+        public DashboardViewData {
+            popularBoards = popularBoards == null ? List.of() : List.copyOf(popularBoards);
+            reviewRankings = reviewRankings == null ? List.of() : List.copyOf(reviewRankings);
+            recentActivities = recentActivities == null ? List.of() : List.copyOf(recentActivities);
+        }
     }
 
     public record PolicyViewData(BoardPolicyResponse policy,
@@ -80,5 +85,15 @@ public class BoardAdminFacade {
                                      long rejectedCount,
                                      long allCount,
                                      BoardReportStatus[] reportStatusValues) {
+        public ReportPageViewData {
+            reportStatusValues = reportStatusValues == null
+                    ? new BoardReportStatus[0]
+                    : reportStatusValues.clone();
+        }
+
+        @Override
+        public BoardReportStatus[] reportStatusValues() {
+            return reportStatusValues.clone();
+        }
     }
 }

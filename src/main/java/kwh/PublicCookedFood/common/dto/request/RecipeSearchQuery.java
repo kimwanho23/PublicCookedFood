@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,12 +31,36 @@ public class RecipeSearchQuery {
         return normalize(keyword);
     }
 
+    public List<String> getType() {
+        return type == null ? null : Collections.unmodifiableList(type);
+    }
+
+    public void setType(List<String> type) {
+        this.type = toMutableCopy(type);
+    }
+
     public List<String> normalizedType() {
         return normalizeList(type);
     }
 
+    public List<String> getNation() {
+        return nation == null ? null : Collections.unmodifiableList(nation);
+    }
+
+    public void setNation(List<String> nation) {
+        this.nation = toMutableCopy(nation);
+    }
+
     public List<String> normalizedNation() {
         return normalizeList(nation);
+    }
+
+    public List<String> getIngredient() {
+        return ingredient == null ? null : Collections.unmodifiableList(ingredient);
+    }
+
+    public void setIngredient(List<String> ingredient) {
+        this.ingredient = toMutableCopy(ingredient);
     }
 
     public List<String> normalizedIngredient() {
@@ -63,5 +89,12 @@ public class RecipeSearchQuery {
                 .filter(value -> !value.isEmpty())
                 .distinct()
                 .toList();
+    }
+
+    private List<String> toMutableCopy(List<String> values) {
+        if (values == null) {
+            return null;
+        }
+        return new ArrayList<>(values);
     }
 }

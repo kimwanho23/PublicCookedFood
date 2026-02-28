@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "board_policy")
 public class BoardPolicy {
 
-    private static final int DEFAULT_FEATURED_LIKE_THRESHOLD = 10;
+    private static final Integer DEFAULT_FEATURED_LIKE_THRESHOLD = 10;
     private static final BoardThumbnailDisplayMode DEFAULT_THUMBNAIL_DISPLAY_MODE = BoardThumbnailDisplayMode.LEFT;
 
     @Id

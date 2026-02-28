@@ -56,6 +56,8 @@ public class ImageSchemaService {
     private final JdbcTemplate jdbcTemplate;
     private final AtomicBoolean legacySchemaChecked = new AtomicBoolean(false);
     private final AtomicBoolean boardImageSchemaChecked = new AtomicBoolean(false);
+    private final Object legacySchemaLock = new Object();
+    private final Object boardImageSchemaLock = new Object();
     private final ImageSchemaProperties imageSchemaProperties;
 
     public void ensureLegacyImagesSchemaCompatibleIfEnabled() {
@@ -77,7 +79,7 @@ public class ImageSchemaService {
             return;
         }
 
-        synchronized (legacySchemaChecked) {
+        synchronized (legacySchemaLock) {
             if (legacySchemaChecked.get()) {
                 return;
             }
@@ -117,7 +119,7 @@ public class ImageSchemaService {
             return;
         }
 
-        synchronized (boardImageSchemaChecked) {
+        synchronized (boardImageSchemaLock) {
             if (boardImageSchemaChecked.get()) {
                 return;
             }

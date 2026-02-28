@@ -104,6 +104,10 @@ public class RecipeMainFacade {
 
     public record HomeViewData(List<Board> popularBoards,
                                List<RecipeRankingResponse> recipeRankings) {
+        public HomeViewData {
+            popularBoards = popularBoards == null ? List.of() : List.copyOf(popularBoards);
+            recipeRankings = recipeRankings == null ? List.of() : List.copyOf(recipeRankings);
+        }
     }
 
     public record RecipeListViewData(Page<Recipe_INFO_ResponseDto> recipePage,
@@ -114,5 +118,11 @@ public class RecipeMainFacade {
                                      String selectedSearch,
                                      List<RecipeCategoryGroupResponse> categories,
                                      String queryErrorMsg) {
+        public RecipeListViewData {
+            selectedTypes = selectedTypes == null ? List.of() : List.copyOf(selectedTypes);
+            selectedNations = selectedNations == null ? List.of() : List.copyOf(selectedNations);
+            selectedIngredients = selectedIngredients == null ? List.of() : List.copyOf(selectedIngredients);
+            categories = categories == null ? List.of() : List.copyOf(categories);
+        }
     }
 }
