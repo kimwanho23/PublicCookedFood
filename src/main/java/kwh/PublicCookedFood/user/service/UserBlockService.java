@@ -32,7 +32,7 @@ public class UserBlockService {
         Users blocker = getUserById(blockerId);
         Users blocked = getUserById(blockedId);
         try {
-            userBlockRepository.save(UserBlock.of(blocker, blocked));
+            userBlockRepository.saveAndFlush(UserBlock.of(blocker, blocked));
             return true;
         } catch (DataIntegrityViolationException e) {
             if (userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId)) {

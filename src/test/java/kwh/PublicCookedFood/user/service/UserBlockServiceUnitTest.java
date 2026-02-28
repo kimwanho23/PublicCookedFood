@@ -67,7 +67,7 @@ class UserBlockServiceUnitTest {
         when(userBlockRepository.existsByBlockerIdAndBlockedId(1L, 2L)).thenReturn(false, true);
         when(userRepository.findById(1L)).thenReturn(Optional.of(blocker));
         when(userRepository.findById(2L)).thenReturn(Optional.of(blocked));
-        when(userBlockRepository.save(any(UserBlock.class)))
+        when(userBlockRepository.saveAndFlush(any(UserBlock.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate key"));
 
         boolean created = userBlockService.block(1L, 2L);

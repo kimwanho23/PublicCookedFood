@@ -51,7 +51,7 @@ public class BoardScrapService {
         }
 
         try {
-            boardScrapRepository.save(BoardScrap.builder()
+            boardScrapRepository.saveAndFlush(BoardScrap.builder()
                     .user(user)
                     .board(board)
                     .build());

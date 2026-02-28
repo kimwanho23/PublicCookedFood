@@ -82,7 +82,7 @@ public class BoardReportService {
         boolean suspicious = isSuspiciousReportVolume(reporterVolume);
 
         try {
-            BoardReport savedReport = boardReportRepository.save(BoardReport.builder()
+            BoardReport savedReport = boardReportRepository.saveAndFlush(BoardReport.builder()
                     .board(board)
                     .reporter(reporter)
                     .reason(reason)
