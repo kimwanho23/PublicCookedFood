@@ -13,11 +13,6 @@ import org.springframework.context.annotation.Bean;
 @EnableAsync
 public class SchedulingConfig {
 
-    @Bean(name = "boardStatsExecutor")
-    public Executor boardStatsExecutor() {
-        return createExecutor("board-stats-");
-    }
-
     @Bean(name = "recipeAiExecutor")
     public Executor recipeAiExecutor() {
         return createExecutor("recipe-ai-");

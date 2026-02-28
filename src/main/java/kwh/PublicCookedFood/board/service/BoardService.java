@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -115,6 +114,8 @@ public class BoardService {
     @Transactional
     public Board save(BoardSaveRequest boardDto) {
         String rawContents = boardDto.getContents();
+        String sanitizedTitle = Jsoup.clean(boardDto.getTitle() == null ? "" : boardDto.getTitle(), Safelist.none());
+        String sanitizedContents = Jsoup.clean(rawContents == null ? "" : rawContents, BOARD_CONTENT_SAFELIST);
         BoardSection section = boardSectionService.resolveSectionForWrite(boardDto.getSectionId());
         Users user = userRepository.findById(boardDto.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
@@ -124,8 +125,8 @@ public class BoardService {
                     .map(Board::isHiddenByReport)
                     .orElse(false);
         }
-        boardDto.setTitle(Jsoup.clean(boardDto.getTitle() == null ? "" : boardDto.getTitle(), Safelist.none()));
-        boardDto.setContents(Jsoup.clean(rawContents == null ? "" : rawContents, BOARD_CONTENT_SAFELIST));
+        boardDto.setTitle(sanitizedTitle);
+        boardDto.setContents(sanitizedContents);
         Board board = Board.builder()
                 .id(boardDto.getId())
                 .title(boardDto.getTitle())
@@ -139,7 +140,7 @@ public class BoardService {
                 .hiddenByReport(hiddenByReport)
                 .build();
         Board savedBoard = boardRepository.save(board);
-        imageService.syncBoardImages(savedBoard, rawContents);
+        imageService.syncBoardImages(savedBoard, sanitizedContents);
         return savedBoard;
     }
 
@@ -156,13 +157,11 @@ public class BoardService {
     }
 
     @Transactional
-    @Async("boardStatsExecutor")
     public void updateLikes(Long id) {
         boardRepository.updateLikes(id);
     }
 
     @Transactional
-    @Async("boardStatsExecutor")
     public void updateCommentCounts(Long id) {
         Long commentCount = commentsRepository.countByBoardIdAndState(id, SoftDeleteState.ACTIVE);
         boardRepository.updateCommentCount(id, commentCount, SoftDeleteState.ACTIVE);
