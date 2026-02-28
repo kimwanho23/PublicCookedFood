@@ -2,6 +2,8 @@ package kwh.PublicCookedFood.user.aop.action;
 
 import kwh.PublicCookedFood.user.audit.UserActionAuditPayload;
 
+import java.util.Optional;
+
 public class UserActionAuditArgs {
 
     private final UserActionAuditPayload payload;
@@ -46,15 +48,12 @@ public class UserActionAuditArgs {
         return null;
     }
 
-    public Boolean asBoolean(int index) {
+    public Optional<Boolean> asBoolean(int index) {
         Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
         if (value instanceof Boolean booleanValue) {
-            return booleanValue;
+            return Optional.of(booleanValue);
         }
-        return null;
+        return Optional.empty();
     }
 
     public String asString(int index) {
@@ -84,8 +83,11 @@ public class UserActionAuditArgs {
         return value == null ? "-" : value.toString();
     }
 
-    public String safeBoolean(Boolean value) {
-        return value == null ? "-" : value.toString();
+    public String safeBoolean(Optional<Boolean> value) {
+        if (value == null || value.isEmpty()) {
+            return "-";
+        }
+        return value.get().toString();
     }
 
     public String safeText(String value) {

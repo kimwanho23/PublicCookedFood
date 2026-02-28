@@ -13,9 +13,11 @@ class UserActionAuditStrategyRegistryUnitTest {
 
     @Test
     void constructor_throwsWhenDuplicateStrategyIsRegistered() {
-        assertThatThrownBy(() -> new UserActionAuditStrategyRegistry(List.of(
+        UserActionAuditStrategyRegistry registry = new UserActionAuditStrategyRegistry(List.of(
                 new FixedStrategy(UserActionAuditType.USER_SIGNUP),
-                new FixedStrategy(UserActionAuditType.USER_SIGNUP))))
+                new FixedStrategy(UserActionAuditType.USER_SIGNUP)));
+
+        assertThatThrownBy(registry::initialize)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Duplicate audit strategy");
     }
@@ -26,6 +28,7 @@ class UserActionAuditStrategyRegistryUnitTest {
         FixedStrategy fallbackStrategy = new FixedStrategy(EnumSet.complementOf(EnumSet.of(UserActionAuditType.USER_SIGNUP)));
         UserActionAuditStrategyRegistry registry = new UserActionAuditStrategyRegistry(List.of(strategy, fallbackStrategy));
         UserActionAuditArgs args = new UserActionAuditArgs(new Object[]{1L, "test@example.com"});
+        registry.initialize();
 
         registry.handle(UserActionAuditType.USER_SIGNUP, args);
 
@@ -37,7 +40,9 @@ class UserActionAuditStrategyRegistryUnitTest {
     @Test
     void constructor_throwsWhenStrategyIsMissing() {
         RecordingStrategy strategy = new RecordingStrategy(UserActionAuditType.USER_SIGNUP);
-        assertThatThrownBy(() -> new UserActionAuditStrategyRegistry(List.of(strategy)))
+        UserActionAuditStrategyRegistry registry = new UserActionAuditStrategyRegistry(List.of(strategy));
+
+        assertThatThrownBy(registry::initialize)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Missing audit strategy");
     }

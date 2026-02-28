@@ -4,7 +4,6 @@ import kwh.PublicCookedFood.user.aop.AccountRecoveryAuditType;
 
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 public abstract class AbstractAccountRecoveryAuditStrategy implements AccountRecoveryAuditStrategy {
@@ -15,9 +14,8 @@ public abstract class AbstractAccountRecoveryAuditStrategy implements AccountRec
             Map<AccountRecoveryAuditType, Consumer<AccountRecoveryAuditArgs>> handlers) {
         EnumMap<AccountRecoveryAuditType, Consumer<AccountRecoveryAuditArgs>> dispatchers =
                 new EnumMap<>(AccountRecoveryAuditType.class);
-        dispatchers.putAll(Objects.requireNonNull(handlers, "handlers must not be null"));
-        if (dispatchers.isEmpty()) {
-            throw new IllegalArgumentException("handlers must not be empty");
+        if (handlers != null) {
+            dispatchers.putAll(handlers);
         }
         this.handlers = Map.copyOf(dispatchers);
     }
