@@ -44,7 +44,7 @@ public class BookmarkService {
        try {
            return bookmarkRepository.findByUserAndRecipeID(user, recipe)
                    .map(existing -> existing)
-                   .orElseGet(() -> bookmarkRepository.save(Bookmark.of(user, recipe)));
+                   .orElseGet(() -> bookmarkRepository.saveAndFlush(Bookmark.of(user, recipe)));
        } catch (DataIntegrityViolationException e) {
            // 동시에 중복 요청이 들어온 경우 unique 제약 충돌 후 기존 레코드 재조회
            return bookmarkRepository.findByUserAndRecipeID(user, recipe)

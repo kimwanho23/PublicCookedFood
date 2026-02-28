@@ -4,6 +4,7 @@ import kwh.PublicCookedFood.user.domain.Users;
 import kwh.PublicCookedFood.user.dto.CustomUserDetails;
 import kwh.PublicCookedFood.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,7 +28,11 @@ public class UserService implements UserDetailsService {
                 throw new IllegalStateException("이미 가입된 이메일입니다.");
             }
         });
-        return userRepository.save(users);
+        try {
+            return userRepository.saveAndFlush(users);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException("이미 가입된 이메일입니다.", e);
+        }
     }
 
     public Users findUserByEmail(String email){

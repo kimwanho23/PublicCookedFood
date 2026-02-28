@@ -47,7 +47,7 @@ public class LikeService {
                 .user(user)
                 .build();
         try {
-            return likesRepository.save(like).getId();
+            return likesRepository.saveAndFlush(like).getId();
         } catch (DataIntegrityViolationException e) {
             // 동시 요청 경합으로 unique 제약 충돌 시 기존 레코드를 재조회한다.
             return likesRepository.findByBoardIdAndUserId(boardId, userId)
