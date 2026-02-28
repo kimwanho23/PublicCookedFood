@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 @Getter
@@ -22,7 +25,7 @@ public class OAuthAttributes {
     @Builder
     public OAuthAttributes(Map<String, Object> attributes, String nameAttributeKey, String name, String email,
                            boolean emailVerified, String loginMethod) {
-        this.attributes = attributes;
+        this.attributes = toImmutableMap(attributes);
         this.nameAttributeKey = nameAttributeKey;
         this.name = name;
         this.email = email;
@@ -30,60 +33,106 @@ public class OAuthAttributes {
         this.loginMethod = loginMethod;
     }
 
+    public Map<String, Object> getAttributes() {
+        if (attributes.isEmpty()) {
+            return Map.of();
+        }
+        return Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
+    }
+
     public static OAuthAttributes of(String registrationId, String userNameAttributeName, Map<String, Object> attributes) {
-        if (registrationId.equals("naver")) {
-            return ofNaver("id", attributes);
-        }
-        if (registrationId.equals("kakao")) {
-            return ofKakao("id", attributes);
-        }
-        return ofGoogle(userNameAttributeName, attributes);
-    }
+        String provider = registrationId == null ? "google" : registrationId.toLowerCase(Locale.ROOT);
+        Map<String, Object> safeAttributes = attributes == null ? Map.of() : attributes;
+        String nameAttributeKey = userNameAttributeName;
+        OAuthProfile profile;
 
-    // OAuth2User에서 반환하는 사용자 정보는 Map이기 때문에 값 하나하나를 변환해야한다.
-    private static OAuthAttributes ofGoogle(String userNameAttributeName, Map<String, Object> attributes) {
+        switch (provider) {
+            case "naver" -> {
+                nameAttributeKey = "id";
+                profile = extractNaverProfile(safeAttributes);
+            }
+            case "kakao" -> {
+                nameAttributeKey = "id";
+                profile = extractKakaoProfile(safeAttributes);
+            }
+            default -> {
+                provider = "google";
+                profile = extractGoogleProfile(safeAttributes);
+            }
+        }
+
         return OAuthAttributes.builder()
-                .name((String) attributes.get("name"))
-                .email((String) attributes.get("email"))
-                .emailVerified(asBoolean(attributes.get("email_verified")))
-                .loginMethod(("google"))
-                .attributes(attributes)
-                .nameAttributeKey(userNameAttributeName)
+                .name(profile.name())
+                .email(profile.email())
+                .emailVerified(profile.emailVerified())
+                .loginMethod(provider)
+                .attributes(profile.attributes())
+                .nameAttributeKey(nameAttributeKey)
                 .build();
     }
 
-    private static OAuthAttributes ofNaver(String userNameAttributeName, Map<String, Object> attributes) {
-        Map<String, Object> response = attributes.get("response") instanceof Map<?, ?> rawResponse
-                ? (Map<String, Object>) rawResponse
-                : Map.of();
-        return OAuthAttributes.builder()
-                .name((String) response.get("name"))
-                .email((String) response.get("email"))
-                .emailVerified(!response.containsKey("email_verified") || asBoolean(response.get("email_verified")))
-                .loginMethod("naver")
-                .attributes(response)
-                .nameAttributeKey(userNameAttributeName)
-                .build();
+    private static OAuthProfile extractGoogleProfile(Map<String, Object> attributes) {
+        return new OAuthProfile(
+                asString(attributes.get("name")),
+                asString(attributes.get("email")),
+                asBoolean(attributes.get("email_verified")),
+                attributes
+        );
     }
 
-    private static OAuthAttributes ofKakao(String userNameAttributeName, Map<String, Object> attributes) {
-        Map<String, Object> account = attributes.get("kakao_account") instanceof Map<?, ?> rawAccount
-                ? (Map<String, Object>) rawAccount
-                : Map.of();
-        Map<String, Object> profile = account.get("profile") instanceof Map<?, ?> rawProfile
-                ? (Map<String, Object>) rawProfile
-                : Map.of();
+    private static OAuthProfile extractNaverProfile(Map<String, Object> attributes) {
+        Map<String, Object> response = getNestedMap(attributes, "response");
+        return new OAuthProfile(
+                asString(response.get("name")),
+                asString(response.get("email")),
+                !response.containsKey("email_verified") || asBoolean(response.get("email_verified")),
+                response
+        );
+    }
+
+    private static OAuthProfile extractKakaoProfile(Map<String, Object> attributes) {
+        Map<String, Object> account = getNestedMap(attributes, "kakao_account");
+        Map<String, Object> profile = getNestedMap(account, "profile");
         boolean isEmailValid = asBoolean(account.get("is_email_valid"));
         boolean isEmailVerified = asBoolean(account.get("is_email_verified"));
 
-        return OAuthAttributes.builder()
-                .name((String) profile.get("nickname"))
-                .email((String) account.get("email"))
-                .emailVerified(isEmailValid && isEmailVerified)
-                .loginMethod("kakao")
-                .attributes(attributes)
-                .nameAttributeKey(userNameAttributeName)
-                .build();
+        return new OAuthProfile(
+                asString(profile.get("nickname")),
+                asString(account.get("email")),
+                isEmailValid && isEmailVerified,
+                attributes
+        );
+    }
+
+    private static Map<String, Object> getNestedMap(Map<String, Object> source, String key) {
+        if (source == null || key == null) {
+            return Map.of();
+        }
+        return toStringObjectMap(source.get(key));
+    }
+
+    private static Map<String, Object> toStringObjectMap(Object value) {
+        if (!(value instanceof Map<?, ?> rawMap) || rawMap.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, Object> converted = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                converted.put(key, entry.getValue());
+            }
+        }
+        if (converted.isEmpty()) {
+            return Map.of();
+        }
+        return Collections.unmodifiableMap(converted);
+    }
+
+    private static Map<String, Object> toImmutableMap(Map<String, Object> source) {
+        if (source == null || source.isEmpty()) {
+            return Map.of();
+        }
+        return Collections.unmodifiableMap(new LinkedHashMap<>(source));
     }
 
 
@@ -98,6 +147,10 @@ public class OAuthAttributes {
                 .build();
     }
 
+    private static String asString(Object value) {
+        return value instanceof String text ? text : null;
+    }
+
     private static boolean asBoolean(Object value) {
         if (value instanceof Boolean bool) {
             return bool;
@@ -106,5 +159,18 @@ public class OAuthAttributes {
             return Boolean.parseBoolean(text);
         }
         return false;
+    }
+
+    private record OAuthProfile(String name,
+                                String email,
+                                boolean emailVerified,
+                                Map<String, Object> attributes) {
+    }
+
+    public static class OAuthAttributesBuilder {
+        public OAuthAttributesBuilder attributes(Map<String, Object> attributes) {
+            this.attributes = toImmutableMap(attributes);
+            return this;
+        }
     }
 }
