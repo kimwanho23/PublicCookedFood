@@ -1,75 +1,116 @@
 package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.board.domain.Board;
+import kwh.PublicCookedFood.board.domain.BoardSection;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
 import kwh.PublicCookedFood.board.dto.request.BoardSaveRequest;
+import kwh.PublicCookedFood.board.repository.BoardRepository;
+import kwh.PublicCookedFood.board.repository.CommentsRepository;
+import kwh.PublicCookedFood.user.domain.Role;
 import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.dto.request.UserSaveDto;
-import kwh.PublicCookedFood.user.service.UserService;
+import kwh.PublicCookedFood.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class BoardServiceTest {
 
-    @Autowired
-    private UserService userService;
+    @Mock
+    private BoardRepository boardRepository;
 
-    @Autowired
+    @Mock
+    private CommentsRepository commentsRepository;
+
+    @Mock
+    private ImageService imageService;
+
+    @Mock
+    private BoardSectionService boardSectionService;
+
+    @Mock
+    private BoardPolicyService boardPolicyService;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
     private BoardService boardService;
-
-    @Autowired
-    private LikeService likeService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Test
     void write() {
-        Users user = createUser("board-write-" + System.nanoTime() + "@test.com");
-
-        Board savedBoard = boardService.save(BoardSaveRequest.builder()
-                .title("Title")
-                .contents("testContents")
-                .userId(user.getId())
+        Users user = Users.builder()
+                .id(11L)
+                .email("board-write@test.com")
+                .name("테스터")
+                .authority(Role.USER)
+                .loginMethod("Current")
+                .build();
+        BoardSection section = BoardSection.builder()
+                .id(2L)
+                .sectionKey("general")
+                .sectionName("자유")
+                .displayOrder(0)
+                .active(true)
+                .build();
+        BoardSaveRequest request = BoardSaveRequest.builder()
+                .title("<b>Title</b>")
+                .contents("<p>ok</p><script>alert(1)</script>")
+                .userId(11L)
+                .sectionId(2L)
                 .views(0L)
                 .likesCount(0L)
                 .commentsCount(0L)
                 .state(SoftDeleteState.ACTIVE)
-                .build());
+                .build();
 
-        assertThat(savedBoard.getId()).isNotNull();
+        when(userRepository.findById(11L)).thenReturn(Optional.of(user));
+        when(boardSectionService.resolveSectionForWrite(2L)).thenReturn(section);
+        when(boardRepository.save(any(Board.class))).thenAnswer(invocation -> {
+            Board candidate = invocation.getArgument(0);
+            return Board.builder()
+                    .id(100L)
+                    .title(candidate.getTitle())
+                    .contents(candidate.getContents())
+                    .user(candidate.getUser())
+                    .section(candidate.getSection())
+                    .views(candidate.getViews())
+                    .likeCount(candidate.getLikeCount())
+                    .commentCount(candidate.getCommentCount())
+                    .state(candidate.getState())
+                    .hiddenByReport(candidate.isHiddenByReport())
+                    .build();
+        });
+
+        Board savedBoard = boardService.save(request);
+
+        ArgumentCaptor<Board> boardCaptor = ArgumentCaptor.forClass(Board.class);
+        verify(boardRepository).save(boardCaptor.capture());
+        Board persisted = boardCaptor.getValue();
+
+        assertThat(savedBoard.getId()).isEqualTo(100L);
+        assertThat(persisted.getTitle()).isEqualTo("Title");
+        assertThat(persisted.getContents()).contains("<p>ok</p>");
+        assertThat(persisted.getContents()).doesNotContain("<script>");
+        assertThat(persisted.getUser()).isSameAs(user);
+        assertThat(persisted.getSection()).isSameAs(section);
+        verify(imageService).syncBoardImages(savedBoard, persisted.getContents());
     }
 
     @Test
     void likeTest() {
-        Users user = createUser("board-like-" + System.nanoTime() + "@test.com");
-        Board board = boardService.save(BoardSaveRequest.builder()
-                .title("Like Test")
-                .contents("like-content")
-                .userId(user.getId())
-                .views(0L)
-                .likesCount(0L)
-                .commentsCount(0L)
-                .state(SoftDeleteState.ACTIVE)
-                .build());
+        boardService.updateLikes(25L);
 
-        Long likeId = likeService.saveLikes(board.getId(), user.getId());
-        boardService.updateLikes(board.getId());
-
-        assertThat(likeId).isNotNull();
-        assertThat(likeService.getLike(board.getId())).isEqualTo(1L);
-    }
-
-    private Users createUser(String email) {
-        UserSaveDto userDto = new UserSaveDto();
-        userDto.setEmail(email);
-        userDto.setName("테스터");
-        userDto.setPassword("12345678");
-        return userService.save(Users.createUser(userDto, passwordEncoder));
+        verify(boardRepository).updateLikes(25L);
     }
 }
