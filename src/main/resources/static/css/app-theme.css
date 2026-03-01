@@ -265,6 +265,21 @@ main.page-shell {
     color: var(--pc-ink);
 }
 
+:root[data-theme='dark'] .board-table-picker {
+    background: #1a2535;
+    border-color: var(--pc-border);
+}
+
+:root[data-theme='dark'] .board-table-picker__cell {
+    background: #131d2b;
+    border-color: #47607f;
+}
+
+:root[data-theme='dark'] .board-table-picker__cell.is-active {
+    background: #2d4f76;
+    border-color: #7ba7d6;
+}
+
 .hero-panel {
     background: linear-gradient(140deg, #1c3456 0%, #2f5f93 45%, #3f74ad 100%);
     color: #fff;
@@ -1378,53 +1393,175 @@ main.page-shell {
     box-shadow: 0 8px 16px rgba(31, 63, 104, 0.22);
 }
 
-.note-editor.note-frame {
-    border-color: #c5d3e6;
-    border-radius: 0.75rem;
+.board-quill-shell {
+    border: 1px solid #c5d3e6;
+    border-top: 0;
+    border-radius: 0 0 0.75rem 0.75rem;
+    overflow: hidden;
+    background: #fff;
 }
 
-.note-editor.note-frame .note-toolbar {
+.board-quill-shell.board-quill-shell-invalid {
+    border-color: var(--bs-form-invalid-border-color, #dc3545);
+}
+
+.board-quill-toolbar.ql-toolbar.ql-snow {
+    border: 1px solid #c5d3e6;
     border-bottom: 1px solid var(--pc-border);
+    border-radius: 0.75rem 0.75rem 0 0;
     background: #f8fbff;
     padding: 0.42rem;
 }
 
-.note-editor.note-frame .note-toolbar .note-btn-group {
+.board-quill-toolbar.board-quill-toolbar-invalid {
+    border-color: var(--bs-form-invalid-border-color, #dc3545);
+}
+
+.board-quill-toolbar.ql-toolbar.ql-snow .ql-formats {
     margin-right: 0.32rem;
 }
 
-.note-editor.note-frame .note-toolbar .note-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 2rem;
-    height: 2rem;
-    line-height: 1;
+.board-quill-toolbar.ql-toolbar.ql-snow button,
+.board-quill-toolbar.ql-toolbar.ql-snow .ql-picker-label {
     border-radius: 0.5rem;
-    border-color: #c7d5e8;
 }
 
-.note-editor.note-frame .note-toolbar .note-icon-caret {
-    margin-left: 0.2rem;
+.board-quill-toolbar .board-quill-icon-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
 }
 
-.note-editor .note-btn,
-.note-modal .note-btn {
-    white-space: nowrap;
+.board-quill-shell.ql-container.ql-snow {
+    border: 1px solid #c5d3e6;
+    border-top: 0;
+    border-radius: 0 0 0.75rem 0.75rem;
+    min-height: 520px;
 }
 
-.note-editor.note-frame .note-editing-area .note-editable img {
+.board-quill-shell .ql-editor {
+    min-height: 520px;
+    line-height: 1.58;
+}
+
+.board-quill-shell .ql-editor img {
     max-width: 100%;
     height: auto;
 }
 
-.note-editor.note-frame.is-uploading .note-toolbar .note-btn {
+.board-quill-shell .board-quill-codeview {
+    display: none;
+    width: 100%;
+    min-height: 520px;
+    border: 0;
+    padding: 0.95rem 1rem;
+    resize: vertical;
+    line-height: 1.55;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.9rem;
+}
+
+.board-quill-shell.is-codeview .board-quill-codeview {
+    display: block;
+}
+
+.board-quill-shell.is-codeview .ql-editor {
+    display: none;
+}
+
+.board-quill-toolbar.is-codeview button,
+.board-quill-toolbar.is-codeview .ql-picker {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.board-quill-toolbar.is-codeview button.ql-codeview,
+.board-quill-toolbar.is-codeview button.ql-fullscreen {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.board-quill-toolbar.is-uploading button,
+.board-quill-toolbar.is-uploading .ql-picker-label {
     opacity: 0.56;
     pointer-events: none;
 }
 
-.note-editor.note-frame.is-uploading .note-editing-area .note-editable {
+.board-quill-shell.is-uploading .ql-editor {
     cursor: progress;
+}
+
+.board-editor-fullscreen-lock {
+    overflow: hidden;
+}
+
+.board-table-picker {
+    position: fixed;
+    z-index: 1100;
+    border: 1px solid var(--pc-border);
+    border-radius: 0.85rem;
+    background: var(--pc-surface);
+    box-shadow: 0 16px 34px rgba(10, 21, 36, 0.24);
+    padding: 0.58rem;
+    user-select: none;
+}
+
+.board-table-picker[hidden] {
+    display: none !important;
+}
+
+.board-table-picker__summary {
+    margin-bottom: 0.4rem;
+    color: var(--pc-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.board-table-picker__grid {
+    display: grid;
+    gap: 2px;
+}
+
+.board-table-picker__cell {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #c7d4e6;
+    border-radius: 2px;
+    background: #fff;
+    padding: 0;
+    cursor: pointer;
+}
+
+.board-table-picker__cell.is-active {
+    background: #d9e8fb;
+    border-color: #5c86bb;
+}
+
+.board-quill-toolbar.is-fullscreen {
+    position: fixed;
+    inset: 12px 12px auto 12px;
+    z-index: 1086;
+    border-radius: 0.9rem 0.9rem 0 0;
+    box-shadow: 0 22px 42px rgba(10, 21, 36, 0.28);
+}
+
+.board-quill-shell.is-fullscreen {
+    position: fixed;
+    inset: 58px 12px 12px 12px;
+    z-index: 1085;
+    border-radius: 0 0 0.9rem 0.9rem;
+    box-shadow: 0 22px 42px rgba(10, 21, 36, 0.28);
+}
+
+.board-quill-shell.is-fullscreen .board-quill-codeview {
+    min-height: calc(var(--board-editor-vh, 100vh) - 86px);
+}
+
+.board-quill-shell.is-fullscreen .ql-editor {
+    min-height: calc(var(--board-editor-vh, 100vh) - 126px);
 }
 
 @media (max-width: 991px) {
@@ -1467,6 +1604,14 @@ main.page-shell {
 
     .recipe-ai-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .board-quill-toolbar.is-fullscreen {
+        inset: 6px 6px auto 6px;
+    }
+
+    .board-quill-shell.is-fullscreen {
+        inset: 52px 6px 6px 6px;
     }
 }
 

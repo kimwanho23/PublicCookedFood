@@ -65,7 +65,7 @@ class BoardServiceTest {
                 .build();
         BoardSaveRequest request = BoardSaveRequest.builder()
                 .title("<b>Title</b>")
-                .contents("<p>ok</p><script>alert(1)</script>")
+                .contents("<p>ok</p><script>alert(1)</script><iframe src=\"https://www.youtube.com/embed/example\"></iframe>")
                 .userId(11L)
                 .sectionId(2L)
                 .views(0L)
@@ -102,6 +102,8 @@ class BoardServiceTest {
         assertThat(persisted.getTitle()).isEqualTo("Title");
         assertThat(persisted.getContents()).contains("<p>ok</p>");
         assertThat(persisted.getContents()).doesNotContain("<script>");
+        assertThat(persisted.getContents()).contains("<iframe");
+        assertThat(persisted.getContents()).contains("youtube.com/embed/example");
         assertThat(persisted.getUser()).isSameAs(user);
         assertThat(persisted.getSection()).isSameAs(section);
         verify(imageService).syncBoardImages(savedBoard, persisted.getContents());
