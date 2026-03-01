@@ -2,9 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
 <head>
     <th:block th:replace="~{fragments/header :: headResources('게시글 작성')}"></th:block>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script th:src="@{/js/board-editor.js}"></script>
 </head>
 <body class="app-shell d-flex flex-column">
@@ -38,15 +37,25 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="summernote" class="form-label">내용</label>
-                    <textarea id="summernote" th:field="*{contents}" class="form-control" th:errorclass="field-error" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+                    <label for="boardEditor" class="form-label">내용</label>
+                    <div id="boardEditor"
+                         class="board-quill-shell"
+                         th:classappend="${#fields.hasErrors('contents')} ? ' board-quill-shell-invalid'"></div>
+                    <textarea id="boardContents" th:field="*{contents}" class="d-none"
+                              spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
                     <div class="field-error" th:errors="*{contents}"></div>
                     <div class="form-text">멘션은 <code>@닉네임</code> 형태로 입력하면 알림이 전달됩니다.</div>
                 </div>
 
-                <div class="d-flex justify-content-end gap-2">
-                    <a class="btn btn-outline-secondary" th:href="@{/boards}">취소</a>
-                    <button type="submit" class="btn btn-brand">게시글 등록</button>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary js-board-draft-save">임시저장</button>
+                        <span class="small text-muted js-board-draft-status" aria-live="polite"></span>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a class="btn btn-outline-secondary" th:href="@{/boards}">취소</a>
+                        <button type="submit" class="btn btn-brand">게시글 등록</button>
+                    </div>
                 </div>
             </form>
         </section>

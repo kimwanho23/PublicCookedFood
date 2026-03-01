@@ -32,7 +32,10 @@ import java.util.stream.Collectors;
 public class BoardService {
 
     private static final Safelist BOARD_CONTENT_SAFELIST = Safelist.relaxed()
+            .addTags("iframe")
+            .addAttributes("iframe", "src", "title", "width", "height", "frameborder", "allow", "allowfullscreen")
             .addProtocols("img", "src", "http", "https")
+            .addProtocols("iframe", "src", "http", "https")
             .preserveRelativeLinks(true);
 
     private final BoardRepository boardRepository;
