@@ -20,7 +20,7 @@
                             nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
                             ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
                        )}"
-                   th:attr="aria-disabled=${currentPage <= 0}">처음</a>
+                   th:attr="aria-disabled=${currentPage <= 0}, tabindex=${currentPage <= 0 ? '-1' : null}">처음</a>
             </li>
 
             <li class="page-item" th:classappend="${hasPreviousGroup} ? '' : 'disabled'">
@@ -35,7 +35,7 @@
                             nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
                             ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
                        )}"
-                   th:attr="aria-disabled=${!hasPreviousGroup}">이전</a>
+                   th:attr="aria-disabled=${!hasPreviousGroup}, tabindex=${!hasPreviousGroup ? '-1' : null}">이전</a>
             </li>
 
             <li th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
@@ -67,7 +67,7 @@
                             nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
                             ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
                        )}"
-                   th:attr="aria-disabled=${!hasNextGroup}">다음</a>
+                   th:attr="aria-disabled=${!hasNextGroup}, tabindex=${!hasNextGroup ? '-1' : null}">다음</a>
             </li>
 
             <li class="page-item"
@@ -83,7 +83,7 @@
                             nation=${nation != null and !#lists.isEmpty(nation) ? nation : null},
                             ingredient=${ingredient != null and !#lists.isEmpty(ingredient) ? ingredient : null}
                        )}"
-                   th:attr="aria-disabled=${totalPages == null or totalPages <= 1 or currentPage >= totalPages - 1}">마지막</a>
+                   th:attr="aria-disabled=${totalPages == null or totalPages <= 1 or currentPage >= totalPages - 1}, tabindex=${totalPages == null or totalPages <= 1 or currentPage >= totalPages - 1 ? '-1' : null}">마지막</a>
             </li>
         </ul>
     </nav>

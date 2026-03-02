@@ -10,7 +10,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="loginModalLabel">로그인 필요</h1>
+                    <h2 class="modal-title fs-5" id="loginModalLabel">로그인 필요</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -18,7 +18,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="button" class="btn btn-brand" th:onclick="|location.href='@{/u/login}'|">로그인</button>
+                    <a class="btn btn-brand" th:href="@{/u/login}">로그인</a>
                 </div>
             </div>
         </div>

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<head>
-    <th:block th:replace="~{fragments/header :: headResources('레시피 목록')}"></th:block>
+<head th:replace="~{fragments/header :: headResources('레시피 목록')}">
+    <meta charset="UTF-8">
+    <title>레시피 목록</title>
 </head>
 <body class="app-shell d-flex flex-column">
 <header th:replace="~{fragments/header :: siteHeader}"></header>
@@ -94,7 +95,8 @@
                 <input type="hidden" name="keyword" th:if="${selectedKeyword != null and !#strings.isEmpty(selectedKeyword)}" th:value="${selectedKeyword}">
 
                 <div class="recipe-top-search mb-3">
-                    <input type="text" name="search" th:value="${selectedSearch}" placeholder="레시피명 검색" class="form-control" aria-label="레시피명 검색">
+                    <label for="recipeSearchInput" class="visually-hidden">레시피명 검색</label>
+                    <input type="text" id="recipeSearchInput" name="search" th:value="${selectedSearch}" placeholder="레시피명 검색" class="form-control" aria-label="레시피명 검색">
                     <button type="submit" class="btn btn-brand">검색</button>
                 </div>
 
@@ -183,8 +185,6 @@
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-xxl-3 g-4 recipe-grid" th:if="${infoResponseDto != null and infoResponseDto.getTotalElements() > 0}">
                     <div class="col" th:each="list : ${infoResponseDto}">
                         <article class="recipe-card recipe-card-clickable"
-                                 tabindex="0"
-                                 role="link"
                                  th:attr="data-recipe-url=@{/recipes/{id}(id=${list.getRecipeID()})}">
                             <a th:href="@{/recipes/{id}(id=${list.getRecipeID()})}" class="recipe-card-link">
                                 <div class="recipe-thumb-link">

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700&family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans:wght@400;500;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@400;500;700&display=swap');
 
 :root {
     color-scheme: light;
@@ -278,6 +278,34 @@ main.page-shell {
 :root[data-theme='dark'] .board-table-picker__cell.is-active {
     background: #2d4f76;
     border-color: #7ba7d6;
+}
+
+:root[data-theme='dark'] .board-table-menu {
+    background: #1a2535;
+    border-color: var(--pc-border);
+}
+
+:root[data-theme='dark'] .board-table-menu__button {
+    background: #131d2b;
+    border-color: #48617f;
+    color: var(--pc-ink);
+}
+
+:root[data-theme='dark'] .board-table-menu__button:hover,
+:root[data-theme='dark'] .board-table-menu__button:focus {
+    background: #2b4666;
+    border-color: #6f93bf;
+}
+
+:root[data-theme='dark'] .board-table-menu__button.is-danger {
+    border-color: #845252;
+    color: #ffb8b8;
+}
+
+:root[data-theme='dark'] .board-table-menu__button.is-danger:hover,
+:root[data-theme='dark'] .board-table-menu__button.is-danger:focus {
+    background: #4e2730;
+    border-color: #aa656f;
 }
 
 .hero-panel {
@@ -1002,6 +1030,15 @@ main.page-shell {
     background: #fff;
 }
 
+.board-meta-author-link {
+    cursor: pointer;
+}
+
+.board-meta-author-link:focus-visible {
+    outline: 2px solid #5b87bc;
+    outline-offset: 2px;
+}
+
 .board-table {
     border-radius: 0.9rem;
     overflow: hidden;
@@ -1411,6 +1448,9 @@ main.page-shell {
     border-radius: 0.75rem 0.75rem 0 0;
     background: #f8fbff;
     padding: 0.42rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.32rem;
 }
 
 .board-quill-toolbar.board-quill-toolbar-invalid {
@@ -1418,12 +1458,73 @@ main.page-shell {
 }
 
 .board-quill-toolbar.ql-toolbar.ql-snow .ql-formats {
-    margin-right: 0.32rem;
+    margin-right: 0;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.3rem;
 }
 
 .board-quill-toolbar.ql-toolbar.ql-snow button,
 .board-quill-toolbar.ql-toolbar.ql-snow .ql-picker-label {
     border-radius: 0.5rem;
+}
+
+.board-quill-toolbar .board-editor-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.45rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+.board-quill-toolbar .board-editor-btn .board-editor-icon {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    stroke-width: 1.55;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.board-quill-toolbar .board-editor-btn:hover,
+.board-quill-toolbar .board-editor-btn:focus {
+    background: #edf4ff;
+    border-color: #b7cae4;
+}
+
+.board-quill-toolbar .board-editor-btn.ql-active {
+    background: #dfeeff;
+    border-color: #8fb1d8;
+    color: #234b78;
+}
+
+.board-quill-toolbar .board-editor-font-family,
+.board-quill-toolbar .board-editor-font-size {
+    height: 2rem;
+    border: 1px solid #cad8ea;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0 0.5rem;
+    font-size: 0.82rem;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.board-quill-toolbar .board-editor-font-family {
+    min-width: 8.9rem;
+    max-width: 11.5rem;
+}
+
+.board-quill-toolbar .board-editor-font-size {
+    min-width: 4.4rem;
 }
 
 .board-quill-toolbar .board-quill-icon-label {
@@ -1434,19 +1535,81 @@ main.page-shell {
     letter-spacing: 0;
 }
 
-.board-quill-shell.ql-container.ql-snow {
-    border: 1px solid #c5d3e6;
-    border-top: 0;
-    border-radius: 0 0 0.75rem 0.75rem;
+.board-quill-shell .board-tiptap-editor {
     min-height: 520px;
 }
 
-.board-quill-shell .ql-editor {
+.board-quill-shell .board-tiptap-editor .ProseMirror {
     min-height: 520px;
     line-height: 1.58;
+    padding: 0.95rem 1rem;
+    outline: none;
 }
 
-.board-quill-shell .ql-editor img {
+.board-quill-shell .board-tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: #8da2bb;
+    pointer-events: none;
+    float: left;
+    height: 0;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror td,
+.board-quill-shell .board-tiptap-editor .ProseMirror th {
+    border: 1px solid #b9cce3;
+    min-width: 60px;
+    padding: 0.44rem;
+    vertical-align: top;
+    position: relative;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror th {
+    background: #eef4fd;
+    font-weight: 700;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror table.is-selected-table td,
+.board-quill-shell .board-tiptap-editor .ProseMirror table.is-selected-table th {
+    border-color: #7fa4cf;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror td.selectedCell,
+.board-quill-shell .board-tiptap-editor .ProseMirror th.selectedCell {
+    background: #edf5ff;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror td.is-active-table-cell,
+.board-quill-shell .board-tiptap-editor .ProseMirror th.is-active-table-cell {
+    background: #f3f8ff;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror td.selectedCell::after,
+.board-quill-shell .board-tiptap-editor .ProseMirror th.selectedCell::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 2px solid #5c86bb;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror td.is-active-table-cell::after,
+.board-quill-shell .board-tiptap-editor .ProseMirror th.is-active-table-cell::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 2px solid #8cb0d8;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.board-quill-shell .board-tiptap-editor .ProseMirror img {
     max-width: 100%;
     height: auto;
 }
@@ -1467,7 +1630,7 @@ main.page-shell {
     display: block;
 }
 
-.board-quill-shell.is-codeview .ql-editor {
+.board-quill-shell.is-codeview .board-tiptap-editor {
     display: none;
 }
 
@@ -1483,14 +1646,30 @@ main.page-shell {
     pointer-events: auto;
 }
 
+.board-quill-toolbar.is-codeview .board-editor-action-codeview,
+.board-quill-toolbar.is-codeview .board-editor-action-fullscreen {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .board-quill-toolbar.is-uploading button,
 .board-quill-toolbar.is-uploading .ql-picker-label {
     opacity: 0.56;
     pointer-events: none;
 }
 
-.board-quill-shell.is-uploading .ql-editor {
+.board-quill-shell.is-uploading .board-tiptap-editor .ProseMirror {
     cursor: progress;
+}
+
+@media (max-width: 576px) {
+    .board-quill-toolbar .board-editor-font-family {
+        min-width: 7.4rem;
+    }
+
+    .board-quill-toolbar .board-editor-font-size {
+        min-width: 4.2rem;
+    }
 }
 
 .board-editor-fullscreen-lock {
@@ -1540,6 +1719,80 @@ main.page-shell {
     border-color: #5c86bb;
 }
 
+.board-table-menu {
+    position: fixed;
+    z-index: 1101;
+    border: 1px solid var(--pc-border);
+    border-radius: 0.78rem;
+    background: var(--pc-surface);
+    box-shadow: 0 18px 32px rgba(10, 21, 36, 0.22);
+    padding: 0.5rem;
+    min-width: 186px;
+}
+
+.board-table-menu[hidden] {
+    display: none !important;
+}
+
+.board-table-menu__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.28rem;
+}
+
+.board-table-menu__row + .board-table-menu__row {
+    margin-top: 0.32rem;
+}
+
+.board-table-menu__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--pc-border);
+    background: #fff;
+    color: var(--pc-ink);
+    border-radius: 0.5rem;
+    font-size: 0.74rem;
+    line-height: 1;
+    padding: 0;
+    width: 1.95rem;
+    height: 1.95rem;
+    min-height: 1.95rem;
+}
+
+.board-table-menu__icon {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 1.55;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.board-table-menu__button:hover,
+.board-table-menu__button:focus {
+    background: #edf4ff;
+    border-color: #9db9dc;
+}
+
+.board-table-menu__button:disabled {
+    opacity: 0.46;
+    cursor: not-allowed;
+    background: #f6f9ff;
+}
+
+.board-table-menu__button.is-danger {
+    border-color: #e5b7b7;
+    color: #9b3333;
+}
+
+.board-table-menu__button.is-danger:hover,
+.board-table-menu__button.is-danger:focus {
+    background: #fff1f1;
+    border-color: #de9c9c;
+}
+
 .board-quill-toolbar.is-fullscreen {
     position: fixed;
     inset: 12px 12px auto 12px;
@@ -1560,7 +1813,7 @@ main.page-shell {
     min-height: calc(var(--board-editor-vh, 100vh) - 86px);
 }
 
-.board-quill-shell.is-fullscreen .ql-editor {
+.board-quill-shell.is-fullscreen .board-tiptap-editor .ProseMirror {
     min-height: calc(var(--board-editor-vh, 100vh) - 126px);
 }
 

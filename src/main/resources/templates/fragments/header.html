@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8">
-    <title>Header</title>
-</head>
-<body>
-<th:block th:fragment="headResources(title)">
+<head th:fragment="headResources(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
@@ -194,7 +189,8 @@
     <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
     <link th:href="@{/css/app-theme.css}" rel="stylesheet">
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-</th:block>
+</head>
+<body>
 
 <header th:fragment="siteHeader" class="site-header sticky-top">
     <nav class="navbar navbar-expand-lg navbar-dark py-2">
@@ -226,8 +222,7 @@
                         로그인
                     </a>
 
-                    <th:block sec:authorize="isAuthenticated()">
-                        <div class="dropdown notification-dropdown">
+                    <div class="dropdown notification-dropdown" sec:authorize="isAuthenticated()">
                             <button id="headerNotificationToggle"
                                     type="button"
                                     class="btn btn-outline-light btn-sm notification-toggle"
@@ -259,9 +254,9 @@
                                     <button type="button" id="headerNotificationDeleteAll" class="btn btn-sm btn-soft-danger btn-action-danger">전체 삭제</button>
                                 </div>
                             </div>
-                        </div>
+                    </div>
 
-                        <form th:action="@{/u/logout}" method="post" class="d-inline-flex">
+                    <form sec:authorize="isAuthenticated()" th:action="@{/u/logout}" method="post" class="d-inline-flex">
                             <div class="dropdown">
                                 <button type="button" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span th:text="${#authentication != null and #authentication.principal != null and #authentication.principal.user != null and #authentication.principal.user.name != null ? (#authentication.principal.user.name.length() > 7 ? #authentication.principal.user.name.substring(0, 7) + '...' : #authentication.principal.user.name) : '사용자'}"></span>
@@ -279,8 +274,7 @@
                                     <li><button type="submit" class="dropdown-item text-danger">로그아웃</button></li>
                                 </ul>
                             </div>
-                        </form>
-                    </th:block>
+                    </form>
                 </div>
             </div>
         </div>

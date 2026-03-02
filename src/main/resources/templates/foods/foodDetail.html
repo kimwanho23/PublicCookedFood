@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
-<head>
-    <th:block th:replace="~{fragments/header :: headResources('레시피 상세')}"></th:block>
+<head th:replace="~{fragments/header :: headResources('레시피 상세')}">
+    <meta charset="UTF-8">
+    <title>레시피 상세</title>
 </head>
 <body class="app-shell d-flex flex-column">
 <header th:replace="~{fragments/header :: siteHeader}"></header>
@@ -75,7 +76,8 @@
                           method="post"
                           class="row g-2 mb-3">
                         <div class="col-sm-3">
-                            <select class="form-select form-select-sm" name="rating">
+                            <label for="reviewRating" class="visually-hidden">리뷰 평점</label>
+                            <select id="reviewRating" class="form-select form-select-sm" name="rating" aria-label="리뷰 평점">
                                 <option th:each="score : ${#numbers.sequence(5,1)}"
                                         th:value="${score}"
                                         th:selected="${myReview != null and myReview.rating() == score}"
@@ -83,9 +85,12 @@
                             </select>
                         </div>
                         <div class="col-sm-9">
+                            <label for="reviewContents" class="visually-hidden">리뷰 내용</label>
                             <input type="text" class="form-control form-control-sm"
+                                   id="reviewContents"
                                    name="contents"
                                    maxlength="500"
+                                   aria-label="리뷰 내용"
                                    placeholder="리뷰를 작성해보세요. (최대 500자)"
                                    th:value="${myReview != null ? myReview.contents() : ''}">
                         </div>

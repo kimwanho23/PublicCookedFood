@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>댓글 프래그먼트</title>
+</head>
 <body>
 <div th:fragment="commentFragment(comment)">
     <article class="comment-card my-3 ms-0"
@@ -56,12 +60,14 @@
             <form th:action="@{/boards/{id}/comments(id=${boardDto.getId()})}" method="post">
                 <input type="hidden" name="parentId" th:value="${comment.id}">
                 <input type="hidden" name="boardId" th:value="${comment.boardId}">
+                <label th:for="'replyContents-' + ${comment.id}" class="visually-hidden">답글 내용</label>
                 <div class="input-group">
                     <span class="input-group-text">답글</span>
                     <textarea class="form-control"
+                              th:id="'replyContents-' + ${comment.id}"
                               name="contents"
                               rows="3"
-                              aria-label="With textarea"
+                              aria-label="답글 내용"
                               placeholder="@닉네임 으로 멘션할 수 있습니다."></textarea>
                 </div>
                 <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요.</p>

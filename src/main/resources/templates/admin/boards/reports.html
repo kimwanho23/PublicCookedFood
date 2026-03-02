@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<head>
-    <th:block th:replace="~{fragments/header :: headResources('게시글 신고 관리')}"></th:block>
+<head th:replace="~{fragments/header :: headResources('게시글 신고 관리')}">
+    <meta charset="UTF-8">
+    <title>게시글 신고 관리</title>
 </head>
 <body class="app-shell d-flex flex-column">
 <header th:replace="~{fragments/header :: siteHeader}"></header>
@@ -108,15 +109,25 @@
                         </td>
                         <td>
                             <form th:action="@{/admin/boards/reports/{id}/status(id=${report.id})}" method="post" class="d-grid gap-2">
-                                <select name="status" class="form-select form-select-sm">
+                                <label th:for="'reportStatus-' + ${report.id}" class="visually-hidden">신고 상태 변경</label>
+                                <select name="status"
+                                        th:id="'reportStatus-' + ${report.id}"
+                                        class="form-select form-select-sm"
+                                        aria-label="신고 상태 변경"
+                                        title="신고 상태 변경">
+                                    <option value="" disabled hidden>상태 선택</option>
                                     <option value="OPEN" th:selected="${report.status.name() == 'OPEN'}">OPEN</option>
                                     <option value="RESOLVED" th:selected="${report.status.name() == 'RESOLVED'}">RESOLVED</option>
                                     <option value="REJECTED" th:selected="${report.status.name() == 'REJECTED'}">REJECTED</option>
                                 </select>
+                                <label th:for="'reportProcessNote-' + ${report.id}" class="visually-hidden">신고 처리 메모</label>
                                 <input type="text"
+                                       th:id="'reportProcessNote-' + ${report.id}"
                                        name="processNote"
                                        maxlength="500"
                                        class="form-control form-control-sm"
+                                       aria-label="신고 처리 메모"
+                                       title="신고 처리 메모 입력"
                                        placeholder="처리 메모 (선택)"
                                        th:value="${report.processedNote}">
                                 <input type="hidden" name="redirectStatus" th:value="${reportFilter}">
