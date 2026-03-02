@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
-<head>
-    <th:block th:replace="~{fragments/header :: headResources('사용자 프로필')}"></th:block>
+<head th:replace="~{fragments/header :: headResources('사용자 프로필')}">
+    <meta charset="UTF-8">
+    <title>사용자 프로필</title>
 </head>
 <body class="app-shell d-flex flex-column">
 <header th:replace="~{fragments/header :: siteHeader}"></header>

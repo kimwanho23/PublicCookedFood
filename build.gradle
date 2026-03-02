@@ -1,3 +1,7 @@
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+import com.github.spotbugs.snom.SpotBugsTask
+
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.0'
@@ -61,11 +65,11 @@ spotbugs {
 	ignoreFailures = false
 	showStackTraces = true
 	showProgress = true
-	effort = com.github.spotbugs.snom.Effort.valueOf('MAX')
-	reportLevel = com.github.spotbugs.snom.Confidence.valueOf('MEDIUM')
+	effort = Effort.valueOf('MAX')
+	reportLevel = Confidence.valueOf('MEDIUM')
 }
 
-tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+tasks.withType(SpotBugsTask).configureEach {
 	reports {
 		html.required = true
 		xml.required = false

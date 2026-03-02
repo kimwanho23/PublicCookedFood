@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
-<head>
-    <th:block th:replace="~{fragments/header :: headResources('게시글 상세')}"></th:block>
+<head th:replace="~{fragments/header :: headResources('게시글 상세')}">
+    <meta charset="UTF-8">
+    <title>게시글 상세</title>
 </head>
 <body class="app-shell d-flex flex-column">
 <header th:replace="~{fragments/header :: siteHeader}"></header>
@@ -89,7 +90,9 @@
                     <button type="button"
                             id="shareBoardButton"
                             class="btn btn-soft"
-                            th:attr="data-share-url=@{/boards/{id}(id=${id})}">
+                            th:attr="data-share-url=@{/boards/{id}(id=${id})}"
+                            aria-label="게시글 공유"
+                            title="게시글 링크 공유">
                         공유
                     </button>
 
@@ -132,7 +135,7 @@
                 </div>
 
                 <div class="d-flex gap-2" th:if="${currentUserId != null and currentUserId == boardDto.userId}" sec:authorize="isAuthenticated()">
-                    <button type="button" class="btn btn-outline-secondary" th:onclick="|location.href='@{/boards/{id}/edit(id=${id})}'|">수정</button>
+                    <a class="btn btn-outline-secondary" th:href="@{/boards/{id}/edit(id=${id})}">수정</a>
                     <button type="button" class="btn btn-soft-danger btn-action-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">삭제</button>
                 </div>
             </div>
@@ -148,12 +151,14 @@
             <section class="p-4" sec:authorize="isAuthenticated()" th:if="${boardInteractionBlocked == null or !boardInteractionBlocked}">
                 <h3 class="h6 mb-3">댓글 작성</h3>
                 <form th:action="@{/boards/{id}/comments(id=${boardDto.getId()})}" method="post">
+                    <label for="commentContents" class="visually-hidden">댓글 내용</label>
                     <div class="input-group">
                         <span class="input-group-text">내용</span>
                         <textarea class="form-control"
+                                  id="commentContents"
                                   name="contents"
                                   rows="4"
-                                  aria-label="With textarea"
+                                  aria-label="댓글 내용"
                                   placeholder="@닉네임 으로 멘션할 수 있습니다."></textarea>
                     </div>
                     <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요.</p>

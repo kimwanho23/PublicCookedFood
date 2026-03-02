@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<head>
-    <th:block th:replace="~{fragments/header :: headResources('PubCook')}"></th:block>
+<head th:replace="~{fragments/header :: headResources('PubCook')}">
+    <meta charset="UTF-8">
+    <title>PubCook</title>
 </head>
 <body class="app-shell d-flex flex-column">
 <header th:replace="~{fragments/header :: siteHeader}"></header>

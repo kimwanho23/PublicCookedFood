@@ -6,11 +6,15 @@
 </head>
 <body>
 <div th:fragment="deleteCommentModal(actionUrl, commentId)">
-    <div class="modal fade" th:id="'deleteCommentModal' + ${commentId}" tabindex="-1" aria-labelledby="deleteCommentModalLabel" aria-hidden="true">
+    <div class="modal fade"
+         th:id="'deleteCommentModal' + ${commentId}"
+         tabindex="-1"
+         th:attr="aria-labelledby='deleteCommentModalLabel' + ${commentId}"
+         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="deleteCommentModalLabel">댓글 삭제</h1>
+                    <h2 class="modal-title fs-5" th:id="'deleteCommentModalLabel' + ${commentId}">댓글 삭제</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">댓글을 삭제하시겠습니까?</div>
