@@ -41,9 +41,9 @@ public class Recipe_INFO_RepositoryImpl implements Recipe_INFO_RepositoryCustom 
         }
         if (keyword != null && !keyword.isEmpty()) { // legacy parameter compatibility
             builder.and(
-                    recipeInfo.tyNM.containsIgnoreCase(keyword)
-                            .or(recipeInfo.nationNM.containsIgnoreCase(keyword))
-                            .or(recipeInfo.irdntCODE.containsIgnoreCase(keyword))
+                    recipeInfo.tyNM.eq(keyword)
+                            .or(recipeInfo.nationNM.eq(keyword))
+                            .or(recipeInfo.irdntCODE.eq(keyword))
             );
         }
         if (search != null && !search.isEmpty()) {

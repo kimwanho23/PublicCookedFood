@@ -29,6 +29,7 @@ repositories {
 
 dependencies {
 	implementation 'org.jsoup:jsoup:1.17.2'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
 	annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
 	annotationProcessor "jakarta.annotation:jakarta.annotation-api"

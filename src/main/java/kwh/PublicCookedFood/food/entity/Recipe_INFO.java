@@ -19,6 +19,7 @@ import java.util.List;
         @Index(name = "idx_recipe_info_nation_nm", columnList = "nation_NM"),
         @Index(name = "idx_recipe_info_irdnt_code", columnList = "irdnt_CODE"),
         @Index(name = "idx_recipe_info_recipe_nm_ko", columnList = "recipe_NM_KO"),
+        @Index(name = "idx_recipe_info_recipe_nm_ko_row_num", columnList = "recipe_NM_KO, row_NUM"),
         @Index(name = "idx_recipe_info_ty_nm_row_num", columnList = "ty_NM, row_NUM"),
         @Index(name = "idx_recipe_info_nation_nm_row_num", columnList = "nation_NM, row_NUM"),
         @Index(name = "idx_recipe_info_irdnt_code_row_num", columnList = "irdnt_CODE, row_NUM")

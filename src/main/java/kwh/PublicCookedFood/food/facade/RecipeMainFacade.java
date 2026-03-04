@@ -14,7 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +54,12 @@ public class RecipeMainFacade {
             search = null;
             queryErrorMsg = QUERY_INVALID_MESSAGE;
         }
+
+        LegacyKeywordResolution legacyKeywordResolution = resolveLegacyKeyword(type, nation, ingredient, keyword);
+        type = legacyKeywordResolution.type();
+        nation = legacyKeywordResolution.nation();
+        ingredient = legacyKeywordResolution.ingredient();
+        keyword = legacyKeywordResolution.keyword();
 
         Page<Recipe_INFO_ResponseDto> recipePage = getRecipeInfo(
                 pageable,
@@ -100,6 +108,73 @@ public class RecipeMainFacade {
                 new RecipeCategoryGroupResponse("재료별", "ingredient", allIrdntCodeList),
                 new RecipeCategoryGroupResponse("분류별", "type", allTyNmList)
         );
+    }
+
+    private LegacyKeywordResolution resolveLegacyKeyword(List<String> type,
+                                                         List<String> nation,
+                                                         List<String> ingredient,
+                                                         String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return new LegacyKeywordResolution(type, nation, ingredient, keyword);
+        }
+        if ((type != null && !type.isEmpty())
+                || (nation != null && !nation.isEmpty())
+                || (ingredient != null && !ingredient.isEmpty())) {
+            return new LegacyKeywordResolution(type, nation, ingredient, keyword);
+        }
+
+        List<String> resolvedType = new ArrayList<>(type == null ? List.of() : type);
+        List<String> resolvedNation = new ArrayList<>(nation == null ? List.of() : nation);
+        List<String> resolvedIngredient = new ArrayList<>(ingredient == null ? List.of() : ingredient);
+
+        String typeMatch = findCanonicalMatch(recipeService.getRecipeTypeNames(), keyword);
+        String nationMatch = findCanonicalMatch(recipeService.getRecipeNationNames(), keyword);
+        String ingredientMatch = findCanonicalMatch(recipeService.getRecipeIrdntCODE(), keyword);
+
+        int matchCount = 0;
+        if (typeMatch != null) {
+            matchCount++;
+        }
+        if (nationMatch != null) {
+            matchCount++;
+        }
+        if (ingredientMatch != null) {
+            matchCount++;
+        }
+
+        if (matchCount != 1) {
+            return new LegacyKeywordResolution(type, nation, ingredient, keyword);
+        }
+
+        if (typeMatch != null) {
+            resolvedType.add(typeMatch);
+        } else if (nationMatch != null) {
+            resolvedNation.add(nationMatch);
+        } else {
+            resolvedIngredient.add(ingredientMatch);
+        }
+        return new LegacyKeywordResolution(resolvedType, resolvedNation, resolvedIngredient, null);
+    }
+
+    private String findCanonicalMatch(List<String> candidates, String keyword) {
+        if (candidates == null || candidates.isEmpty() || keyword == null) {
+            return null;
+        }
+        String normalizedKeyword = keyword.trim().toLowerCase(Locale.ROOT);
+        if (normalizedKeyword.isEmpty()) {
+            return null;
+        }
+        return candidates.stream()
+                .filter(candidate -> candidate != null
+                        && candidate.trim().toLowerCase(Locale.ROOT).equals(normalizedKeyword))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private record LegacyKeywordResolution(List<String> type,
+                                           List<String> nation,
+                                           List<String> ingredient,
+                                           String keyword) {
     }
 
     public record HomeViewData(List<Board> popularBoards,

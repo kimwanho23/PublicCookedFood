@@ -64,10 +64,12 @@ public class RecipeService {
 
     //////////////////// 전체 레시피 리스트 ///////////////////////////////
 
+    @Cacheable("recipeListPages")
     public Page<Recipe_INFO_ResponseDto> getAllRecipeInfo(Pageable pageable) {
         return infoRepository.findAll(pageable).map(this::toInfoResponse); // 레시피 리스트 표시
     }
 
+    @Cacheable(value = "recipeFilteredPages", condition = "#search == null || #search.isBlank()")
     public Page<Recipe_INFO_ResponseDto> getFilteredRecipeList(List<String> type,
                                                                List<String> nation,
                                                                List<String> ingredient,
