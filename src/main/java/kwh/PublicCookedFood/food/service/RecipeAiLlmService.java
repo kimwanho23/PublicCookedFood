@@ -9,8 +9,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,6 +21,7 @@ import java.util.Optional;
 @Slf4j
 public class RecipeAiLlmService {
 
+    private static final int DEFAULT_MAX_COMPLETION_TOKENS = 500;
     private static final String DEFAULT_SYSTEM_PROMPT = """
             너는 레시피 도우미다.
             반드시 제공된 레시피 문맥 안에서만 답하고, 문맥에 없는 정보는 추측하지 마라.
@@ -47,7 +50,7 @@ public class RecipeAiLlmService {
         Map<String, Object> requestBody = new LinkedHashMap<>();
         requestBody.put("model", openAiModel);
         requestBody.put("temperature", temperature);
-        requestBody.put("max_tokens", 500);
+        applyCompletionTokenField(requestBody, openAiModel);
         requestBody.put("messages", List.of(
                 Map.of("role", "system", "content", DEFAULT_SYSTEM_PROMPT),
                 Map.of("role", "user", "content", buildUserPrompt(normalizedDocument, normalizedQuestion))
@@ -89,10 +92,42 @@ public class RecipeAiLlmService {
     private String resolveChatCompletionsUri() {
         String openAiBaseUrl = openAiProperties.baseUrl();
         String normalized = openAiBaseUrl == null ? "" : openAiBaseUrl.trim();
+        if (normalized.isBlank()) {
+            normalized = "https://api.openai.com/v1";
+        }
         if (normalized.endsWith("/")) {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
+        if (normalized.endsWith("/chat/completions")) {
+            return normalized;
+        }
+        normalized = ensureApiVersionPath(normalized);
         return normalized + "/chat/completions";
+    }
+
+    private String ensureApiVersionPath(String baseUrl) {
+        try {
+            URI uri = URI.create(baseUrl);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            boolean openAiHost = host != null && host.equalsIgnoreCase("api.openai.com");
+            boolean hasVersionPath = path != null && path.toLowerCase(Locale.ROOT).matches(".*/v\\d+/?$");
+            if (openAiHost && !hasVersionPath) {
+                return baseUrl + "/v1";
+            }
+            return baseUrl;
+        } catch (IllegalArgumentException ignored) {
+            return baseUrl;
+        }
+    }
+
+    private void applyCompletionTokenField(Map<String, Object> requestBody, String model) {
+        String normalizedModel = model == null ? "" : model.trim().toLowerCase(Locale.ROOT);
+        if (normalizedModel.startsWith("gpt-5")) {
+            requestBody.put("max_completion_tokens", DEFAULT_MAX_COMPLETION_TOKENS);
+            return;
+        }
+        requestBody.put("max_tokens", DEFAULT_MAX_COMPLETION_TOKENS);
     }
 
     private String normalizeText(String raw, int maxLength) {

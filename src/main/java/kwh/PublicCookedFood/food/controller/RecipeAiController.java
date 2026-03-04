@@ -8,10 +8,12 @@ import kwh.PublicCookedFood.food.dto.request.RecipeAiAskRequest;
 import kwh.PublicCookedFood.food.dto.request.RecipeAiRecommendRequest;
 import kwh.PublicCookedFood.food.dto.response.RecipeAiAskResponse;
 import kwh.PublicCookedFood.food.dto.response.RecipeAiRecommendResponse;
+import kwh.PublicCookedFood.food.dto.response.RecipeAiStatusResponse;
 import kwh.PublicCookedFood.food.facade.RecipeAiFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,10 +26,15 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Validated
 @RequestMapping("/api/ai/recipes")
-@Tag(name = "Recipe AI API")
+@Tag(name = "Recipe Recommendation API")
 public class RecipeAiController {
 
     private final RecipeAiFacade recipeAiFacade;
+
+    @GetMapping("/status")
+    public ResponseEntity<RecipeAiStatusResponse> status() {
+        return ResponseEntity.ok(recipeAiFacade.getStatus());
+    }
 
     @PostMapping("/recommend")
     public CompletableFuture<ResponseEntity<RecipeAiRecommendResponse>> recommend(
