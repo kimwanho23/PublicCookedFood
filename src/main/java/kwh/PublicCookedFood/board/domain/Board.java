@@ -20,7 +20,10 @@ import java.util.List;
         @Index(name = "idx_board_state_title", columnList = "state, title"),
         @Index(name = "idx_board_user_id", columnList = "user_id"),
         @Index(name = "idx_board_state_section_reg_time", columnList = "state, section_id, regTime"),
-        @Index(name = "idx_board_state_like_count", columnList = "state, likeCount")
+        @Index(name = "idx_board_state_like_count", columnList = "state, likeCount"),
+        @Index(name = "idx_board_state_hidden_reg_time", columnList = "state, is_hidden_by_report, regTime"),
+        @Index(name = "idx_board_state_hidden_section_reg_time", columnList = "state, is_hidden_by_report, section_id, regTime"),
+        @Index(name = "idx_board_state_hidden_like_count_reg_time", columnList = "state, is_hidden_by_report, likeCount, regTime")
 })
 public class Board extends BaseEntity {
 
