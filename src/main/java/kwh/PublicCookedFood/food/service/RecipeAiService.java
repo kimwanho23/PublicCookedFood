@@ -82,6 +82,28 @@ public class RecipeAiService {
         return CompletableFuture.completedFuture(response);
     }
 
+    public RecommendationReadiness getRecommendationReadiness() {
+        try {
+            long docCount = recipeAiDocRepository.countAll();
+            Long sampleRecipeId = recipeAiDocRepository.findFirstRecipeId().orElse(null);
+            if (docCount <= 0) {
+                return RecommendationReadiness.notReady(
+                        0L,
+                        null,
+                        "추천 가능한 레시피 문서가 없습니다. 레시피 데이터 적재 상태를 확인해주세요."
+                );
+            }
+            return RecommendationReadiness.ready(docCount, sampleRecipeId);
+        } catch (DataAccessException e) {
+            log.warn("Failed to inspect recipe_ai_doc readiness.", e);
+            return RecommendationReadiness.notReady(
+                    0L,
+                    null,
+                    "recipe_ai_doc 뷰를 조회할 수 없습니다. Flyway 마이그레이션(V13)과 DB 권한을 확인해주세요."
+            );
+        }
+    }
+
     private List<RecipeAiDocRepository.RecipeAiDoc> loadAllDocs() {
         try {
             return recipeAiDocRepository.findAll();
@@ -387,5 +409,20 @@ public class RecipeAiService {
             int score,
             String reason
     ) {
+    }
+
+    public record RecommendationReadiness(
+            boolean ready,
+            long documentCount,
+            Long sampleRecipeId,
+            String message
+    ) {
+        public static RecommendationReadiness ready(long documentCount, Long sampleRecipeId) {
+            return new RecommendationReadiness(true, Math.max(documentCount, 0L), sampleRecipeId, null);
+        }
+
+        public static RecommendationReadiness notReady(long documentCount, Long sampleRecipeId, String message) {
+            return new RecommendationReadiness(false, Math.max(documentCount, 0L), sampleRecipeId, message);
+        }
     }
 }

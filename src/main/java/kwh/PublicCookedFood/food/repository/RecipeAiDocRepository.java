@@ -41,6 +41,10 @@ public class RecipeAiDocRepository {
 
     private static final String SELECT_BY_RECIPE_ID_SQL = SELECT_COLUMNS + " WHERE recipe_id = ? LIMIT 1";
 
+    private static final String COUNT_ALL_SQL = "SELECT COUNT(*) FROM recipe_ai_doc";
+
+    private static final String SELECT_FIRST_RECIPE_ID_SQL = "SELECT recipe_id FROM recipe_ai_doc ORDER BY recipe_row_num LIMIT 1";
+
     private static final RowMapper<RecipeAiDoc> RECIPE_AI_DOC_ROW_MAPPER = new RecipeAiDocRowMapper();
 
     private final JdbcTemplate jdbcTemplate;
@@ -51,6 +55,19 @@ public class RecipeAiDocRepository {
 
     public Optional<RecipeAiDoc> findByRecipeId(Long recipeId) {
         List<RecipeAiDoc> rows = jdbcTemplate.query(SELECT_BY_RECIPE_ID_SQL, RECIPE_AI_DOC_ROW_MAPPER, recipeId);
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(rows.get(0));
+    }
+
+    public long countAll() {
+        Long count = jdbcTemplate.queryForObject(COUNT_ALL_SQL, Long.class);
+        return count == null ? 0L : count;
+    }
+
+    public Optional<Long> findFirstRecipeId() {
+        List<Long> rows = jdbcTemplate.query(SELECT_FIRST_RECIPE_ID_SQL, (rs, rowNum) -> rs.getLong(1));
         if (rows.isEmpty()) {
             return Optional.empty();
         }
