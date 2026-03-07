@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.common.BaseTimeEntity;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,12 +31,12 @@ public class Notification extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", referencedColumnName = "id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Users receiver;
+    private Account receiver;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "actor_id", referencedColumnName = "id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Users actor;
+    private Account actor;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", referencedColumnName = "id", nullable = false)
@@ -63,8 +63,8 @@ public class Notification extends BaseTimeEntity {
 
     @Builder
     public Notification(Long id,
-                        Users receiver,
-                        Users actor,
+                        Account receiver,
+                        Account actor,
                         Board board,
                         Comments comment,
                         NotificationType type,
@@ -82,8 +82,8 @@ public class Notification extends BaseTimeEntity {
         this.readTime = readTime;
     }
 
-    public static Notification boardComment(Users receiver,
-                                            Users actor,
+    public static Notification boardComment(Account receiver,
+                                            Account actor,
                                             Board board,
                                             Comments comment,
                                             String contentPreview) {
@@ -98,8 +98,8 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public static Notification commentReply(Users receiver,
-                                            Users actor,
+    public static Notification commentReply(Account receiver,
+                                            Account actor,
                                             Board board,
                                             Comments comment,
                                             String contentPreview) {
@@ -114,8 +114,8 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public static Notification boardMention(Users receiver,
-                                            Users actor,
+    public static Notification boardMention(Account receiver,
+                                            Account actor,
                                             Board board,
                                             String contentPreview) {
         return Notification.builder()
@@ -129,8 +129,8 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public static Notification commentMention(Users receiver,
-                                              Users actor,
+    public static Notification commentMention(Account receiver,
+                                              Account actor,
                                               Board board,
                                               Comments comment,
                                               String contentPreview) {
@@ -145,8 +145,8 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public static Notification reportResult(Users receiver,
-                                            Users actor,
+    public static Notification reportResult(Account receiver,
+                                            Account actor,
                                             Board board,
                                             NotificationType type,
                                             String contentPreview) {

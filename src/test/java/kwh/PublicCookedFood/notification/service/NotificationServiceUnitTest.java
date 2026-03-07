@@ -1,11 +1,13 @@
 package kwh.PublicCookedFood.notification.service;
 
+import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.notification.repository.NotificationRepository;
+import kwh.PublicCookedFood.notification.error.NotificationErrorCode;
 import kwh.PublicCookedFood.notification.service.dispatch.NotificationDispatchFacade;
-import kwh.PublicCookedFood.user.audit.NotificationAuditPublisher;
-import kwh.PublicCookedFood.user.domain.Role;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.repository.UserRepository;
+import kwh.PublicCookedFood.account.audit.NotificationAuditPublisher;
+import kwh.PublicCookedFood.account.domain.Role;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,7 +29,7 @@ class NotificationServiceUnitTest {
     private NotificationRepository notificationRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private AccountRepository accountRepository;
 
     @Mock
     private NotificationDispatchFacade notificationDispatchFacade;
@@ -43,32 +45,30 @@ class NotificationServiceUnitTest {
 
     @Test
     void updateNotificationEnabled_disableClearsActiveEmitters() {
-        Users user = createUser(1L, true);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Account account = createAccount(1L, true);
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
         boolean enabled = notificationService.updateNotificationEnabled(1L, false);
 
         assertThat(enabled).isFalse();
-        assertThat(user.isNotificationEnabled()).isFalse();
+        assertThat(account.isNotificationEnabled()).isFalse();
         verify(notificationAuditPublisher).notificationSettingUpdate(1L, false);
         verify(notificationSseService).clearEmitters(1L);
     }
 
     @Test
     void subscribe_throwsWhenNotificationSettingDisabled() {
-        Users user = createUser(2L, false);
-        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
-        when(notificationSseService.isSseEnabled()).thenReturn(true);
+        when(notificationSseService.isSseEnabled()).thenReturn(false);
 
         assertThatThrownBy(() -> notificationService.subscribe(2L))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("비활성화");
+                .isInstanceOfSatisfying(AppException.class, e -> {
+                    assertThat(e.getErrorCode()).isEqualTo(NotificationErrorCode.NOTIFICATION_SSE_DISABLED);
+                    assertThat(e.getMessage()).contains("비활성화");
+                });
     }
 
     @Test
     void subscribe_registersEmitterWhenNotificationEnabled() {
-        Users user = createUser(3L, true);
-        when(userRepository.findById(3L)).thenReturn(Optional.of(user));
         when(notificationSseService.isSseEnabled()).thenReturn(true);
         SseEmitter expected = new SseEmitter();
         when(notificationSseService.subscribe(3L)).thenReturn(expected);
@@ -78,8 +78,8 @@ class NotificationServiceUnitTest {
         assertThat(emitter).isSameAs(expected);
     }
 
-    private Users createUser(Long id, boolean notificationEnabled) {
-        return Users.builder()
+    private Account createAccount(Long id, boolean notificationEnabled) {
+        return Account.builder()
                 .id(id)
                 .email("notification-" + id + "@test.com")
                 .name("알림테스터")

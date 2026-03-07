@@ -2,7 +2,7 @@ package kwh.PublicCookedFood.notification.service.dispatch;
 
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.notification.domain.Notification;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Component;
@@ -24,16 +24,16 @@ public class BoardCreatedNotificationDispatchStrategy implements NotificationDis
     @Override
     public void dispatch(NotificationDispatchContext context) {
         Board board = context.board();
-        if (board == null || board.getUser() == null || board.getUser().getId() == null) {
+        if (board == null || board.getAccount() == null || board.getAccount().getId() == null) {
             return;
         }
 
-        Users actor = board.getUser();
+        Account actor = board.getAccount();
         String plainText = Jsoup.parse(board.getContents() == null ? "" : board.getContents()).text();
         String preview = support.buildPreview(board.getTitle() == null ? plainText : board.getTitle() + " " + plainText);
         Set<Long> notifiedReceiverIds = new LinkedHashSet<>();
 
-        for (Users mentionedUser : support.resolveMentionedUsers(plainText, actor.getId())) {
+        for (Account mentionedUser : support.resolveMentionedUsers(plainText, actor.getId())) {
             if (mentionedUser.getId() == null || notifiedReceiverIds.contains(mentionedUser.getId())) {
                 continue;
             }

@@ -1,7 +1,9 @@
 package kwh.PublicCookedFood.notification.service;
 
+import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.config.properties.NotificationSseProperties;
 import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
+import kwh.PublicCookedFood.notification.error.NotificationErrorCode;
 import kwh.PublicCookedFood.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +44,7 @@ public class NotificationSseService {
 
     public SseEmitter subscribe(Long receiverId) {
         if (!isSseEnabled()) {
-            throw new IllegalStateException("알림 SSE가 비활성화되어 있습니다.");
+            throw new AppException(NotificationErrorCode.NOTIFICATION_SSE_DISABLED);
         }
         String emitterId = receiverId + "_" + System.currentTimeMillis();
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
@@ -69,11 +71,11 @@ public class NotificationSseService {
     }
 
     public void clearEmitters(Long receiverId) {
-        Map<String, SseEmitter> userEmitters = emitters.remove(receiverId);
-        if (userEmitters == null) {
+        Map<String, SseEmitter> accountEmitters = emitters.remove(receiverId);
+        if (accountEmitters == null) {
             return;
         }
-        userEmitters.values().forEach(emitter -> {
+        accountEmitters.values().forEach(emitter -> {
             try {
                 emitter.complete();
             } catch (IllegalStateException ignored) {
@@ -88,9 +90,9 @@ public class NotificationSseService {
         }
         sseHeartbeatEvents.incrementAndGet();
         Map<String, Object> payload = Map.of("timestamp", System.currentTimeMillis());
-        for (Map.Entry<Long, Map<String, SseEmitter>> userEntry : emitters.entrySet()) {
-            Long receiverId = userEntry.getKey();
-            for (Map.Entry<String, SseEmitter> emitterEntry : userEntry.getValue().entrySet()) {
+        for (Map.Entry<Long, Map<String, SseEmitter>> accountEntry : emitters.entrySet()) {
+            Long receiverId = accountEntry.getKey();
+            for (Map.Entry<String, SseEmitter> emitterEntry : accountEntry.getValue().entrySet()) {
                 sendToEmitter(receiverId, emitterEntry.getKey(), emitterEntry.getValue(), "heartbeat", payload);
             }
         }
@@ -128,8 +130,8 @@ public class NotificationSseService {
     }
 
     private void sendNotificationEvent(Long receiverId, Long notificationId) {
-        Map<String, SseEmitter> userEmitters = emitters.get(receiverId);
-        if (userEmitters == null || userEmitters.isEmpty()) {
+        Map<String, SseEmitter> accountEmitters = emitters.get(receiverId);
+        if (accountEmitters == null || accountEmitters.isEmpty()) {
             return;
         }
         sseNotificationEvents.incrementAndGet();
@@ -142,7 +144,7 @@ public class NotificationSseService {
         payload.put("latest", latest);
         payload.put("timestamp", System.currentTimeMillis());
 
-        for (Map.Entry<String, SseEmitter> entry : userEmitters.entrySet()) {
+        for (Map.Entry<String, SseEmitter> entry : accountEmitters.entrySet()) {
             sendToEmitter(receiverId, entry.getKey(), entry.getValue(), "notification", payload);
         }
     }
@@ -167,12 +169,12 @@ public class NotificationSseService {
     }
 
     private void removeEmitter(Long receiverId, String emitterId) {
-        Map<String, SseEmitter> userEmitters = emitters.get(receiverId);
-        if (userEmitters == null) {
+        Map<String, SseEmitter> accountEmitters = emitters.get(receiverId);
+        if (accountEmitters == null) {
             return;
         }
-        userEmitters.remove(emitterId);
-        if (userEmitters.isEmpty()) {
+        accountEmitters.remove(emitterId);
+        if (accountEmitters.isEmpty()) {
             emitters.remove(receiverId);
         }
     }
