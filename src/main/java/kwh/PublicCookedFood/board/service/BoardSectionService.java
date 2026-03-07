@@ -111,9 +111,9 @@ public class BoardSectionService {
             }
         }
 
-        Map<Long, BoardSection> sectionMap = boardSectionRepository.findAllById(orderedIds).stream()
+        Map<Long, BoardSection> sectionMap = getAllSections().stream()
                 .collect(Collectors.toMap(BoardSection::getId, Function.identity()));
-        if (sectionMap.size() != orderedIds.size()) {
+        if (sectionMap.size() != orderedIds.size() || !sectionMap.keySet().equals(orderedIds)) {
             throw new AppException(BoardSectionErrorCode.BOARD_SECTION_NOT_FOUND);
         }
 
