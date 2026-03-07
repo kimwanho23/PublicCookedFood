@@ -1,27 +1,37 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<head th:replace="~{fragments/header :: headResources('게시판 정책 관리')}">
+<th:block th:fragment="pageResources">
+    <link th:href="@{/css/admin-board-policy.css}" rel="stylesheet">
+</th:block>
+<head th:replace="~{fragments/header :: headResourcesWithExtras('게시판 정책 관리', ~{::pageResources})}">
     <meta charset="UTF-8">
     <title>게시판 정책 관리</title>
 </head>
 <body class="app-shell d-flex flex-column">
 <header th:replace="~{fragments/header :: siteHeader}"></header>
-
 <main class="page-shell">
     <div class="container">
         <section class="hero-panel hero-panel-board mb-4">
             <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
                 <div>
                     <h1 class="display-title h3 mb-2">게시판 정책 관리</h1>
-                    <p class="mb-0 text-white-50">썸네일 노출 방식과 추천글 기준을 운영 정책으로 관리합니다.</p>
+                    <p class="mb-0 text-white-50">썸네일 노출 방식과 추천글 기준, 게시판 탭 구성을 운영 정책으로 관리합니다.</p>
                 </div>
             </div>
         </section>
 
-        <section class="section-wrap p-4">
-            <div class="alert alert-success" th:if="${policyMessage != null}" th:text="${policyMessage}"></div>
+        <div class="alert alert-success" th:if="${policyMessage != null}" th:text="${policyMessage}"></div>
+        <div id="adminBoardMessage" class="alert d-none"></div>
 
-            <form th:action="@{/admin/boards/policy}" method="post" class="row g-3">
+        <section class="section-wrap p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">노출 정책</h2>
+                    <p class="small text-muted-soft mb-0">추천글 기준과 썸네일 표시 모드를 한곳에서 관리합니다.</p>
+                </div>
+            </div>
+
+            <form id="boardPolicyForm" th:action="@{/admin/boards/policy}" method="post" class="row g-3">
                 <div class="col-md-4">
                     <label for="featuredLikeThreshold" class="form-label">추천글 기준 추천 수</label>
                     <input id="featuredLikeThreshold"
@@ -50,15 +60,70 @@
                 </div>
 
                 <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-brand">저장</button>
+                    <button type="submit" class="btn btn-brand">정책 저장</button>
                     <a th:href="@{/admin/boards/dashboard}" class="btn btn-soft">운영 대시보드</a>
                     <a th:href="@{/boards}" class="btn btn-outline-secondary">게시판으로 이동</a>
                 </div>
             </form>
         </section>
+
+        <section class="section-wrap p-4 mt-3">
+            <div class="mb-3">
+                <div>
+                    <h2 class="h5 mb-1">게시판 탭 관리</h2>
+                    <p class="small text-muted-soft mb-0">탭을 추가하고, 순서와 노출 여부를 이 화면에서 관리합니다.</p>
+                </div>
+            </div>
+
+            <div class="row g-3 align-items-start">
+                <div class="col-xl-4">
+                    <div class="board-tab-preview-panel">
+                        <p class="board-tab-section-eyebrow mb-2">탭 미리보기</p>
+                        <h3 class="h6 mb-2">현재 게시판 탭 구성</h3>
+                        <p class="small text-muted-soft mb-3">사용자 화면에서 보이게 될 게시판 탭 구성을 바로 확인할 수 있습니다.</p>
+                        <div id="boardTabPreview" class="board-tab-preview-list nav nav-pills" aria-live="polite"></div>
+                        <p id="boardTabStatus" class="small text-muted-soft mb-0 mt-3 board-tab-status-note">게시판 탭 목록을 불러오는 중입니다.</p>
+                    </div>
+
+                    <div class="board-tab-create-panel mt-3">
+                        <p class="board-tab-section-eyebrow mb-2">탭 추가</p>
+                        <h3 class="h6 mb-2">새 게시판 탭 만들기</h3>
+                        <p class="small text-muted-soft mb-3">보일 이름만 입력하면 바로 추가할 수 있습니다.</p>
+                        <form id="boardTabCreateForm" class="row g-2">
+                            <div class="col-12">
+                                <label for="newTabName" class="form-label mb-1 small">탭 이름</label>
+                                <input id="newTabName"
+                                       name="sectionName"
+                                       type="text"
+                                       class="form-control"
+                                       maxlength="100"
+                                       placeholder="예: 공지사항"
+                                       required>
+                            </div>
+                            <div class="col-12 d-grid">
+                                <button type="submit" class="btn btn-brand">탭 추가</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-xl-8">
+                    <div class="board-tab-sort-panel">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+                            <div>
+                                <p class="board-tab-section-eyebrow mb-2">탭 목록</p>
+                                <h3 class="h5 mb-1">게시판 탭</h3>
+                                <p class="small text-muted-soft mb-0">탭 이름과 노출 여부를 관리합니다.</p>
+                            </div>
+                        </div>
+                        <ul id="boardTabList" class="list-unstyled mb-0"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 </main>
-
+<script th:src="@{/js/admin-board-policy.js}"></script>
 <footer th:replace="~{fragments/footer :: siteFooter}"></footer>
 </body>
 </html>

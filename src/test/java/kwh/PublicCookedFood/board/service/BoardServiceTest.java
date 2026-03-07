@@ -6,9 +6,10 @@ import kwh.PublicCookedFood.board.domain.SoftDeleteState;
 import kwh.PublicCookedFood.board.dto.request.BoardSaveRequest;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.CommentsRepository;
-import kwh.PublicCookedFood.user.domain.Role;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.repository.UserRepository;
+import kwh.PublicCookedFood.metrics.popular.BoardPopularSnapshotService;
+import kwh.PublicCookedFood.account.domain.Role;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -42,24 +43,27 @@ class BoardServiceTest {
     private BoardPolicyService boardPolicyService;
 
     @Mock
-    private UserRepository userRepository;
+    private AccountRepository accountRepository;
+
+    @Mock
+    private BoardPopularSnapshotService boardPopularSnapshotService;
 
     @InjectMocks
     private BoardService boardService;
 
     @Test
     void write() {
-        Users user = Users.builder()
+        Account account = Account.builder()
                 .id(11L)
                 .email("board-write@test.com")
-                .name("테스터")
+                .name("author")
                 .authority(Role.USER)
                 .loginMethod("Current")
                 .build();
         BoardSection section = BoardSection.builder()
                 .id(2L)
                 .sectionKey("general")
-                .sectionName("자유")
+                .sectionName("일반")
                 .displayOrder(0)
                 .active(true)
                 .build();
@@ -67,7 +71,7 @@ class BoardServiceTest {
                 .title("<b>Title</b>")
                 .contents("<p><span style=\"font-size: 18px; font-family: 'Noto Serif KR', serif; color: red;\">ok</span></p>"
                         + "<script>alert(1)</script><iframe src=\"https://www.youtube.com/embed/example\"></iframe>")
-                .userId(11L)
+                .accountId(11L)
                 .sectionId(2L)
                 .views(0L)
                 .likesCount(0L)
@@ -75,7 +79,7 @@ class BoardServiceTest {
                 .state(SoftDeleteState.ACTIVE)
                 .build();
 
-        when(userRepository.findById(11L)).thenReturn(Optional.of(user));
+        when(accountRepository.findById(11L)).thenReturn(Optional.of(account));
         when(boardSectionService.resolveSectionForWrite(2L)).thenReturn(section);
         when(boardRepository.save(any(Board.class))).thenAnswer(invocation -> {
             Board candidate = invocation.getArgument(0);
@@ -83,7 +87,7 @@ class BoardServiceTest {
                     .id(100L)
                     .title(candidate.getTitle())
                     .contents(candidate.getContents())
-                    .user(candidate.getUser())
+                    .account(candidate.getAccount())
                     .section(candidate.getSection())
                     .views(candidate.getViews())
                     .likeCount(candidate.getLikeCount())
@@ -108,31 +112,31 @@ class BoardServiceTest {
         assertThat(persisted.getContents()).doesNotContain("<script>");
         assertThat(persisted.getContents()).contains("<iframe");
         assertThat(persisted.getContents()).contains("youtube.com/embed/example");
-        assertThat(persisted.getUser()).isSameAs(user);
+        assertThat(persisted.getAccount()).isSameAs(account);
         assertThat(persisted.getSection()).isSameAs(section);
         verify(imageService).syncBoardImages(savedBoard, persisted.getContents());
     }
 
     @Test
     void writeRejectsDisallowedInlineStyles() {
-        Users user = Users.builder()
+        Account account = Account.builder()
                 .id(11L)
                 .email("board-write@test.com")
-                .name("테스터")
+                .name("author")
                 .authority(Role.USER)
                 .loginMethod("Current")
                 .build();
         BoardSection section = BoardSection.builder()
                 .id(2L)
                 .sectionKey("general")
-                .sectionName("자유")
+                .sectionName("일반")
                 .displayOrder(0)
                 .active(true)
                 .build();
         BoardSaveRequest request = BoardSaveRequest.builder()
                 .title("Title")
                 .contents("<p><span style=\"font-size: 100px; font-family: fantasy; color: red;\">bad</span></p>")
-                .userId(11L)
+                .accountId(11L)
                 .sectionId(2L)
                 .views(0L)
                 .likesCount(0L)
@@ -140,7 +144,7 @@ class BoardServiceTest {
                 .state(SoftDeleteState.ACTIVE)
                 .build();
 
-        when(userRepository.findById(11L)).thenReturn(Optional.of(user));
+        when(accountRepository.findById(11L)).thenReturn(Optional.of(account));
         when(boardSectionService.resolveSectionForWrite(2L)).thenReturn(section);
         when(boardRepository.save(any(Board.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

@@ -26,22 +26,22 @@
                 <a class="btn btn-sm"
                    th:classappend="${reportFilter == 'OPEN'} ? ' btn-brand' : ' btn-outline-secondary'"
                    th:href="@{/admin/boards/reports(status='OPEN')}">
-                    OPEN (<span th:text="${openCount}">0</span>)
+                    <span th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).OPEN.label}">처리 대기</span> (<span th:text="${openCount}">0</span>)
                 </a>
                 <a class="btn btn-sm"
                    th:classappend="${reportFilter == 'RESOLVED'} ? ' btn-brand' : ' btn-outline-secondary'"
                    th:href="@{/admin/boards/reports(status='RESOLVED')}">
-                    RESOLVED (<span th:text="${resolvedCount}">0</span>)
+                    <span th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).RESOLVED.label}">처리 완료</span> (<span th:text="${resolvedCount}">0</span>)
                 </a>
                 <a class="btn btn-sm"
                    th:classappend="${reportFilter == 'REJECTED'} ? ' btn-brand' : ' btn-outline-secondary'"
                    th:href="@{/admin/boards/reports(status='REJECTED')}">
-                    REJECTED (<span th:text="${rejectedCount}">0</span>)
+                    <span th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).REJECTED.label}">반려</span> (<span th:text="${rejectedCount}">0</span>)
                 </a>
                 <a class="btn btn-sm"
                    th:classappend="${reportFilter == 'ALL'} ? ' btn-brand' : ' btn-outline-secondary'"
                    th:href="@{/admin/boards/reports(status='ALL')}">
-                    ALL (<span th:text="${allCount}">0</span>)
+                    전체 (<span th:text="${allCount}">0</span>)
                 </a>
                 <a class="btn btn-sm btn-soft" th:href="@{/admin/boards/dashboard}">대시보드</a>
                 <a class="btn btn-sm btn-outline-secondary ms-auto" th:href="@{/admin/boards/policy}">정책 관리</a>
@@ -86,7 +86,7 @@
                         <td>
                             <span class="badge"
                                   th:classappend="${report.status.name() == 'OPEN'} ? ' text-bg-warning' : (${report.status.name() == 'RESOLVED'} ? ' text-bg-success' : ' text-bg-secondary')"
-                                  th:text="${report.status.name()}">OPEN</span>
+                                  th:text="${report.status.label}">처리 대기</span>
                         </td>
                         <td>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
@@ -116,9 +116,9 @@
                                         aria-label="신고 상태 변경"
                                         title="신고 상태 변경">
                                     <option value="" disabled hidden>상태 선택</option>
-                                    <option value="OPEN" th:selected="${report.status.name() == 'OPEN'}">OPEN</option>
-                                    <option value="RESOLVED" th:selected="${report.status.name() == 'RESOLVED'}">RESOLVED</option>
-                                    <option value="REJECTED" th:selected="${report.status.name() == 'REJECTED'}">REJECTED</option>
+                                    <option value="OPEN" th:selected="${report.status.name() == 'OPEN'}" th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).OPEN.label}">처리 대기</option>
+                                    <option value="RESOLVED" th:selected="${report.status.name() == 'RESOLVED'}" th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).RESOLVED.label}">처리 완료</option>
+                                    <option value="REJECTED" th:selected="${report.status.name() == 'REJECTED'}" th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).REJECTED.label}">반려</option>
                                 </select>
                                 <label th:for="'reportProcessNote-' + ${report.id}" class="visually-hidden">신고 처리 메모</label>
                                 <input type="text"
@@ -131,7 +131,7 @@
                                        placeholder="처리 메모 (선택)"
                                        th:value="${report.processedNote}">
                                 <input type="hidden" name="redirectStatus" th:value="${reportFilter}">
-                                <input type="hidden" name="page" th:value="${reportPage.number}">
+                                <input type="hidden" name="page" th:value="${reportPage.number + 1}">
                                 <button type="submit" class="btn btn-sm btn-soft">적용</button>
                             </form>
                         </td>
@@ -144,18 +144,18 @@
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item" th:classappend="${reportPage.first} ? ' disabled'">
                         <a class="page-link"
-                           th:href="@{/admin/boards/reports(status=${reportFilter}, page=${reportPage.number - 1}, size=${reportPage.size})}">이전</a>
+                           th:href="@{/admin/boards/reports(status=${reportFilter}, page=${reportPage.number}, size=${reportPage.size})}">이전</a>
                     </li>
                     <li class="page-item"
-                        th:each="pageNum : ${#numbers.sequence(0, reportPage.totalPages - 1)}"
-                        th:classappend="${pageNum == reportPage.number} ? ' active'">
+                        th:each="pageNum : ${#numbers.sequence(1, reportPage.totalPages)}"
+                        th:classappend="${pageNum == reportPage.number + 1} ? ' active'">
                         <a class="page-link"
-                           th:text="${pageNum + 1}"
+                           th:text="${pageNum}"
                            th:href="@{/admin/boards/reports(status=${reportFilter}, page=${pageNum}, size=${reportPage.size})}">1</a>
                     </li>
                     <li class="page-item" th:classappend="${reportPage.last} ? ' disabled'">
                         <a class="page-link"
-                           th:href="@{/admin/boards/reports(status=${reportFilter}, page=${reportPage.number + 1}, size=${reportPage.size})}">다음</a>
+                           th:href="@{/admin/boards/reports(status=${reportFilter}, page=${reportPage.number + 2}, size=${reportPage.size})}">다음</a>
                     </li>
                 </ul>
             </nav>

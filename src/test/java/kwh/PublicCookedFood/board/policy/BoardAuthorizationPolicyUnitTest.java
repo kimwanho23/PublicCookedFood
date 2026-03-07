@@ -1,11 +1,11 @@
 package kwh.PublicCookedFood.board.policy;
 
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.domain.Role;
+import kwh.PublicCookedFood.account.service.AccountBlockService;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
-import kwh.PublicCookedFood.user.domain.Role;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.service.UserBlockService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,15 +20,15 @@ import static org.mockito.Mockito.when;
 class BoardAuthorizationPolicyUnitTest {
 
     @Mock
-    private UserBlockService userBlockService;
+    private AccountBlockService accountBlockService;
 
     @InjectMocks
     private BoardAuthorizationPolicy boardAuthorizationPolicy;
 
     @Test
-    void canManageBoard_returnsTrueWhenUserOwnsBoard() {
-        Users owner = createUser(10L);
-        BoardDetailResponse board = BoardDetailResponse.builder().userId(10L).build();
+    void canManageBoard_returnsTrueWhenAccountOwnsBoard() {
+        Account owner = createAccount(10L);
+        BoardDetailResponse board = BoardDetailResponse.builder().accountId(10L).build();
 
         boolean allowed = boardAuthorizationPolicy.canManageBoard(owner, board);
 
@@ -36,9 +36,9 @@ class BoardAuthorizationPolicyUnitTest {
     }
 
     @Test
-    void canManageBoard_returnsFalseWhenUserDoesNotOwnBoard() {
-        Users actor = createUser(10L);
-        BoardDetailResponse board = BoardDetailResponse.builder().userId(20L).build();
+    void canManageBoard_returnsFalseWhenAccountDoesNotOwnBoard() {
+        Account actor = createAccount(10L);
+        BoardDetailResponse board = BoardDetailResponse.builder().accountId(20L).build();
 
         boolean allowed = boardAuthorizationPolicy.canManageBoard(actor, board);
 
@@ -46,12 +46,12 @@ class BoardAuthorizationPolicyUnitTest {
     }
 
     @Test
-    void canManageComment_returnsTrueWhenUserOwnsCommentAndBoardMatches() {
-        Users actor = createUser(1L);
+    void canManageComment_returnsTrueWhenAccountOwnsCommentAndBoardMatches() {
+        Account actor = createAccount(1L);
         Comments comment = Comments.builder()
-                .user(createUser(1L))
+                .account(createAccount(1L))
                 .board(Board.builder().id(99L).build())
-                .contents("댓글")
+                .contents("body")
                 .build();
 
         boolean allowed = boardAuthorizationPolicy.canManageComment(actor, 99L, comment);
@@ -61,11 +61,11 @@ class BoardAuthorizationPolicyUnitTest {
 
     @Test
     void canManageComment_returnsFalseWhenBoardIdDoesNotMatch() {
-        Users actor = createUser(1L);
+        Account actor = createAccount(1L);
         Comments comment = Comments.builder()
-                .user(createUser(1L))
+                .account(createAccount(1L))
                 .board(Board.builder().id(55L).build())
-                .contents("댓글")
+                .contents("body")
                 .build();
 
         boolean allowed = boardAuthorizationPolicy.canManageComment(actor, 99L, comment);
@@ -74,28 +74,28 @@ class BoardAuthorizationPolicyUnitTest {
     }
 
     @Test
-    void isViewRestricted_delegatesToUserBlockService() {
-        Users viewer = createUser(2L);
-        when(userBlockService.isEitherBlocked(2L, 3L)).thenReturn(true);
+    void isViewRestricted_delegatesToAccountBlockService() {
+        Account viewer = createAccount(2L);
+        when(accountBlockService.isEitherBlocked(2L, 3L)).thenReturn(true);
 
         boolean restricted = boardAuthorizationPolicy.isViewRestricted(viewer, 3L);
 
         assertThat(restricted).isTrue();
-        verify(userBlockService).isEitherBlocked(2L, 3L);
+        verify(accountBlockService).isEitherBlocked(2L, 3L);
     }
 
     @Test
-    void isAuthorBlockedByViewer_returnsFalseWhenSameUser() {
+    void isAuthorBlockedByViewer_returnsFalseWhenSameAccount() {
         boolean blocked = boardAuthorizationPolicy.isAuthorBlockedByViewer(5L, 5L);
 
         assertThat(blocked).isFalse();
     }
 
-    private Users createUser(Long id) {
-        return Users.builder()
+    private Account createAccount(Long id) {
+        return Account.builder()
                 .id(id)
-                .email("user-" + id + "@test.com")
-                .name("테스터")
+                .email("account-" + id + "@test.com")
+                .name("author")
                 .authority(Role.USER)
                 .loginMethod("Current")
                 .build();

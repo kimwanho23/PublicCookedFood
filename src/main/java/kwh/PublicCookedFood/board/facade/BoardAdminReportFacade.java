@@ -3,7 +3,9 @@ package kwh.PublicCookedFood.board.facade;
 import kwh.PublicCookedFood.board.domain.BoardReport;
 import kwh.PublicCookedFood.board.domain.BoardReportStatus;
 import kwh.PublicCookedFood.board.service.BoardReportService;
-import kwh.PublicCookedFood.user.audit.BoardAuditPublisher;
+import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.common.error.CommonErrorCode;
+import kwh.PublicCookedFood.account.audit.BoardAuditPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,12 +41,12 @@ public class BoardAdminReportFacade {
     public void updateReportStatus(Long reportId,
                                    BoardReportStatus status,
                                    String processNote,
-                                   Long actorUserId) {
-        if (actorUserId == null) {
-            throw new IllegalArgumentException("신고 처리 권한이 없습니다.");
+                                   Long actorAccountId) {
+        if (actorAccountId == null) {
+            throw new AppException(CommonErrorCode.ACCESS_DENIED, "신고 처리 권한이 없습니다.");
         }
-        boardReportService.updateReportStatus(reportId, status, actorUserId, processNote);
-        boardAuditPublisher.boardReportStatusUpdate(actorUserId, reportId, status.name());
+        boardReportService.updateReportStatus(reportId, status, actorAccountId, processNote);
+        boardAuditPublisher.boardReportStatusUpdate(actorAccountId, reportId, status.name());
     }
 
     public String normalizeReportFilter(String statusFilter) {

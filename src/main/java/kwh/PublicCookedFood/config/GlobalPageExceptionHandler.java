@@ -4,11 +4,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import kwh.PublicCookedFood.board.contoller.AdminBoardPageController;
 import kwh.PublicCookedFood.board.contoller.BoardController;
 import kwh.PublicCookedFood.board.contoller.BoardDetailController;
+import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.common.error.CommonErrorCode;
+import kwh.PublicCookedFood.common.error.ErrorMessageResolver;
 import kwh.PublicCookedFood.food.controller.MainController;
 import kwh.PublicCookedFood.food.controller.RecipeController;
-import kwh.PublicCookedFood.user.controller.BookmarkController;
-import kwh.PublicCookedFood.user.controller.UserBlockController;
-import kwh.PublicCookedFood.user.controller.UserController;
+import kwh.PublicCookedFood.account.controller.BookmarkController;
+import kwh.PublicCookedFood.account.controller.AccountBlockController;
+import kwh.PublicCookedFood.account.controller.AccountController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,8 +25,8 @@ import java.util.NoSuchElementException;
         RecipeController.class,
         BoardController.class,
         BoardDetailController.class,
-        UserController.class,
-        UserBlockController.class,
+        AccountController.class,
+        AccountBlockController.class,
         BookmarkController.class,
         AdminBoardPageController.class
 })
@@ -34,18 +37,36 @@ public class GlobalPageExceptionHandler {
                                       HttpServletRequest request,
                                       RedirectAttributes redirectAttributes) {
         log.warn("페이지 리소스 조회 실패. uri={}, message={}", request.getRequestURI(), e.getMessage());
-        redirectAttributes.addFlashAttribute("globalErrorMessage", "요청한 리소스를 찾을 수 없습니다.");
+        redirectAttributes.addFlashAttribute("globalErrorCode", CommonErrorCode.RESOURCE_NOT_FOUND.code());
+        redirectAttributes.addFlashAttribute("globalErrorMessage", CommonErrorCode.RESOURCE_NOT_FOUND.message());
         return "redirect:" + resolveRedirectPath(request.getRequestURI());
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
-    public String handleInvalidInput(RuntimeException e,
+    @ExceptionHandler(AppException.class)
+    public String handleAppException(AppException e,
+                                     HttpServletRequest request,
+                                     RedirectAttributes redirectAttributes) {
+        if (e.getErrorCode().status().is5xxServerError()) {
+            log.error("페이지 요청 애플리케이션 예외. uri={}, code={}", request.getRequestURI(), e.getErrorCode().code(), e);
+        } else {
+            log.warn("페이지 요청 애플리케이션 예외. uri={}, code={}, message={}",
+                    request.getRequestURI(), e.getErrorCode().code(), e.getMessage());
+        }
+        redirectAttributes.addFlashAttribute("globalErrorCode", e.getErrorCode().code());
+        redirectAttributes.addFlashAttribute(
+                "globalErrorMessage",
+                ErrorMessageResolver.resolve(e.getMessage(), e.getErrorCode().message())
+        );
+        return "redirect:" + resolveRedirectPath(request.getRequestURI());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public String handleInvalidInput(IllegalArgumentException e,
                                      HttpServletRequest request,
                                      RedirectAttributes redirectAttributes) {
         log.warn("페이지 요청 처리 실패. uri={}, message={}", request.getRequestURI(), e.getMessage());
-        String message = e.getMessage() == null || e.getMessage().isBlank()
-                ? "요청을 처리할 수 없습니다."
-                : e.getMessage();
+        String message = ErrorMessageResolver.resolve(e.getMessage(), "요청을 처리할 수 없습니다.");
+        redirectAttributes.addFlashAttribute("globalErrorCode", CommonErrorCode.INVALID_REQUEST.code());
         redirectAttributes.addFlashAttribute("globalErrorMessage", message);
         return "redirect:" + resolveRedirectPath(request.getRequestURI());
     }

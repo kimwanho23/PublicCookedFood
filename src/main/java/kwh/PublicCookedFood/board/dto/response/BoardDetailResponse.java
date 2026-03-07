@@ -18,11 +18,11 @@ public class BoardDetailResponse {
 
     private String contents;
 
-    private Long userId;
+    private Long accountId;
 
-    private String userName;
+    private String accountName;
 
-    private String userProfileImageUrl;
+    private String accountProfileImageUrl;
 
     private Long sectionId;
 
@@ -43,17 +43,17 @@ public class BoardDetailResponse {
     private LocalDateTime updateTime;
 
     @Builder
-    public BoardDetailResponse(Long id, String title, String contents, Long userId, String userName,
-                               String userProfileImageUrl,
+    public BoardDetailResponse(Long id, String title, String contents, Long accountId, String accountName,
+                               String accountProfileImageUrl,
                                Long sectionId, String sectionKey, String sectionName,
                                Long views, Long likesCount, Long commentsCount, SoftDeleteState state,
                                LocalDateTime regTime, LocalDateTime updateTime) {
         this.id = id;
         this.title = title;
         this.contents = contents;
-        this.userId = userId;
-        this.userName = userName;
-        this.userProfileImageUrl = userProfileImageUrl;
+        this.accountId = accountId;
+        this.accountName = accountName;
+        this.accountProfileImageUrl = accountProfileImageUrl;
         this.sectionId = sectionId;
         this.sectionKey = sectionKey;
         this.sectionName = sectionName;
@@ -70,9 +70,9 @@ public class BoardDetailResponse {
                 .id(board.getId())
                 .title(board.getTitle())
                 .contents(board.getContents())
-                .userId(board.getUser() == null ? null : board.getUser().getId())
-                .userName(board.getUser() == null ? null : board.getUser().getName())
-                .userProfileImageUrl(board.getUser() == null ? null : board.getUser().getProfileImageUrl())
+                .accountId(board.getAccount() == null ? null : board.getAccount().getId())
+                .accountName(board.getAccount() == null ? null : board.getAccount().getName())
+                .accountProfileImageUrl(board.getAccount() == null ? null : board.getAccount().getProfileImageUrl())
                 .sectionId(board.getSection() == null ? null : board.getSection().getId())
                 .sectionKey(board.getSection() == null ? null : board.getSection().getSectionKey())
                 .sectionName(board.getSection() == null ? null : board.getSection().getSectionName())

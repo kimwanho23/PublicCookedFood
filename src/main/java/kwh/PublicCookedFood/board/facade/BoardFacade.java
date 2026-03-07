@@ -10,8 +10,8 @@ import kwh.PublicCookedFood.board.service.BoardScrapService;
 import kwh.PublicCookedFood.board.service.BoardSectionService;
 import kwh.PublicCookedFood.board.service.BoardService;
 import kwh.PublicCookedFood.common.dto.request.BoardSearchQuery;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.service.UserBlockService;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.service.AccountBlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +28,7 @@ public class BoardFacade {
     private final BoardService boardService;
     private final BoardSectionService boardSectionService;
     private final BoardScrapService boardScrapService;
-    private final UserBlockService userBlockService;
+    private final AccountBlockService accountBlockService;
     private final BoardAuthorizationPolicy boardAuthorizationPolicy;
     private final BoardListQueryFacade boardListQueryFacade;
     private final BoardCommandFacade boardCommandFacade;
@@ -37,19 +37,19 @@ public class BoardFacade {
                                            BoardSearchQuery query,
                                            boolean featuredPage,
                                            boolean hasBindingErrors,
-                                           Long viewerUserId) {
+                                           Long viewerAccountId) {
         return boardListQueryFacade.loadBoardList(
                 pageable,
                 query,
                 featuredPage,
                 hasBindingErrors,
-                viewerUserId
+                viewerAccountId
         );
     }
 
-    public List<Board> loadMyScrappedBoards(Long userId) {
-        Set<Long> blockedUserIds = userBlockService.getViewRestrictedUserIds(userId);
-        return boardScrapService.getMyScrappedBoards(userId, blockedUserIds);
+    public List<Board> loadMyScrappedBoards(Long accountId) {
+        Set<Long> blockedAccountIds = accountBlockService.getViewRestrictedAccountIds(accountId);
+        return boardScrapService.getMyScrappedBoards(accountId, blockedAccountIds);
     }
 
     public List<BoardSection> loadActiveSections() {
@@ -68,7 +68,7 @@ public class BoardFacade {
         }
     }
 
-    public BoardManageContext loadBoardManageContext(Users actor, Long boardId) {
+    public BoardManageContext loadBoardManageContext(Account actor, Long boardId) {
         BoardDetailResponse board = boardService.getBoardDetail(boardId);
         boolean manageable = boardAuthorizationPolicy.canManageBoard(actor, board);
         return new BoardManageContext(board, manageable);
@@ -81,19 +81,19 @@ public class BoardFacade {
         );
     }
 
-    public Board createBoard(Long actorUserId, BoardWriteRequest boardDto) {
-        return boardCommandFacade.createBoard(actorUserId, boardDto);
+    public Board createBoard(Long actorAccountId, BoardWriteRequest boardDto) {
+        return boardCommandFacade.createBoard(actorAccountId, boardDto);
     }
 
-    public void updateBoard(Long actorUserId,
+    public void updateBoard(Long actorAccountId,
                             Long boardId,
                             BoardUpdateRequest boardDto,
                             BoardDetailResponse existingBoard) {
-        boardCommandFacade.updateBoard(actorUserId, boardId, boardDto, existingBoard);
+        boardCommandFacade.updateBoard(actorAccountId, boardId, boardDto, existingBoard);
     }
 
-    public void deleteBoard(Long actorUserId, Long boardId) {
-        boardCommandFacade.deleteBoard(actorUserId, boardId);
+    public void deleteBoard(Long actorAccountId, Long boardId) {
+        boardCommandFacade.deleteBoard(actorAccountId, boardId);
     }
 
     public record BoardListViewData(Page<Board> boardList,
@@ -101,6 +101,7 @@ public class BoardFacade {
                                     String search,
                                     String activeSection,
                                     String orderBy,
+                                    Map<Long, Long> boardViewMap,
                                     Map<Long, String> boardThumbnailMap,
                                     Map<Long, Boolean> boardHasImageMap,
                                     String thumbnailDisplayMode,
@@ -111,6 +112,7 @@ public class BoardFacade {
                                     String boardPageTitle,
                                     String queryErrorMsg) {
         public BoardListViewData {
+            boardViewMap = boardViewMap == null ? Map.of() : Map.copyOf(boardViewMap);
             boardThumbnailMap = boardThumbnailMap == null ? Map.of() : Map.copyOf(boardThumbnailMap);
             boardHasImageMap = boardHasImageMap == null ? Map.of() : Map.copyOf(boardHasImageMap);
             sections = sections == null ? List.of() : List.copyOf(sections);

@@ -4,7 +4,8 @@ import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.service.BoardSectionService;
 import kwh.PublicCookedFood.board.service.BoardService;
 import kwh.PublicCookedFood.common.dto.request.BoardSearchQuery;
-import kwh.PublicCookedFood.user.service.UserBlockService;
+import kwh.PublicCookedFood.metrics.view.ViewCounterService;
+import kwh.PublicCookedFood.account.service.AccountBlockService;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,17 +24,18 @@ import java.util.Set;
 public class BoardListQueryFacade {
 
     private static final String QUERY_INVALID_MESSAGE = "검색 조건이 유효하지 않아 기본 목록을 표시합니다.";
-    private static final String SECTION_INVALID_MESSAGE = "존재하지 않거나 비활성화된 게시판 탭입니다.";
+    private static final String SECTION_INVALID_MESSAGE = "선택한 게시판 탭을 찾을 수 없어 기본 목록을 표시합니다.";
 
     private final BoardService boardService;
     private final BoardSectionService boardSectionService;
-    private final UserBlockService userBlockService;
+    private final AccountBlockService accountBlockService;
+    private final ViewCounterService viewCounterService;
 
     public BoardFacade.BoardListViewData loadBoardList(Pageable pageable,
                                                        BoardSearchQuery query,
                                                        boolean featuredPage,
                                                        boolean hasBindingErrors,
-                                                       Long viewerUserId) {
+                                                       Long viewerAccountId) {
         String search = query == null ? null : query.normalizedSearch();
         String section = query == null ? null : query.normalizedSection();
         String orderBy = normalizeOrderBy(query == null ? null : query.normalizedOrderBy(), featuredPage);
@@ -51,10 +54,11 @@ public class BoardListQueryFacade {
         }
 
         Pageable listPageable = resolveListPageable(pageable, featuredPage, orderBy);
-        Set<Long> blockedUserIds = userBlockService.getViewRestrictedUserIds(viewerUserId);
-        Page<Board> boardList = getBoardInfo(listPageable, search, section, featuredPage, blockedUserIds);
+        Set<Long> blockedAccountIds = accountBlockService.getViewRestrictedAccountIds(viewerAccountId);
+        Page<Board> boardList = getBoardInfo(listPageable, search, section, featuredPage, orderBy, blockedAccountIds);
 
         BoardThumbnailData thumbnailData = extractBoardThumbnailData(boardList.getContent());
+        Map<Long, Long> boardViewMap = resolveBoardViewMap(boardList.getContent());
         String boardListPath = featuredPage ? "/boards/featured" : "/boards";
 
         return new BoardFacade.BoardListViewData(
@@ -63,6 +67,7 @@ public class BoardListQueryFacade {
                 search,
                 section,
                 orderBy,
+                boardViewMap,
                 thumbnailData.thumbnailUrlByBoardId(),
                 thumbnailData.hasImageByBoardId(),
                 boardService.getThumbnailDisplayMode().name(),
@@ -70,7 +75,7 @@ public class BoardListQueryFacade {
                 boardListPath,
                 featuredPage,
                 boardService.getFeaturedLikeThreshold(),
-                featuredPage ? "추천 게시물" : "게시판",
+                featuredPage ? "\uCD94\uCC9C \uAC8C\uC2DC\uBB3C" : "\uAC8C\uC2DC\uD310",
                 queryErrorMsg
         );
     }
@@ -79,17 +84,24 @@ public class BoardListQueryFacade {
                                      String search,
                                      String section,
                                      boolean featuredPage,
-                                     Set<Long> blockedUserIds) {
+                                     String orderBy,
+                                     Set<Long> blockedAccountIds) {
         boolean hasSearch = search != null && !search.isEmpty();
         if (featuredPage) {
             return hasSearch
-                    ? boardService.findFeaturedByKeyword(search, section, null, blockedUserIds, pageable)
-                    : boardService.getFeaturedBoardList(pageable, section, null, blockedUserIds);
+                    ? boardService.findFeaturedByKeyword(search, section, null, blockedAccountIds, pageable)
+                    : boardService.getFeaturedBoardList(pageable, section, null, blockedAccountIds);
+        }
+
+        if ("views".equals(orderBy)) {
+            return hasSearch
+                    ? boardService.findByKeywordOrderByViews(search, section, null, blockedAccountIds, pageable)
+                    : boardService.getBoardListOrderByViews(pageable, section, null, blockedAccountIds);
         }
 
         return hasSearch
-                ? boardService.findByKeyword(search, section, null, blockedUserIds, pageable)
-                : boardService.getBoardList(pageable, section, null, blockedUserIds);
+                ? boardService.findByKeyword(search, section, null, blockedAccountIds, pageable)
+                : boardService.getBoardList(pageable, section, null, blockedAccountIds);
     }
 
     private Pageable resolveListPageable(Pageable pageable, boolean featuredPage, String orderBy) {
@@ -97,8 +109,10 @@ public class BoardListQueryFacade {
             return pageable;
         }
         String normalizedOrderBy = (orderBy == null || orderBy.isBlank()) ? "recent" : orderBy;
+        if ("views".equals(normalizedOrderBy)) {
+            return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        }
         Sort sort = switch (normalizedOrderBy) {
-            case "views" -> Sort.by(Sort.Order.desc("views"));
             case "likes" -> Sort.by(Sort.Order.desc("likeCount"));
             case "comments" -> Sort.by(Sort.Order.desc("commentCount"));
             default -> Sort.by(Sort.Order.desc("regTime"));
@@ -154,6 +168,24 @@ public class BoardListQueryFacade {
                 .findFirst()
                 .orElse(null);
         return src == null || src.isBlank() ? null : src;
+    }
+
+    private Map<Long, Long> resolveBoardViewMap(Iterable<Board> boards) {
+        if (boards == null) {
+            return Map.of();
+        }
+
+        Set<Long> boardIds = new LinkedHashSet<>();
+        for (Board board : boards) {
+            if (board == null || board.getId() == null) {
+                continue;
+            }
+            boardIds.add(board.getId());
+        }
+        if (boardIds.isEmpty()) {
+            return Map.of();
+        }
+        return viewCounterService.getBoardViewCounts(boardIds);
     }
 
     private record BoardThumbnailData(Map<Long, String> thumbnailUrlByBoardId,

@@ -2,7 +2,7 @@ package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.common.BaseEntity;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.Builder;
 import lombok.Getter;
 import org.hibernate.annotations.OnDelete;
@@ -14,7 +14,8 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "Comments", indexes = {
+@Table(name = "comments", indexes = {
+        @Index(name = "idx_comments_account_id", columnList = "account_id"),
         @Index(name = "idx_comments_post_state", columnList = "post_id, state"),
         @Index(name = "idx_comments_post_reg_time", columnList = "post_id, regTime"),
         @Index(name = "idx_comments_parent_id", columnList = "parent_id"),
@@ -27,9 +28,9 @@ public class Comments extends BaseEntity {
     private Long id; // 댓글 ID
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "account_id", referencedColumnName = "id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Users user; // 작성자
+    private Account account; // 작성자
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", referencedColumnName = "id", nullable = false)
@@ -54,9 +55,9 @@ public class Comments extends BaseEntity {
     }
 
     @Builder
-    public Comments(Long id, Users user, Board board, String contents, Comments parent, SoftDeleteState state, List<Comments> replies) {
+    public Comments(Long id, Account account, Board board, String contents, Comments parent, SoftDeleteState state, List<Comments> replies) {
         this.id = id;
-        this.user = user;
+        this.account = account;
         this.board = board;
         this.contents = contents;
         this.parent = parent;

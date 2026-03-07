@@ -4,12 +4,12 @@ import kwh.PublicCookedFood.board.domain.BoardReport;
 import kwh.PublicCookedFood.board.domain.BoardReportStatus;
 import kwh.PublicCookedFood.board.domain.BoardThumbnailDisplayMode;
 import kwh.PublicCookedFood.board.dto.response.BoardPolicyResponse;
-import kwh.PublicCookedFood.user.domain.UserActivityLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -35,8 +35,8 @@ public class BoardAdminFacade {
 
     public void updateBoardPolicy(Integer featuredLikeThreshold,
                                   BoardThumbnailDisplayMode thumbnailDisplayMode,
-                                  Long actorUserId) {
-        boardAdminPolicyFacade.updateBoardPolicy(featuredLikeThreshold, thumbnailDisplayMode, actorUserId);
+                                  Long actorAccountId) {
+        boardAdminPolicyFacade.updateBoardPolicy(featuredLikeThreshold, thumbnailDisplayMode, actorAccountId);
     }
 
     public ReportPageViewData loadReportPage(String statusFilter, Pageable pageable) {
@@ -46,8 +46,8 @@ public class BoardAdminFacade {
     public void updateReportStatus(Long reportId,
                                    BoardReportStatus status,
                                    String processNote,
-                                   Long actorUserId) {
-        boardAdminReportFacade.updateReportStatus(reportId, status, processNote, actorUserId);
+                                   Long actorAccountId) {
+        boardAdminReportFacade.updateReportStatus(reportId, status, processNote, actorAccountId);
     }
 
     public int normalizeFeaturedThreshold(Integer featuredLikeThreshold) {
@@ -58,6 +58,13 @@ public class BoardAdminFacade {
         return boardAdminReportFacade.normalizeReportFilter(statusFilter);
     }
 
+    public record DashboardRecentActivityView(LocalDateTime regTime,
+                                              Long accountId,
+                                              String accountName,
+                                              String action,
+                                              String detail) {
+    }
+
     public record DashboardViewData(long openCount,
                                     long resolvedCount,
                                     long rejectedCount,
@@ -65,7 +72,7 @@ public class BoardAdminFacade {
                                     long hiddenByReportCount,
                                     List<?> popularBoards,
                                     List<?> reviewRankings,
-                                    List<UserActivityLog> recentActivities) {
+                                    List<DashboardRecentActivityView> recentActivities) {
         public DashboardViewData {
             popularBoards = popularBoards == null ? List.of() : List.copyOf(popularBoards);
             reviewRankings = reviewRankings == null ? List.of() : List.copyOf(reviewRankings);

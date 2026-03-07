@@ -4,7 +4,7 @@ import kwh.PublicCookedFood.board.domain.BoardPolicy;
 import kwh.PublicCookedFood.board.domain.BoardThumbnailDisplayMode;
 import kwh.PublicCookedFood.board.dto.response.BoardPolicyResponse;
 import kwh.PublicCookedFood.board.service.BoardPolicyService;
-import kwh.PublicCookedFood.user.audit.BoardAuditPublisher;
+import kwh.PublicCookedFood.account.audit.BoardAuditPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +28,7 @@ public class BoardAdminPolicyFacade {
     @Transactional
     public void updateBoardPolicy(Integer featuredLikeThreshold,
                                   BoardThumbnailDisplayMode thumbnailDisplayMode,
-                                  Long actorUserId) {
+                                  Long actorAccountId) {
         int normalizedThreshold = normalizeFeaturedThreshold(featuredLikeThreshold);
         BoardThumbnailDisplayMode normalizedDisplayMode = thumbnailDisplayMode == null
                 ? boardPolicyService.getThumbnailDisplayMode()
@@ -37,8 +37,8 @@ public class BoardAdminPolicyFacade {
         boardPolicyService.updateFeaturedLikeThreshold(normalizedThreshold);
         boardPolicyService.updateThumbnailDisplayMode(normalizedDisplayMode);
 
-        if (actorUserId != null) {
-            boardAuditPublisher.boardPolicyUpdate(actorUserId, normalizedThreshold, normalizedDisplayMode.name());
+        if (actorAccountId != null) {
+            boardAuditPublisher.boardPolicyUpdate(actorAccountId, normalizedThreshold, normalizedDisplayMode.name());
         }
     }
 

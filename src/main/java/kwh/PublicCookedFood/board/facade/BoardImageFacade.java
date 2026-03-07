@@ -2,16 +2,15 @@ package kwh.PublicCookedFood.board.facade;
 
 import kwh.PublicCookedFood.board.service.BoardService;
 import kwh.PublicCookedFood.board.service.ImageService;
+import org.springframework.core.io.PathResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
@@ -41,25 +40,21 @@ public class BoardImageFacade {
         }
 
         ImageService.ImageDownloadResource downloadResource = downloadResourceOptional.get();
-        try {
-            Resource resource = new UrlResource(downloadResource.filePath().toUri());
-            if (!resource.exists() || !resource.isReadable()) {
-                return Optional.empty();
-            }
-
-            ContentDisposition disposition = download
-                    ? ContentDisposition.attachment().filename(downloadResource.downloadFilename(), StandardCharsets.UTF_8).build()
-                    : ContentDisposition.inline().filename(downloadResource.downloadFilename(), StandardCharsets.UTF_8).build();
-
-            return Optional.of(new ImageDownloadViewData(
-                    resource,
-                    downloadResource.contentType(),
-                    disposition.toString(),
-                    downloadResource.fileSize()
-            ));
-        } catch (MalformedURLException e) {
+        Resource resource = new PathResource(downloadResource.filePath());
+        if (!resource.exists() || !resource.isReadable()) {
             return Optional.empty();
         }
+
+        ContentDisposition disposition = download
+                ? ContentDisposition.attachment().filename(downloadResource.downloadFilename(), StandardCharsets.UTF_8).build()
+                : ContentDisposition.inline().filename(downloadResource.downloadFilename(), StandardCharsets.UTF_8).build();
+
+        return Optional.of(new ImageDownloadViewData(
+                resource,
+                downloadResource.contentType(),
+                disposition.toString(),
+                downloadResource.fileSize()
+        ));
     }
 
     public Optional<BoardImagesZipViewData> prepareBoardImagesZip(Long boardId) {

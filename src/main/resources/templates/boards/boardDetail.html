@@ -25,23 +25,25 @@
                 <div class="d-flex flex-wrap align-items-center gap-3 text-muted-soft small">
                     <span class="d-inline-flex align-items-center gap-1">
                         <img class="comment-author-avatar"
-                             th:if="${boardDto.userProfileImageUrl != null and !#strings.isEmpty(boardDto.userProfileImageUrl)}"
-                             th:src="${boardDto.userProfileImageUrl}"
+                             th:if="${boardDto.accountProfileImageUrl != null and !#strings.isEmpty(boardDto.accountProfileImageUrl)}"
+                             th:src="${boardDto.accountProfileImageUrl}"
+                             onerror="this.onerror=null;this.src='/img/person-black.svg';"
                              alt="작성자 프로필">
                         <img class="comment-author-avatar"
-                             th:if="${boardDto.userProfileImageUrl == null or #strings.isEmpty(boardDto.userProfileImageUrl)}"
+                             th:if="${boardDto.accountProfileImageUrl == null or #strings.isEmpty(boardDto.accountProfileImageUrl)}"
                              th:src="@{/img/person-black.svg}"
                              alt="작성자 기본 프로필">
                         <a class="nickname-link"
-                           th:if="${boardDto.userId != null and boardDto.userName != null}"
-                           th:href="@{/u/{userId}(userId=${boardDto.userId})}"
-                           th:text="${boardDto.userName}">작성자</a>
-                        <span th:if="${boardDto.userId == null or boardDto.userName == null}"
-                              th:text="${boardDto.userName != null ? boardDto.userName : '알 수 없음'}">작성자</span>
+                           th:if="${boardDto.accountId != null and boardDto.accountName != null}"
+                           th:href="@{/u/{accountId}(accountId=${boardDto.accountId})}"
+                           th:title="|멘션 코드: @${boardDto.accountName}|"
+                           th:text="${boardDto.accountName}">작성자</a>
+                        <span th:if="${boardDto.accountId == null or boardDto.accountName == null}"
+                              th:text="${boardDto.accountName != null ? boardDto.accountName : '알 수 없음'}">작성자</span>
                     </span>
                     <span th:text="|조회수 ${boardDto.views}|">조회수</span>
-                    <span th:text="|추천 ${likes}|">추천수</span>
-                    <span th:text="|스크랩 ${scraps}|">스크랩수</span>
+                    <span th:text="|추천 ${likes}|">추천</span>
+                    <span th:text="|스크랩 ${scraps}|">스크랩</span>
                 </div>
             </header>
 
@@ -103,7 +105,7 @@
 
                     <button type="button"
                             sec:authorize="isAuthenticated()"
-                            th:if="${currentUserId != null and currentUserId != boardDto.userId and (myReport == null or !myReport)}"
+                            th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and (myReport == null or !myReport)}"
                             class="btn btn-soft-danger btn-action-danger"
                             data-bs-toggle="modal"
                             data-bs-target="#reportModal">
@@ -112,29 +114,29 @@
 
                     <button type="button"
                             sec:authorize="isAuthenticated()"
-                            th:if="${currentUserId != null and currentUserId != boardDto.userId and myReport}"
+                            th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and myReport}"
                             class="btn btn-soft-danger btn-action-danger"
                             disabled>
                         신고 완료
                     </button>
 
                     <form sec:authorize="isAuthenticated()"
-                          th:if="${currentUserId != null and currentUserId != boardDto.userId and !myBlockedAuthor}"
-                          th:action="@{/u/blocks/{targetUserId}(targetUserId=${boardDto.userId})}"
+                          th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and !myBlockedAuthor}"
+                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${boardDto.accountId})}"
                           method="post">
                         <button type="submit" class="btn btn-soft-danger btn-action-danger">작성자 차단</button>
                     </form>
 
                     <form sec:authorize="isAuthenticated()"
-                          th:if="${currentUserId != null and currentUserId != boardDto.userId and myBlockedAuthor}"
-                          th:action="@{/u/blocks/{targetUserId}(targetUserId=${boardDto.userId})}"
+                          th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and myBlockedAuthor}"
+                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${boardDto.accountId})}"
                           method="post">
                         <input type="hidden" name="_method" value="patch">
                         <button type="submit" class="btn btn-soft">차단 해제</button>
                     </form>
                 </div>
 
-                <div class="d-flex gap-2" th:if="${currentUserId != null and currentUserId == boardDto.userId}" sec:authorize="isAuthenticated()">
+                <div class="d-flex gap-2" th:if="${currentAccountId != null and currentAccountId == boardDto.accountId}" sec:authorize="isAuthenticated()">
                     <a class="btn btn-outline-secondary" th:href="@{/boards/{id}/edit(id=${id})}">수정</a>
                     <button type="button" class="btn btn-soft-danger btn-action-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">삭제</button>
                 </div>
@@ -161,7 +163,7 @@
                                   aria-label="댓글 내용"
                                   placeholder="@닉네임 으로 멘션할 수 있습니다."></textarea>
                     </div>
-                    <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요.</p>
+                    <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요. 닉네임은 사용자마다 고유합니다.</p>
                     <div class="d-flex justify-content-end">
                         <button type="submit" class="btn btn-brand mt-3">댓글 달기</button>
                     </div>
@@ -212,132 +214,6 @@
 </main>
 
 <footer th:replace="~{fragments/footer :: siteFooter}"></footer>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const hash = window.location.hash || '';
-        if (hash.startsWith('#comment-')) {
-            const target = document.querySelector(hash);
-            if (target) {
-                target.classList.add('comment-focus');
-                setTimeout(function () {
-                    target.classList.remove('comment-focus');
-                }, 2200);
-            }
-        }
-
-        const shareButton = document.getElementById('shareBoardButton');
-        if (shareButton) {
-            shareButton.addEventListener('click', async function () {
-                const rawSharePath = shareButton.getAttribute('data-share-url') || window.location.pathname;
-                const shareUrl = new URL(rawSharePath, window.location.origin).toString();
-                const shareData = {
-                    title: document.title || '게시글 공유',
-                    url: shareUrl
-                };
-
-                if (navigator.share) {
-                    try {
-                        await navigator.share(shareData);
-                        return;
-                    } catch (ignored) {
-                    }
-                }
-
-                try {
-                    await navigator.clipboard.writeText(shareUrl);
-                    window.alert('게시글 링크가 복사되었습니다.');
-                } catch (ignored) {
-                    window.prompt('아래 링크를 복사하세요.', shareUrl);
-                }
-            });
-        }
-
-        const reportModal = document.getElementById('reportModal');
-        if (reportModal) {
-            const reportReason = reportModal.querySelector('#reportReason');
-            const reportDetails = reportModal.querySelector('#reportDetails');
-            const reportForm = reportModal.querySelector('form');
-
-            function syncReportDetailsRequirement() {
-                if (!reportReason || !reportDetails) {
-                    return;
-                }
-                const needDetails = reportReason.value === 'OTHER';
-                reportDetails.required = needDetails;
-                reportDetails.placeholder = needDetails
-                    ? '기타 사유는 상세 설명을 반드시 입력해주세요. (최대 500자)'
-                    : '추가 설명이 필요하면 입력해주세요. (최대 500자)';
-            }
-
-            if (reportReason && reportDetails) {
-                reportReason.addEventListener('change', syncReportDetailsRequirement);
-                syncReportDetailsRequirement();
-            }
-
-            if (reportForm && reportReason && reportDetails) {
-                reportForm.addEventListener('submit', function (event) {
-                    if (reportReason.value === 'OTHER' && !reportDetails.value.trim()) {
-                        event.preventDefault();
-                        window.alert('기타 사유는 상세 내용을 입력해주세요.');
-                        reportDetails.focus();
-                    }
-                });
-            }
-        }
-
-        const contentRoot = document.querySelector('.board-detail-content');
-        if (!contentRoot) {
-            return;
-        }
-
-        const images = contentRoot.querySelectorAll('img[src]');
-        const localImagePaths = [];
-
-        images.forEach(function (img) {
-            const rawSrc = (img.getAttribute('src') || '').trim();
-            if (!rawSrc) {
-                return;
-            }
-
-            let pathName = '';
-            try {
-                pathName = new URL(rawSrc, window.location.origin).pathname || '';
-            } catch (ignored) {
-                return;
-            }
-
-            if (!pathName.startsWith('/images/')) {
-                return;
-            }
-
-            const originalViewUrl = '/api/images/original?url=' + encodeURIComponent(pathName);
-            localImagePaths.push(pathName);
-
-            img.style.cursor = 'zoom-in';
-            img.title = '원본 이미지 새 탭 열기';
-            img.addEventListener('click', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                window.open(originalViewUrl, '_blank', 'noopener,noreferrer');
-            });
-        });
-
-        if (new Set(localImagePaths).size > 0) {
-            const boardIdMatch = window.location.pathname.match(/^\/boards\/(\d+)(?:\/.*)?$/);
-            if (boardIdMatch && boardIdMatch[1]) {
-                const bulkDownloadWrapper = document.createElement('div');
-                bulkDownloadWrapper.className = 'p-4 border-bottom text-end';
-
-                const bulkDownloadLink = document.createElement('a');
-                bulkDownloadLink.className = 'btn btn-sm btn-outline-primary';
-                bulkDownloadLink.href = '/api/images/boards/' + encodeURIComponent(boardIdMatch[1]) + '/zip';
-                bulkDownloadLink.textContent = '이미지 일괄 다운로드 (ZIP)';
-
-                bulkDownloadWrapper.appendChild(bulkDownloadLink);
-                contentRoot.insertAdjacentElement('afterend', bulkDownloadWrapper);
-            }
-        }
-    });
-</script>
+<script th:src="@{/js/board-detail.js}"></script>
 </body>
 </html>

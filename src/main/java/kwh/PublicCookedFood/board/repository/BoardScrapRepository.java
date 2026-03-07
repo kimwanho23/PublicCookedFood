@@ -17,42 +17,42 @@ import java.util.List;
 @Repository
 public interface BoardScrapRepository extends JpaRepository<BoardScrap, Long> {
 
-    boolean existsByBoardIdAndUserId(Long boardId, Long userId);
+    boolean existsByBoardIdAndAccountId(Long boardId, Long accountId);
 
     long countByBoardId(Long boardId);
 
     @Modifying
-    @Query("DELETE FROM BoardScrap bs WHERE bs.board.id = :boardId AND bs.user.id = :userId")
-    int deleteByBoardIdAndUserId(@Param("boardId") Long boardId, @Param("userId") Long userId);
+    @Query("DELETE FROM BoardScrap bs WHERE bs.board.id = :boardId AND bs.account.id = :accountId")
+    int deleteByBoardIdAndAccountId(@Param("boardId") Long boardId, @Param("accountId") Long accountId);
 
     @Query("SELECT b FROM BoardScrap bs " +
             "JOIN bs.board b " +
-            "JOIN FETCH b.user " +
+            "JOIN FETCH b.account " +
             "LEFT JOIN FETCH b.section " +
-            "WHERE bs.user.id = :userId AND b.state = :state AND b.hiddenByReport = false " +
-            "AND (:excludeBlocked = false OR b.user.id NOT IN :blockedUserIds) " +
+            "WHERE bs.account.id = :accountId AND b.state = :state AND b.hiddenByReport = false " +
+            "AND (:excludeBlocked = false OR b.account.id NOT IN :blockedAccountIds) " +
             "ORDER BY bs.regTime DESC")
-    List<Board> findScrappedBoardsByUserIdAndBoardState(@Param("userId") Long userId,
+    List<Board> findScrappedBoardsByAccountIdAndBoardState(@Param("accountId") Long accountId,
                                                          @Param("state") SoftDeleteState state,
                                                          @Param("excludeBlocked") boolean excludeBlocked,
-                                                         @Param("blockedUserIds") Collection<Long> blockedUserIds);
+                                                         @Param("blockedAccountIds") Collection<Long> blockedAccountIds);
 
     @Query(
             value = "SELECT b FROM BoardScrap bs " +
                     "JOIN bs.board b " +
-                    "JOIN FETCH b.user " +
+                    "JOIN FETCH b.account " +
                     "LEFT JOIN FETCH b.section " +
-                    "WHERE bs.user.id = :userId AND b.state = :state AND b.hiddenByReport = false " +
-                    "AND (:excludeBlocked = false OR b.user.id NOT IN :blockedUserIds) " +
+                    "WHERE bs.account.id = :accountId AND b.state = :state AND b.hiddenByReport = false " +
+                    "AND (:excludeBlocked = false OR b.account.id NOT IN :blockedAccountIds) " +
                     "ORDER BY bs.regTime DESC",
             countQuery = "SELECT COUNT(bs) FROM BoardScrap bs " +
                     "JOIN bs.board b " +
-                    "WHERE bs.user.id = :userId AND b.state = :state AND b.hiddenByReport = false " +
-                    "AND (:excludeBlocked = false OR b.user.id NOT IN :blockedUserIds)"
+                    "WHERE bs.account.id = :accountId AND b.state = :state AND b.hiddenByReport = false " +
+                    "AND (:excludeBlocked = false OR b.account.id NOT IN :blockedAccountIds)"
     )
-    Page<Board> findScrappedBoardsPageByUserIdAndBoardState(@Param("userId") Long userId,
+    Page<Board> findScrappedBoardsPageByAccountIdAndBoardState(@Param("accountId") Long accountId,
                                                              @Param("state") SoftDeleteState state,
                                                              @Param("excludeBlocked") boolean excludeBlocked,
-                                                             @Param("blockedUserIds") Collection<Long> blockedUserIds,
+                                                             @Param("blockedAccountIds") Collection<Long> blockedAccountIds,
                                                              Pageable pageable);
 }

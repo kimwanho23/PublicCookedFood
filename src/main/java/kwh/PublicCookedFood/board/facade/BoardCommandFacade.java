@@ -7,7 +7,7 @@ import kwh.PublicCookedFood.board.dto.request.BoardWriteRequest;
 import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
 import kwh.PublicCookedFood.board.service.BoardService;
 import kwh.PublicCookedFood.notification.service.NotificationService;
-import kwh.PublicCookedFood.user.audit.BoardAuditPublisher;
+import kwh.PublicCookedFood.account.audit.BoardAuditPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,31 +21,31 @@ public class BoardCommandFacade {
     private final BoardAuditPublisher boardAuditPublisher;
 
     @Transactional
-    public Board createBoard(Long actorUserId, BoardWriteRequest boardDto) {
-        BoardSaveRequest command = BoardSaveRequest.forCreate(boardDto, actorUserId);
+    public Board createBoard(Long actorAccountId, BoardWriteRequest boardDto) {
+        BoardSaveRequest command = BoardSaveRequest.forCreate(boardDto, actorAccountId);
         Board savedBoard = boardService.save(command);
         notificationService.notifyOnBoardCreated(savedBoard);
-        boardAuditPublisher.boardCreate(actorUserId, savedBoard.getId());
+        boardAuditPublisher.boardCreate(actorAccountId, savedBoard.getId());
         return savedBoard;
     }
 
     @Transactional
-    public void updateBoard(Long actorUserId,
+    public void updateBoard(Long actorAccountId,
                             Long boardId,
                             BoardUpdateRequest boardDto,
                             BoardDetailResponse existingBoard) {
         BoardSaveRequest command = BoardSaveRequest.forUpdate(boardDto, existingBoard);
         boardService.save(command);
-        if (actorUserId != null) {
-            boardAuditPublisher.boardUpdate(actorUserId, boardId);
+        if (actorAccountId != null) {
+            boardAuditPublisher.boardUpdate(actorAccountId, boardId);
         }
     }
 
     @Transactional
-    public void deleteBoard(Long actorUserId, Long boardId) {
+    public void deleteBoard(Long actorAccountId, Long boardId) {
         boardService.delete(boardId);
-        if (actorUserId != null) {
-            boardAuditPublisher.boardDelete(actorUserId, boardId);
+        if (actorAccountId != null) {
+            boardAuditPublisher.boardDelete(actorAccountId, boardId);
         }
     }
 }

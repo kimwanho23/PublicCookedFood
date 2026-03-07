@@ -10,8 +10,8 @@ import kwh.PublicCookedFood.board.facade.BoardFacade;
 import kwh.PublicCookedFood.common.Paging;
 import kwh.PublicCookedFood.common.dto.request.BoardSearchQuery;
 import kwh.PublicCookedFood.common.web.QueryParamCanonicalizer;
-import kwh.PublicCookedFood.config.oauth2.LoginUser;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.config.oauth2.LoginAccount;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -43,34 +43,34 @@ public class BoardController {
     private final BoardFacade boardFacade;
 
     @GetMapping("")
-    public String boardList(@LoginUser Users user,
+    public String boardList(@LoginAccount Account account,
                             Model model,
                             @PageableDefault(page = 0, size = 15, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
                             @Valid @ModelAttribute("query") BoardSearchQuery query,
                             BindingResult bindingResult,
                             HttpServletRequest request) {
         return renderBoardList(model, pageable, query, bindingResult, request, false,
-                user == null ? null : user.getId());
+                account == null ? null : account.getId());
     }
 
     @GetMapping("/featured")
-    public String featuredBoardList(@LoginUser Users user,
+    public String featuredBoardList(@LoginAccount Account account,
                                     Model model,
                                     @PageableDefault(page = 0, size = 15, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
                                     @Valid @ModelAttribute("query") BoardSearchQuery query,
                                     BindingResult bindingResult,
                                     HttpServletRequest request) {
         return renderBoardList(model, pageable, query, bindingResult, request, true,
-                user == null ? null : user.getId());
+                account == null ? null : account.getId());
     }
 
     @GetMapping("/scraps")
-    public String myScrapBoardList(@LoginUser Users user, Model model) {
-        String loginRedirect = redirectIfUnauthenticated(user);
+    public String myScrapBoardList(@LoginAccount Account account, Model model) {
+        String loginRedirect = redirectIfUnauthenticated(account);
         if (loginRedirect != null) {
             return loginRedirect;
         }
-        List<Board> scrappedBoards = boardFacade.loadMyScrappedBoards(user.getId());
+        List<Board> scrappedBoards = boardFacade.loadMyScrappedBoards(account.getId());
         model.addAttribute("scrappedBoards", scrappedBoards);
         return "/boards/boardScraps";
     }
@@ -81,7 +81,7 @@ public class BoardController {
                                    BindingResult bindingResult,
                                    HttpServletRequest request,
                                    boolean featuredPage,
-                                   Long viewerUserId) {
+                                   Long viewerAccountId) {
         boolean ajaxRequest = isAjaxRequest(request);
         String boardListPath = featuredPage ? "/boards/featured" : "/boards";
         if (!ajaxRequest) {
@@ -96,7 +96,7 @@ public class BoardController {
                 query,
                 featuredPage,
                 bindingResult.hasErrors(),
-                viewerUserId
+                viewerAccountId
         );
 
         if (viewData.queryErrorMsg() != null) {
@@ -117,6 +117,7 @@ public class BoardController {
         model.addAttribute("search", viewData.search());
         model.addAttribute("activeSection", viewData.activeSection());
         model.addAttribute("orderBy", viewData.orderBy());
+        model.addAttribute("boardViewMap", viewData.boardViewMap());
         model.addAttribute("boardThumbnailMap", viewData.boardThumbnailMap());
         model.addAttribute("boardHasImageMap", viewData.boardHasImageMap());
         model.addAttribute("thumbnailDisplayMode", viewData.thumbnailDisplayMode());
@@ -140,11 +141,11 @@ public class BoardController {
     }
 
     @PostMapping("")
-    public String addBoard(@LoginUser Users user,
+    public String addBoard(@LoginAccount Account account,
                            @Valid @ModelAttribute("boardDto") BoardWriteRequest boardDto,
                            BindingResult bindingResult,
                            Model model) {
-        String loginRedirect = redirectIfUnauthenticated(user);
+        String loginRedirect = redirectIfUnauthenticated(account);
         if (loginRedirect != null) {
             return loginRedirect;
         }
@@ -154,13 +155,13 @@ public class BoardController {
             return BOARD_ADD_VIEW;
         }
 
-        boardFacade.createBoard(user.getId(), boardDto);
+        boardFacade.createBoard(account.getId(), boardDto);
         return "redirect:/boards";
     }
 
     @GetMapping("/{id:[0-9]+}/edit")
-    public String updateBoardForm(@LoginUser Users user, @PathVariable Long id, Model model) {
-        BoardFacade.BoardManageContext manageContext = boardFacade.loadBoardManageContext(user, id);
+    public String updateBoardForm(@LoginAccount Account account, @PathVariable Long id, Model model) {
+        BoardFacade.BoardManageContext manageContext = boardFacade.loadBoardManageContext(account, id);
         if (!manageContext.manageable()) {
             return boardDetailRedirect(id);
         }
@@ -172,12 +173,12 @@ public class BoardController {
     }
 
     @PatchMapping("/{id:[0-9]+}")
-    public String updateBoard(@LoginUser Users user,
+    public String updateBoard(@LoginAccount Account account,
                               @PathVariable Long id,
                               @Valid @ModelAttribute("boardDto") BoardUpdateRequest boardDto,
                               BindingResult bindingResult,
                               Model model) {
-        BoardFacade.BoardManageContext manageContext = boardFacade.loadBoardManageContext(user, id);
+        BoardFacade.BoardManageContext manageContext = boardFacade.loadBoardManageContext(account, id);
         if (!manageContext.manageable()) {
             return boardDetailRedirect(id);
         }
@@ -189,18 +190,18 @@ public class BoardController {
             return BOARD_UPDATE_VIEW;
         }
 
-        boardFacade.updateBoard(user == null ? null : user.getId(), id, boardDto, manageContext.board());
+        boardFacade.updateBoard(account == null ? null : account.getId(), id, boardDto, manageContext.board());
         return boardDetailRedirect(id);
     }
 
     @PatchMapping("/{id:[0-9]+}/delete")
-    public String deleteBoard(@LoginUser Users user, @PathVariable Long id) {
-        BoardFacade.BoardManageContext manageContext = boardFacade.loadBoardManageContext(user, id);
+    public String deleteBoard(@LoginAccount Account account, @PathVariable Long id) {
+        BoardFacade.BoardManageContext manageContext = boardFacade.loadBoardManageContext(account, id);
         if (!manageContext.manageable()) {
             return boardDetailRedirect(id);
         }
 
-        boardFacade.deleteBoard(user == null ? null : user.getId(), id);
+        boardFacade.deleteBoard(account == null ? null : account.getId(), id);
         return "redirect:/boards";
     }
 
@@ -208,8 +209,8 @@ public class BoardController {
         model.addAttribute("sections", boardFacade.loadActiveSections());
     }
 
-    private String redirectIfUnauthenticated(Users user) {
-        return user == null ? LOGIN_REDIRECT : null;
+    private String redirectIfUnauthenticated(Account account) {
+        return account == null ? LOGIN_REDIRECT : null;
     }
 
     private String boardDetailRedirect(Long boardId) {

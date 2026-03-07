@@ -2,7 +2,7 @@ package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.common.BaseEntity;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.List;
 @Table(name = "board", indexes = {
         @Index(name = "idx_board_state_reg_time", columnList = "state, regTime"),
         @Index(name = "idx_board_state_title", columnList = "state, title"),
-        @Index(name = "idx_board_user_id", columnList = "user_id"),
+        @Index(name = "idx_board_account_id", columnList = "account_id"),
         @Index(name = "idx_board_state_section_reg_time", columnList = "state, section_id, regTime"),
         @Index(name = "idx_board_state_like_count", columnList = "state, likeCount"),
         @Index(name = "idx_board_state_hidden_reg_time", columnList = "state, is_hidden_by_report, regTime"),
@@ -36,8 +36,8 @@ public class Board extends BaseEntity {
     private String contents; // 내용
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
-    private Users user; //작성자
+    @JoinColumn(name = "account_id", referencedColumnName = "id", nullable = false)
+    private Account account; //작성자
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", referencedColumnName = "id")
@@ -66,14 +66,14 @@ public class Board extends BaseEntity {
     private List<Comments> comments = new ArrayList<>(); // 댓글
 
     @Builder
-    public Board(Long id, String title, String contents, Users user, BoardSection section,
+    public Board(Long id, String title, String contents, Account account, BoardSection section,
                  Long views, Long likeCount, Long commentCount, SoftDeleteState state,
                  boolean hiddenByReport,
                  List<Likes> likes, List<Comments> comments) {
         this.id = id;
         this.title = title;
         this.contents = contents;
-        this.user = user;
+        this.account = account;
         this.section = section;
         this.views = views;
         this.likeCount = likeCount;

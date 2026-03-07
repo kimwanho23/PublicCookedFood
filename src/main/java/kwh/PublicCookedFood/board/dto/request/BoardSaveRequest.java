@@ -18,7 +18,7 @@ public class BoardSaveRequest {
 
     private String contents;
 
-    private Long userId;
+    private Long accountId;
 
     private Long sectionId;
 
@@ -31,12 +31,12 @@ public class BoardSaveRequest {
     private SoftDeleteState state;
 
     @Builder
-    public BoardSaveRequest(Long id, String title, String contents, Long userId, Long sectionId, Long views,
+    public BoardSaveRequest(Long id, String title, String contents, Long accountId, Long sectionId, Long views,
                             Long likesCount, Long commentsCount, SoftDeleteState state) {
         this.id = id;
         this.title = title;
         this.contents = contents;
-        this.userId = userId;
+        this.accountId = accountId;
         this.sectionId = sectionId;
         this.views = views;
         this.likesCount = likesCount;
@@ -44,11 +44,11 @@ public class BoardSaveRequest {
         this.state = state;
     }
 
-    public static BoardSaveRequest forCreate(BoardWriteRequest request, Long userId) {
+    public static BoardSaveRequest forCreate(BoardWriteRequest request, Long accountId) {
         return BoardSaveRequest.builder()
                 .title(request.getTitle())
                 .contents(request.getContents())
-                .userId(userId)
+                .accountId(accountId)
                 .sectionId(request.getSectionId())
                 .views(0L)
                 .likesCount(0L)
@@ -62,7 +62,7 @@ public class BoardSaveRequest {
                 .id(existingBoard.getId())
                 .title(request.getTitle())
                 .contents(request.getContents())
-                .userId(existingBoard.getUserId())
+                .accountId(existingBoard.getAccountId())
                 .sectionId(request.getSectionId())
                 .views(existingBoard.getViews())
                 .likesCount(existingBoard.getLikesCount())

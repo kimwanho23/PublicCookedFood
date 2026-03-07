@@ -14,16 +14,18 @@
             <img class="comment-author-avatar"
                  th:if="${comment.profileImageUrl != null and !#strings.isEmpty(comment.profileImageUrl)}"
                  th:src="${comment.profileImageUrl}"
+                 onerror="this.onerror=null;this.src='/img/person-black.svg';"
                  alt="댓글 작성자 프로필">
             <img class="comment-author-avatar"
                  th:if="${comment.profileImageUrl == null or #strings.isEmpty(comment.profileImageUrl)}"
                  th:src="@{/img/person-black.svg}"
                  alt="댓글 작성자 기본 프로필">
-            <a th:if="${comment.userId != null}"
+            <a th:if="${comment.accountId != null}"
                class="fw-semibold nickname-link"
-               th:href="@{/u/{userId}(userId=${comment.userId})}"
+               th:href="@{/u/{accountId}(accountId=${comment.accountId})}"
+               th:title="|멘션 코드: @${comment.name}|"
                th:text="${comment.name != null ? comment.name : '익명'}">작성자</a>
-            <strong th:if="${comment.userId == null}" th:text="${comment.name != null ? comment.name : '익명'}">작성자</strong>
+            <strong th:if="${comment.accountId == null}" th:text="${comment.name != null ? comment.name : '익명'}">작성자</strong>
             <span class="ms-auto small text-muted-soft" th:text="${#temporals.format(comment.regTime, 'yyyy-MM-dd HH:mm:ss')}">작성 시간</span>
 
             <a sec:authorize="isAuthenticated()"
@@ -32,13 +34,13 @@
                role="button" aria-expanded="false" th:aria-controls="'collapse' + ${comment.id}">답글</a>
 
             <form sec:authorize="isAuthenticated()"
-                  th:if="${currentUserId != null and comment.userId != currentUserId}"
-                  th:action="@{/u/blocks/{targetUserId}(targetUserId=${comment.userId})}"
+                  th:if="${currentAccountId != null and comment.accountId != currentAccountId}"
+                  th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${comment.accountId})}"
                   method="post">
                 <button type="submit" class="btn btn-soft-danger btn-action-danger btn-sm">차단</button>
             </form>
 
-            <button sec:authorize="isAuthenticated()" th:if="${currentUserId != null and comment.userId == currentUserId}"
+            <button sec:authorize="isAuthenticated()" th:if="${currentAccountId != null and comment.accountId == currentAccountId}"
                     type="button" class="btn btn-soft-danger btn-action-danger btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteCommentModal' + ${comment.id}">삭제</button>
         </div>
 
@@ -70,7 +72,7 @@
                               aria-label="답글 내용"
                               placeholder="@닉네임 으로 멘션할 수 있습니다."></textarea>
                 </div>
-                <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요.</p>
+                <p class="small text-muted-soft mt-2 mb-0">멘션은 <code>@닉네임</code> 형식을 사용하세요. 닉네임은 사용자마다 고유합니다.</p>
                 <button type="submit" class="btn btn-soft btn-sm mt-2">답글 달기</button>
             </form>
         </div>
