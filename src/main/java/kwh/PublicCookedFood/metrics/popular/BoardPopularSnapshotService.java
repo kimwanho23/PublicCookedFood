@@ -36,25 +36,23 @@ public class BoardPopularSnapshotService {
         String normalizedSectionKey = normalizeSectionKey(sectionKey);
         try {
             LocalDateTime now = LocalDateTime.now();
-            long total = snapshotRepository.countActiveBySlot(FEATURED_RANKING_TYPE, normalizedSectionKey, now);
+            long total = snapshotRepository.countActiveVisibleBySlot(
+                    FEATURED_RANKING_TYPE,
+                    normalizedSectionKey,
+                    now,
+                    SoftDeleteState.ACTIVE
+            );
             if (total <= 0) {
                 return Optional.empty();
             }
 
-            List<BoardPopularSnapshot> rankingRows = snapshotRepository.findActiveBySlot(
+            List<Long> orderedIds = snapshotRepository.findActiveVisibleBoardIdsBySlot(
                     FEATURED_RANKING_TYPE,
                     normalizedSectionKey,
                     now,
+                    SoftDeleteState.ACTIVE,
                     pageable
             );
-            if (rankingRows.isEmpty()) {
-                return Optional.of(new PageImpl<>(List.of(), pageable, total));
-            }
-
-            List<Long> orderedIds = rankingRows.stream()
-                    .map(BoardPopularSnapshot::getBoardId)
-                    .filter(Objects::nonNull)
-                    .toList();
             if (orderedIds.isEmpty()) {
                 return Optional.of(new PageImpl<>(List.of(), pageable, total));
             }
