@@ -65,8 +65,7 @@ public class AccountBlockService {
         if (accountAId == null || accountBId == null || accountAId.equals(accountBId)) {
             return false;
         }
-        return accountBlockRepository.existsByBlockerIdAndBlockedId(accountAId, accountBId)
-                || accountBlockRepository.existsByBlockerIdAndBlockedId(accountBId, accountAId);
+        return accountBlockRepository.existsBetweenAccounts(accountAId, accountBId);
     }
 
     @Transactional(readOnly = true)
@@ -76,14 +75,26 @@ public class AccountBlockService {
         }
 
         Set<Long> restrictedAccountIds = new HashSet<>();
-        accountBlockRepository.findByBlockerId(accountId).stream()
-                .map(accountBlock -> accountBlock.getBlocked().getId())
+        accountBlockRepository.findBlockedIdsByBlockerId(accountId).stream()
                 .forEach(restrictedAccountIds::add);
-        accountBlockRepository.findByBlockedId(accountId).stream()
-                .map(accountBlock -> accountBlock.getBlocker().getId())
+        accountBlockRepository.findBlockerIdsByBlockedId(accountId).stream()
                 .forEach(restrictedAccountIds::add);
         restrictedAccountIds.remove(accountId);
         return Set.copyOf(restrictedAccountIds);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Long> getRestrictedCounterpartyIds(Long accountId, Set<Long> candidateIds) {
+        if (accountId == null || candidateIds == null || candidateIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Long> normalizedCandidateIds = candidateIds.stream()
+                .filter(id -> id != null && !id.equals(accountId))
+                .collect(java.util.stream.Collectors.toSet());
+        if (normalizedCandidateIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return Set.copyOf(accountBlockRepository.findRestrictedCounterpartyIds(accountId, normalizedCandidateIds));
     }
 
     @Transactional(readOnly = true)

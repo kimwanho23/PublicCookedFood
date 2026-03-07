@@ -24,6 +24,8 @@ public class CustomAccountDetails implements UserDetails, OAuth2User {
     private final String roleKey;
     private final String password;
     private final String email;
+    private final boolean notificationEnabled;
+    private final String loginMethod;
     private final Map<String, Object> attributes;
 
 
@@ -35,6 +37,8 @@ public class CustomAccountDetails implements UserDetails, OAuth2User {
         this.roleKey = account != null && account.getAuthority() != null ? account.getAuthority().getKey() : null;
         this.password = account != null ? account.getPassword() : null;
         this.email = account != null ? account.getEmail() : null;
+        this.notificationEnabled = account != null && account.isNotificationEnabled();
+        this.loginMethod = account != null ? account.getLoginMethod() : null;
         this.attributes = Map.of();
     }
 
@@ -46,6 +50,8 @@ public class CustomAccountDetails implements UserDetails, OAuth2User {
         this.roleKey = account != null && account.getAuthority() != null ? account.getAuthority().getKey() : null;
         this.password = account != null ? account.getPassword() : null;
         this.email = account != null ? account.getEmail() : null;
+        this.notificationEnabled = account != null && account.isNotificationEnabled();
+        this.loginMethod = account != null ? account.getLoginMethod() : null;
         this.attributes = toImmutableMap(attributes);
     }
 
@@ -104,8 +110,8 @@ public class CustomAccountDetails implements UserDetails, OAuth2User {
                 .email(email)
                 .password(password)
                 .authority(role)
-                .notificationEnabled(true)
-                .loginMethod("Current")
+                .notificationEnabled(notificationEnabled)
+                .loginMethod(loginMethod)
                 .build();
     }
 

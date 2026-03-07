@@ -4,6 +4,8 @@ import kwh.PublicCookedFood.account.domain.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -15,6 +17,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByEmailAndPhoneNumberAndBirthDate(String email, String phoneNumber, java.time.LocalDate birthDate);
 
     Optional<Account> findByName(String name);
+
+    List<Account> findByNameIn(Collection<String> names);
 
     boolean existsByProfileImageUrl(String profileImageUrl);
 }

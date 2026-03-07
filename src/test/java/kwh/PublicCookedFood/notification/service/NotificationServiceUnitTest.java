@@ -40,6 +40,9 @@ class NotificationServiceUnitTest {
     @Mock
     private NotificationSseService notificationSseService;
 
+    @Mock
+    private NotificationViewSupport notificationViewSupport;
+
     @InjectMocks
     private NotificationService notificationService;
 
