@@ -35,15 +35,28 @@ public class NewCommentNotificationDispatchStrategy implements NotificationDispa
         Account parentCommentOwner = parent == null ? null : parent.getAccount();
         String preview = support.buildPreview(comment.getContents());
         Set<Long> notifiedReceiverIds = new LinkedHashSet<>();
+        Set<Account> mentionedUsers = support.resolveMentionedUsers(comment.getContents(), actor.getId());
+        Set<Account> candidateReceivers = new LinkedHashSet<>();
+
+        if (!support.isSameAccount(parentCommentOwner, actor) && parentCommentOwner != null) {
+            candidateReceivers.add(parentCommentOwner);
+        }
+        if (boardOwner != null
+                && !support.isSameAccount(boardOwner, actor)
+                && !support.isSameAccount(boardOwner, parentCommentOwner)) {
+            candidateReceivers.add(boardOwner);
+        }
+        candidateReceivers.addAll(mentionedUsers);
+        Set<Long> restrictedReceiverIds = support.resolveRestrictedReceiverIds(actor, candidateReceivers);
 
         if (!support.isSameAccount(parentCommentOwner, actor)) {
-            createReplyNotificationIfNeeded(parentCommentOwner, actor, board, comment, preview, notifiedReceiverIds);
+            createReplyNotificationIfNeeded(parentCommentOwner, board, comment, preview, notifiedReceiverIds, restrictedReceiverIds);
         }
 
         if (boardOwner != null
                 && !support.isSameAccount(boardOwner, actor)
                 && !support.isSameAccount(boardOwner, parentCommentOwner)
-                && support.canReceiveNotification(boardOwner, actor)) {
+                && support.canReceiveNotification(boardOwner, restrictedReceiverIds)) {
             Notification saved = support.saveAndPublish(
                     Notification.boardComment(boardOwner, actor, board, comment, preview)
             );
@@ -52,16 +65,16 @@ public class NewCommentNotificationDispatchStrategy implements NotificationDispa
             }
         }
 
-        for (Account mentionedUser : support.resolveMentionedUsers(comment.getContents(), actor.getId())) {
+        for (Account mentionedUser : mentionedUsers) {
             if (mentionedUser.getId() == null || notifiedReceiverIds.contains(mentionedUser.getId())) {
                 continue;
             }
-            if (!support.canReceiveNotification(mentionedUser, actor)) {
+            if (!support.canReceiveNotification(mentionedUser, restrictedReceiverIds)) {
                 continue;
             }
             Notification saved = support.saveAndPublish(
                     Notification.commentMention(mentionedUser, actor, board, comment, preview)
-            );
+                );
             if (saved.getReceiver() != null && saved.getReceiver().getId() != null) {
                 notifiedReceiverIds.add(saved.getReceiver().getId());
             }
@@ -69,16 +82,16 @@ public class NewCommentNotificationDispatchStrategy implements NotificationDispa
     }
 
     private void createReplyNotificationIfNeeded(Account receiver,
-                                                 Account actor,
                                                  Board board,
                                                  Comments comment,
                                                  String preview,
-                                                 Set<Long> notifiedReceiverIds) {
-        if (receiver == null || !support.canReceiveNotification(receiver, actor)) {
+                                                 Set<Long> notifiedReceiverIds,
+                                                 Set<Long> restrictedReceiverIds) {
+        if (receiver == null || !support.canReceiveNotification(receiver, restrictedReceiverIds)) {
             return;
         }
         Notification saved = support.saveAndPublish(
-                Notification.commentReply(receiver, actor, board, comment, preview)
+                Notification.commentReply(receiver, comment.getAccount(), board, comment, preview)
         );
         if (saved.getReceiver() != null && saved.getReceiver().getId() != null) {
             notifiedReceiverIds.add(saved.getReceiver().getId());

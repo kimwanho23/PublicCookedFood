@@ -12,9 +12,7 @@ import kwh.PublicCookedFood.account.service.AccountBlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,9 +54,19 @@ public class NotificationDispatchSupport {
             return Set.of();
         }
 
+        Map<String, Account> accountByName = accountRepository.findByNameIn(mentionNames).stream()
+                .filter(Objects::nonNull)
+                .filter(account -> account.getName() != null && !account.getName().isBlank())
+                .collect(java.util.stream.Collectors.toMap(
+                        Account::getName,
+                        account -> account,
+                        (left, right) -> left,
+                        LinkedHashMap::new
+                ));
+
         Set<Account> resolvedUsers = new LinkedHashSet<>();
         for (String mentionName : mentionNames) {
-            Account candidate = resolveMentionedUser(mentionName);
+            Account candidate = accountByName.get(mentionName);
             if (candidate == null) {
                 continue;
             }
@@ -68,10 +76,6 @@ public class NotificationDispatchSupport {
             resolvedUsers.add(candidate);
         }
         return resolvedUsers;
-    }
-
-    private Account resolveMentionedUser(String mentionName) {
-        return accountRepository.findByName(mentionName).orElse(null);
     }
 
     public boolean canReceiveNotification(Account receiver, Account actor) {
@@ -85,6 +89,31 @@ public class NotificationDispatchSupport {
             return true;
         }
         return !accountBlockService.isEitherBlocked(receiver.getId(), actor.getId());
+    }
+
+    public boolean canReceiveNotification(Account receiver, Set<Long> restrictedReceiverIds) {
+        if (receiver == null || receiver.getId() == null) {
+            return false;
+        }
+        if (!receiver.isNotificationEnabled()) {
+            return false;
+        }
+        return restrictedReceiverIds == null || !restrictedReceiverIds.contains(receiver.getId());
+    }
+
+    public Set<Long> resolveRestrictedReceiverIds(Account actor, Set<Account> candidateReceivers) {
+        if (actor == null || actor.getId() == null || candidateReceivers == null || candidateReceivers.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> candidateIds = candidateReceivers.stream()
+                .filter(Objects::nonNull)
+                .map(Account::getId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        if (candidateIds.isEmpty()) {
+            return Set.of();
+        }
+        return accountBlockService.getRestrictedCounterpartyIds(actor.getId(), candidateIds);
     }
 
     public String buildPreview(String contents) {

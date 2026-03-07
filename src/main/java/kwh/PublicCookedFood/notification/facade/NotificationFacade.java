@@ -21,11 +21,11 @@ public class NotificationFacade {
     private final NotificationService notificationService;
 
     public SseEmitter subscribe(Account account) {
-        Account currentAccount = requireAccount(account);
-        if (!currentAccount.isNotificationEnabled()) {
+        Long accountId = requireAccountId(account);
+        if (!notificationService.isNotificationEnabled(accountId)) {
             throw new AppException(NotificationErrorCode.NOTIFICATION_DISABLED);
         }
-        return notificationService.subscribe(currentAccount.getId());
+        return notificationService.subscribe(accountId);
     }
 
     public NotificationListResponse getNotifications(Account account,

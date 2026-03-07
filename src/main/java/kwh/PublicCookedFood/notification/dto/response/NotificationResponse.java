@@ -19,10 +19,17 @@ public record NotificationResponse(
         String targetPath
 ) {
     public static NotificationResponse from(Notification notification) {
-        String targetPath = "/boards/" + notification.getBoard().getId();
-        if (notification.getComment() != null && notification.getComment().getId() != null) {
-            targetPath = targetPath + "#comment-" + notification.getComment().getId();
+        String targetPath = "/boards";
+        if (notification != null && notification.getBoard() != null && notification.getBoard().getId() != null) {
+            targetPath = "/boards/" + notification.getBoard().getId();
+            if (notification.getComment() != null && notification.getComment().getId() != null) {
+                targetPath = targetPath + "#comment-" + notification.getComment().getId();
+            }
         }
+        return from(notification, targetPath);
+    }
+
+    public static NotificationResponse from(Notification notification, String targetPath) {
         return new NotificationResponse(
                 notification.getId(),
                 notification.getType(),

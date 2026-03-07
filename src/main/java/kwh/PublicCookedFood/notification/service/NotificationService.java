@@ -30,6 +30,7 @@ public class NotificationService {
     private final NotificationAuditPublisher notificationAuditPublisher;
     private final NotificationDispatchFacade notificationDispatchFacade;
     private final NotificationSseService notificationSseService;
+    private final NotificationViewSupport notificationViewSupport;
 
     public SseEmitter subscribe(Long receiverId) {
         if (!notificationSseService.isSseEnabled()) {
@@ -65,17 +66,12 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public Page<NotificationResponse> getNotifications(Long receiverId, Pageable pageable, boolean unreadOnly) {
-        if (unreadOnly) {
-            return notificationRepository.findByReceiverIdAndIsReadFalseOrderByRegTimeDesc(receiverId, pageable)
-                    .map(NotificationResponse::from);
-        }
-        return notificationRepository.findByReceiverIdOrderByRegTimeDesc(receiverId, pageable)
-                .map(NotificationResponse::from);
+        return notificationViewSupport.loadVisibleNotificationPage(receiverId, pageable, unreadOnly);
     }
 
     @Transactional(readOnly = true)
     public long getUnreadCount(Long receiverId) {
-        return notificationRepository.countByReceiverIdAndIsReadFalse(receiverId);
+        return notificationViewSupport.countVisibleUnreadNotifications(receiverId);
     }
 
     @Transactional
