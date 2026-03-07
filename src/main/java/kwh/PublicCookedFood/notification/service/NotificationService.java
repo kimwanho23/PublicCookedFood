@@ -4,12 +4,14 @@ import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardReport;
 import kwh.PublicCookedFood.board.domain.Comments;
+import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
+import kwh.PublicCookedFood.notification.error.NotificationErrorCode;
 import kwh.PublicCookedFood.notification.repository.NotificationRepository;
 import kwh.PublicCookedFood.notification.service.dispatch.NotificationDispatchFacade;
-import kwh.PublicCookedFood.user.audit.NotificationAuditPublisher;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.repository.UserRepository;
+import kwh.PublicCookedFood.account.audit.NotificationAuditPublisher;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,17 +26,14 @@ import java.util.NoSuchElementException;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final NotificationAuditPublisher notificationAuditPublisher;
     private final NotificationDispatchFacade notificationDispatchFacade;
     private final NotificationSseService notificationSseService;
 
     public SseEmitter subscribe(Long receiverId) {
         if (!notificationSseService.isSseEnabled()) {
-            throw new IllegalStateException("알림 SSE가 비활성화되어 있습니다.");
-        }
-        if (!isNotificationEnabled(receiverId)) {
-            throw new IllegalStateException("알림 수신이 비활성화되어 있습니다.");
+            throw new AppException(NotificationErrorCode.NOTIFICATION_SSE_DISABLED);
         }
         return notificationSseService.subscribe(receiverId);
     }
@@ -93,21 +92,21 @@ public class NotificationService {
     }
 
     @Transactional
-    public boolean updateNotificationEnabled(Long userId, boolean enabled) {
-        Users user = userRepository.findById(userId)
+    public boolean updateNotificationEnabled(Long accountId, boolean enabled) {
+        Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new NoSuchElementException("사용자 정보를 찾을 수 없습니다."));
-        user.updateNotificationEnabled(enabled);
-        notificationAuditPublisher.notificationSettingUpdate(userId, enabled);
+        account.updateNotificationEnabled(enabled);
+        notificationAuditPublisher.notificationSettingUpdate(accountId, enabled);
         if (!enabled) {
-            notificationSseService.clearEmitters(userId);
+            notificationSseService.clearEmitters(accountId);
         }
-        return user.isNotificationEnabled();
+        return account.isNotificationEnabled();
     }
 
     @Transactional(readOnly = true)
-    public boolean isNotificationEnabled(Long userId) {
-        Users user = userRepository.findById(userId)
+    public boolean isNotificationEnabled(Long accountId) {
+        Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new NoSuchElementException("사용자 정보를 찾을 수 없습니다."));
-        return user.isNotificationEnabled();
+        return account.isNotificationEnabled();
     }
 }

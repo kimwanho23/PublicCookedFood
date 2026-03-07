@@ -1,14 +1,14 @@
 package kwh.PublicCookedFood.notification.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Positive;
-import kwh.PublicCookedFood.config.oauth2.LoginUser;
-import kwh.PublicCookedFood.notification.dto.response.NotificationDeleteAllResponse;
+import kwh.PublicCookedFood.config.oauth2.LoginAccount;
 import kwh.PublicCookedFood.notification.dto.response.NotificationListResponse;
-import kwh.PublicCookedFood.notification.dto.response.NotificationReadAllResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationSettingResponse;
 import kwh.PublicCookedFood.notification.facade.NotificationFacade;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,63 +24,90 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springdoc.core.annotations.ParameterObject;
 
 @RestController
 @RequiredArgsConstructor
 @Validated
 @RequestMapping("/api/notifications")
-@Tag(name = "Notification API")
+@Tag(name = "알림 API", description = "실시간 알림 구독과 알림 목록 관리 기능을 제공하는 API")
 public class NotificationController {
 
     private final NotificationFacade notificationFacade;
 
+    @Operation(summary = "실시간 알림 구독", description = "SSE 연결을 열어 현재 로그인 사용자의 실시간 알림을 구독합니다.")
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@LoginUser Users user) {
-        return notificationFacade.subscribe(user);
+    public SseEmitter subscribe(@Parameter(hidden = true) @LoginAccount Account account) {
+        return notificationFacade.subscribe(account);
     }
 
+    @Operation(summary = "알림 목록 조회", description = "현재 로그인 사용자의 알림 목록을 페이징하여 조회합니다.")
     @GetMapping("")
     public ResponseEntity<NotificationListResponse> getNotifications(
-            @LoginUser Users user,
+            @Parameter(hidden = true) @LoginAccount Account account,
+            @Parameter(description = "true이면 읽지 않은 알림만 조회합니다.")
             @RequestParam(defaultValue = "false") boolean unreadOnly,
+            @ParameterObject
             @PageableDefault(page = 0, size = 20, sort = "regTime", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(notificationFacade.getNotifications(user, pageable, unreadOnly));
+        return ResponseEntity.ok(notificationFacade.getNotifications(account, pageable, unreadOnly));
     }
 
+    @Operation(summary = "알림 설정 조회", description = "현재 로그인 사용자의 알림 수신 설정을 조회합니다.")
     @GetMapping("/setting")
-    public ResponseEntity<NotificationSettingResponse> getNotificationSetting(@LoginUser Users user) {
-        return ResponseEntity.ok(notificationFacade.getNotificationSetting(user));
+    public ResponseEntity<NotificationSettingResponse> getNotificationSetting(
+            @Parameter(hidden = true) @LoginAccount Account account
+    ) {
+        return ResponseEntity.ok(notificationFacade.getNotificationSetting(account));
     }
 
+    @Operation(summary = "알림 설정 변경", description = "현재 로그인 사용자의 알림 수신 여부를 변경합니다.")
     @PatchMapping("/setting")
-    public ResponseEntity<NotificationSettingResponse> updateNotificationSetting(@LoginUser Users user,
-                                                                                 @RequestParam boolean enabled) {
-        return ResponseEntity.ok(notificationFacade.updateNotificationSetting(user, enabled));
+    public ResponseEntity<NotificationSettingResponse> updateNotificationSetting(
+            @Parameter(hidden = true) @LoginAccount Account account,
+            @Parameter(description = "알림 수신 활성화 여부", required = true)
+            @RequestParam boolean enabled
+    ) {
+        return ResponseEntity.ok(notificationFacade.updateNotificationSetting(account, enabled));
     }
 
+    @Operation(summary = "알림 단건 읽음 처리", description = "특정 알림 1건을 읽음 상태로 변경합니다.")
     @PatchMapping("/{notificationId}/read")
-    public ResponseEntity<Void> markAsRead(@LoginUser Users user, @PathVariable @Positive Long notificationId) {
-        notificationFacade.markAsRead(user, notificationId);
+    public ResponseEntity<Void> markAsRead(
+            @Parameter(hidden = true) @LoginAccount Account account,
+            @Parameter(description = "읽음 처리할 알림 ID", required = true)
+            @PathVariable @Positive Long notificationId
+    ) {
+        notificationFacade.markAsRead(account, notificationId);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "알림 전체 읽음 처리", description = "현재 로그인 사용자의 모든 알림을 읽음 상태로 변경합니다.")
     @PatchMapping("/read-all")
-    public ResponseEntity<NotificationReadAllResponse> markAllAsRead(@LoginUser Users user) {
-        return ResponseEntity.ok(notificationFacade.markAllAsRead(user));
-    }
-
-    @DeleteMapping("/{notificationId}")
-    public ResponseEntity<Void> deleteNotification(@LoginUser Users user, @PathVariable @Positive Long notificationId) {
-        notificationFacade.deleteNotification(user, notificationId);
+    public ResponseEntity<Void> markAllAsRead(@Parameter(hidden = true) @LoginAccount Account account) {
+        notificationFacade.markAllAsRead(account);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "알림 단건 삭제", description = "특정 알림 1건을 삭제합니다.")
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<Void> deleteNotification(
+            @Parameter(hidden = true) @LoginAccount Account account,
+            @Parameter(description = "삭제할 알림 ID", required = true)
+            @PathVariable @Positive Long notificationId
+    ) {
+        notificationFacade.deleteNotification(account, notificationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "알림 전체 삭제", description = "조건에 맞는 현재 로그인 사용자의 알림을 전체 삭제합니다.")
     @DeleteMapping("")
-    public ResponseEntity<NotificationDeleteAllResponse> deleteAllNotifications(
-            @LoginUser Users user,
+    public ResponseEntity<Void> deleteAllNotifications(
+            @Parameter(hidden = true) @LoginAccount Account account,
+            @Parameter(description = "true이면 읽지 않은 알림만 삭제합니다.")
             @RequestParam(defaultValue = "false") boolean unreadOnly
     ) {
-        return ResponseEntity.ok(notificationFacade.deleteAllNotifications(user, unreadOnly));
+        notificationFacade.deleteAllNotifications(account, unreadOnly);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -172,22 +172,203 @@
             applyThemeMode(readThemeMode(), false);
             applyUiSettings(readUiSettings(), false);
 
-            if (darkMedia) {
-                const onSystemThemeChanged = function () {
+            if (darkMedia && typeof darkMedia.addEventListener === 'function') {
+                darkMedia.addEventListener('change', function () {
                     if (readThemeMode() === 'system') {
                         applyThemeMode('system', true);
                     }
-                };
-                if (typeof darkMedia.addEventListener === 'function') {
-                    darkMedia.addEventListener('change', onSystemThemeChanged);
-                } else if (typeof darkMedia.addListener === 'function') {
-                    darkMedia.addListener(onSystemThemeChanged);
-                }
+                });
             }
         })();
     </script>
     <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
     <link th:href="@{/css/app-theme.css}" rel="stylesheet">
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</head>
+<head th:fragment="headResourcesWithExtras(title, extraResources)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}">
+    <title th:text="${title != null ? title : 'PubCook'}">PubCook</title>
+    <script>
+        (function () {
+            const STORAGE_THEME_MODE = 'pubcook.theme.mode';
+            const STORAGE_FONT_SIZE = 'pubcook.ui.fontSize';
+            const STORAGE_LIST_DENSITY = 'pubcook.ui.listDensity';
+            const STORAGE_NOTIFICATION_UNREAD_ONLY_DEFAULT = 'pubcook.ui.notificationUnreadOnlyDefault';
+            const doc = document.documentElement;
+            const darkMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+            function readStorage(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function writeStorage(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            }
+
+            function normalizeThemeMode(mode) {
+                return mode === 'light' || mode === 'dark' || mode === 'system' ? mode : 'system';
+            }
+
+            function normalizeFontSize(value) {
+                return value === 'large' ? 'large' : 'normal';
+            }
+
+            function normalizeListDensity(value) {
+                return value === 'compact' ? 'compact' : 'comfortable';
+            }
+
+            function normalizeUnreadOnlyDefault(value) {
+                return value === true || value === 'true';
+            }
+
+            function resolveTheme(mode) {
+                if (mode === 'light' || mode === 'dark') {
+                    return mode;
+                }
+                return darkMedia && darkMedia.matches ? 'dark' : 'light';
+            }
+
+            function readThemeMode() {
+                return normalizeThemeMode(readStorage(STORAGE_THEME_MODE));
+            }
+
+            function readUiSettings() {
+                return {
+                    fontSize: normalizeFontSize(readStorage(STORAGE_FONT_SIZE)),
+                    listDensity: normalizeListDensity(readStorage(STORAGE_LIST_DENSITY)),
+                    notificationUnreadOnlyDefault: normalizeUnreadOnlyDefault(readStorage(STORAGE_NOTIFICATION_UNREAD_ONLY_DEFAULT))
+                };
+            }
+
+            function applyThemeMode(mode, emitEvent) {
+                const normalizedMode = normalizeThemeMode(mode);
+                const resolvedTheme = resolveTheme(normalizedMode);
+                doc.setAttribute('data-theme-mode', normalizedMode);
+                doc.setAttribute('data-theme', resolvedTheme);
+                if (emitEvent) {
+                    window.dispatchEvent(new CustomEvent('pubcook-theme-change', {
+                        detail: {
+                            mode: normalizedMode,
+                            theme: resolvedTheme
+                        }
+                    }));
+                }
+            }
+
+            function applyUiSettings(settings, emitEvent) {
+                const normalized = {
+                    fontSize: normalizeFontSize(settings && settings.fontSize),
+                    listDensity: normalizeListDensity(settings && settings.listDensity),
+                    notificationUnreadOnlyDefault: normalizeUnreadOnlyDefault(settings && settings.notificationUnreadOnlyDefault)
+                };
+
+                doc.setAttribute('data-font-size', normalized.fontSize);
+                doc.setAttribute('data-density', normalized.listDensity);
+                doc.setAttribute(
+                    'data-notification-unread-only-default',
+                    normalized.notificationUnreadOnlyDefault ? 'true' : 'false'
+                );
+
+                if (emitEvent) {
+                    window.dispatchEvent(new CustomEvent('pubcook-ui-settings-change', {
+                        detail: normalized
+                    }));
+                }
+                return normalized;
+            }
+
+            function setThemeMode(mode) {
+                const normalizedMode = normalizeThemeMode(mode);
+                writeStorage(STORAGE_THEME_MODE, normalizedMode);
+                applyThemeMode(normalizedMode, true);
+            }
+
+            function updateUiSettings(partialSettings) {
+                const current = readUiSettings();
+                const next = {
+                    fontSize: partialSettings && partialSettings.fontSize != null
+                        ? normalizeFontSize(partialSettings.fontSize)
+                        : current.fontSize,
+                    listDensity: partialSettings && partialSettings.listDensity != null
+                        ? normalizeListDensity(partialSettings.listDensity)
+                        : current.listDensity,
+                    notificationUnreadOnlyDefault: partialSettings && partialSettings.notificationUnreadOnlyDefault != null
+                        ? normalizeUnreadOnlyDefault(partialSettings.notificationUnreadOnlyDefault)
+                        : current.notificationUnreadOnlyDefault
+                };
+
+                writeStorage(STORAGE_FONT_SIZE, next.fontSize);
+                writeStorage(STORAGE_LIST_DENSITY, next.listDensity);
+                writeStorage(
+                    STORAGE_NOTIFICATION_UNREAD_ONLY_DEFAULT,
+                    next.notificationUnreadOnlyDefault ? 'true' : 'false'
+                );
+                return applyUiSettings(next, true);
+            }
+
+            window.PubCookTheme = {
+                getMode: readThemeMode,
+                setMode: setThemeMode,
+                applyCurrent: function () {
+                    applyThemeMode(readThemeMode(), false);
+                }
+            };
+
+            window.PubCookSettings = {
+                getFontSize: function () {
+                    return readUiSettings().fontSize;
+                },
+                setFontSize: function (fontSize) {
+                    return updateUiSettings({fontSize: fontSize});
+                },
+                getListDensity: function () {
+                    return readUiSettings().listDensity;
+                },
+                setListDensity: function (density) {
+                    return updateUiSettings({listDensity: density});
+                },
+                isNotificationUnreadOnlyDefault: function () {
+                    return readUiSettings().notificationUnreadOnlyDefault;
+                },
+                setNotificationUnreadOnlyDefault: function (enabled) {
+                    return updateUiSettings({notificationUnreadOnlyDefault: enabled});
+                },
+                setAll: function (settings) {
+                    return updateUiSettings(settings || {});
+                },
+                getAll: readUiSettings,
+                applyCurrent: function () {
+                    applyUiSettings(readUiSettings(), false);
+                }
+            };
+
+            applyThemeMode(readThemeMode(), false);
+            applyUiSettings(readUiSettings(), false);
+
+            if (darkMedia && typeof darkMedia.addEventListener === 'function') {
+                darkMedia.addEventListener('change', function () {
+                    if (readThemeMode() === 'system') {
+                        applyThemeMode('system', true);
+                    }
+                });
+            }
+        })();
+    </script>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/app-theme.css}" rel="stylesheet">
+    <th:block th:replace="${extraResources}"></th:block>
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
 </head>
 <body>
@@ -209,6 +390,9 @@
 
             <div class="collapse navbar-collapse" id="siteNavbar">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 site-nav-list">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/main}">메인</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/recipes}">레시피 탐색</a>
                     </li>
@@ -259,12 +443,12 @@
                     <form sec:authorize="isAuthenticated()" th:action="@{/u/logout}" method="post" class="d-inline-flex">
                             <div class="dropdown">
                                 <button type="button" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span th:text="${#authentication != null and #authentication.principal != null and #authentication.principal.user != null and #authentication.principal.user.name != null ? (#authentication.principal.user.name.length() > 7 ? #authentication.principal.user.name.substring(0, 7) + '...' : #authentication.principal.user.name) : '사용자'}"></span>
+                                    <span th:text="${#authentication != null and #authentication.principal != null and #authentication.principal.account != null and #authentication.principal.account.name != null ? (#authentication.principal.account.name.length() > 7 ? #authentication.principal.account.name.substring(0, 7) + '...' : #authentication.principal.account.name) : '사용자'}"></span>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end site-menu">
                                     <li><a class="dropdown-item" th:href="@{/bookmarks}">북마크</a></li>
                                     <li><a class="dropdown-item" th:href="@{/boards/scraps}">스크랩 글</a></li>
-                                    <li><a class="dropdown-item" th:href="@{/u/{userId}(userId=${#authentication.principal.user.id})}">내 프로필</a></li>
+                                    <li><a class="dropdown-item" th:href="@{/u/{accountId}(accountId=${#authentication.principal.account.id})}">내 프로필</a></li>
                                     <li><a class="dropdown-item" th:href="@{/u/profile}">프로필 수정</a></li>
                                     <li><a class="dropdown-item" th:href="@{/u/settings}">환경설정</a></li>
                                     <li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" th:href="@{/admin/boards/dashboard}">운영 대시보드</a></li>

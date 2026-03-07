@@ -1,12 +1,13 @@
 package kwh.PublicCookedFood.notification.facade;
 
-import kwh.PublicCookedFood.notification.dto.response.NotificationDeleteAllResponse;
+import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.common.error.CommonErrorCode;
 import kwh.PublicCookedFood.notification.dto.response.NotificationListResponse;
-import kwh.PublicCookedFood.notification.dto.response.NotificationReadAllResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationSettingResponse;
+import kwh.PublicCookedFood.notification.error.NotificationErrorCode;
 import kwh.PublicCookedFood.notification.service.NotificationService;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,55 +18,60 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 public class NotificationFacade {
 
-    private static final String LOGIN_REQUIRED_MESSAGE = "로그인이 필요합니다.";
-
     private final NotificationService notificationService;
 
-    public SseEmitter subscribe(Users user) {
-        return notificationService.subscribe(requireUserId(user));
+    public SseEmitter subscribe(Account account) {
+        Account currentAccount = requireAccount(account);
+        if (!currentAccount.isNotificationEnabled()) {
+            throw new AppException(NotificationErrorCode.NOTIFICATION_DISABLED);
+        }
+        return notificationService.subscribe(currentAccount.getId());
     }
 
-    public NotificationListResponse getNotifications(Users user,
+    public NotificationListResponse getNotifications(Account account,
                                                      Pageable pageable,
                                                      boolean unreadOnly) {
-        Long userId = requireUserId(user);
-        Page<NotificationResponse> notifications = notificationService.getNotifications(userId, pageable, unreadOnly);
-        long unreadCount = notificationService.getUnreadCount(userId);
+        Long accountId = requireAccountId(account);
+        Page<NotificationResponse> notifications = notificationService.getNotifications(accountId, pageable, unreadOnly);
+        long unreadCount = notificationService.getUnreadCount(accountId);
         return NotificationListResponse.from(notifications, unreadCount);
     }
 
-    public NotificationSettingResponse getNotificationSetting(Users user) {
-        boolean enabled = notificationService.isNotificationEnabled(requireUserId(user));
+    public NotificationSettingResponse getNotificationSetting(Account account) {
+        boolean enabled = notificationService.isNotificationEnabled(requireAccountId(account));
         return new NotificationSettingResponse(enabled);
     }
 
-    public NotificationSettingResponse updateNotificationSetting(Users user, boolean enabled) {
-        boolean updated = notificationService.updateNotificationEnabled(requireUserId(user), enabled);
+    public NotificationSettingResponse updateNotificationSetting(Account account, boolean enabled) {
+        boolean updated = notificationService.updateNotificationEnabled(requireAccountId(account), enabled);
+        account.updateNotificationEnabled(updated);
         return new NotificationSettingResponse(updated);
     }
 
-    public void markAsRead(Users user, Long notificationId) {
-        notificationService.markAsRead(requireUserId(user), notificationId);
+    public void markAsRead(Account account, Long notificationId) {
+        notificationService.markAsRead(requireAccountId(account), notificationId);
     }
 
-    public NotificationReadAllResponse markAllAsRead(Users user) {
-        int updatedCount = notificationService.markAllAsRead(requireUserId(user));
-        return new NotificationReadAllResponse(updatedCount);
+    public void markAllAsRead(Account account) {
+        notificationService.markAllAsRead(requireAccountId(account));
     }
 
-    public void deleteNotification(Users user, Long notificationId) {
-        notificationService.deleteNotification(requireUserId(user), notificationId);
+    public void deleteNotification(Account account, Long notificationId) {
+        notificationService.deleteNotification(requireAccountId(account), notificationId);
     }
 
-    public NotificationDeleteAllResponse deleteAllNotifications(Users user, boolean unreadOnly) {
-        long deletedCount = notificationService.deleteAllNotifications(requireUserId(user), unreadOnly);
-        return new NotificationDeleteAllResponse(deletedCount);
+    public void deleteAllNotifications(Account account, boolean unreadOnly) {
+        notificationService.deleteAllNotifications(requireAccountId(account), unreadOnly);
     }
 
-    private Long requireUserId(Users user) {
-        if (user == null || user.getId() == null) {
-            throw new IllegalStateException(LOGIN_REQUIRED_MESSAGE);
+    private Long requireAccountId(Account account) {
+        return requireAccount(account).getId();
+    }
+
+    private Account requireAccount(Account account) {
+        if (account == null || account.getId() == null) {
+            throw new AppException(CommonErrorCode.AUTHENTICATION_REQUIRED);
         }
-        return user.getId();
+        return account;
     }
 }

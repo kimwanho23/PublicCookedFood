@@ -3,7 +3,7 @@ package kwh.PublicCookedFood.notification.service.dispatch;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.notification.domain.Notification;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,25 +24,25 @@ public class NewCommentNotificationDispatchStrategy implements NotificationDispa
     @Override
     public void dispatch(NotificationDispatchContext context) {
         Comments comment = context.comment();
-        if (comment == null || comment.getBoard() == null || comment.getUser() == null) {
+        if (comment == null || comment.getBoard() == null || comment.getAccount() == null) {
             return;
         }
 
-        Users actor = comment.getUser();
+        Account actor = comment.getAccount();
         Board board = comment.getBoard();
-        Users boardOwner = board.getUser();
+        Account boardOwner = board.getAccount();
         Comments parent = comment.getParent();
-        Users parentCommentOwner = parent == null ? null : parent.getUser();
+        Account parentCommentOwner = parent == null ? null : parent.getAccount();
         String preview = support.buildPreview(comment.getContents());
         Set<Long> notifiedReceiverIds = new LinkedHashSet<>();
 
-        if (!support.isSameUser(parentCommentOwner, actor)) {
+        if (!support.isSameAccount(parentCommentOwner, actor)) {
             createReplyNotificationIfNeeded(parentCommentOwner, actor, board, comment, preview, notifiedReceiverIds);
         }
 
         if (boardOwner != null
-                && !support.isSameUser(boardOwner, actor)
-                && !support.isSameUser(boardOwner, parentCommentOwner)
+                && !support.isSameAccount(boardOwner, actor)
+                && !support.isSameAccount(boardOwner, parentCommentOwner)
                 && support.canReceiveNotification(boardOwner, actor)) {
             Notification saved = support.saveAndPublish(
                     Notification.boardComment(boardOwner, actor, board, comment, preview)
@@ -52,7 +52,7 @@ public class NewCommentNotificationDispatchStrategy implements NotificationDispa
             }
         }
 
-        for (Users mentionedUser : support.resolveMentionedUsers(comment.getContents(), actor.getId())) {
+        for (Account mentionedUser : support.resolveMentionedUsers(comment.getContents(), actor.getId())) {
             if (mentionedUser.getId() == null || notifiedReceiverIds.contains(mentionedUser.getId())) {
                 continue;
             }
@@ -68,8 +68,8 @@ public class NewCommentNotificationDispatchStrategy implements NotificationDispa
         }
     }
 
-    private void createReplyNotificationIfNeeded(Users receiver,
-                                                 Users actor,
+    private void createReplyNotificationIfNeeded(Account receiver,
+                                                 Account actor,
                                                  Board board,
                                                  Comments comment,
                                                  String preview,
@@ -85,4 +85,3 @@ public class NewCommentNotificationDispatchStrategy implements NotificationDispa
         }
     }
 }
-
