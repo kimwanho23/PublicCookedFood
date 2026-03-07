@@ -73,6 +73,49 @@
                 </section>
             </div>
         </div>
+
+        <div class="row g-4 mt-1">
+            <div class="col-lg-6">
+                <section class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-3">점심 추천 레시피</h2>
+                    <div class="alert alert-light border mb-0"
+                         th:if="${lunchRecommendations == null or #lists.isEmpty(lunchRecommendations)}">
+                        점심 추천 데이터가 없습니다.
+                    </div>
+                    <ul class="list-group list-group-flush" th:if="${lunchRecommendations != null and !#lists.isEmpty(lunchRecommendations)}">
+                        <li class="list-group-item px-0" th:each="item : ${lunchRecommendations}">
+                            <a th:href="@{/recipes/{id}(id=${item.recipeId()})}" class="text-decoration-none">
+                                <strong th:text="${item.recipeName()}">레시피명</strong>
+                            </a>
+                            <div class="small text-muted-soft mt-1"
+                                 th:text="|추천 점수 ${item.score()}|">
+                                추천 점수 0
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+            <div class="col-lg-6">
+                <section class="section-wrap p-4 h-100">
+                    <h2 class="h5 mb-3">저녁 추천 레시피</h2>
+                    <div class="alert alert-light border mb-0"
+                         th:if="${dinnerRecommendations == null or #lists.isEmpty(dinnerRecommendations)}">
+                        저녁 추천 데이터가 없습니다.
+                    </div>
+                    <ul class="list-group list-group-flush" th:if="${dinnerRecommendations != null and !#lists.isEmpty(dinnerRecommendations)}">
+                        <li class="list-group-item px-0" th:each="item : ${dinnerRecommendations}">
+                            <a th:href="@{/recipes/{id}(id=${item.recipeId()})}" class="text-decoration-none">
+                                <strong th:text="${item.recipeName()}">레시피명</strong>
+                            </a>
+                            <div class="small text-muted-soft mt-1"
+                                 th:text="|추천 점수 ${item.score()}|">
+                                추천 점수 0
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
     </div>
 </main>
 

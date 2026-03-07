@@ -8,8 +8,8 @@ import kwh.PublicCookedFood.food.entity.RecipeReview;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import kwh.PublicCookedFood.food.repository.RecipeReviewRepository;
 import kwh.PublicCookedFood.food.repository.Recipe_INFO_Repository;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.repository.UserRepository;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,26 +25,27 @@ public class RecipeReviewService {
 
     private final RecipeReviewRepository recipeReviewRepository;
     private final Recipe_INFO_Repository recipeInfoRepository;
-    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
 
     @Transactional
-    public void upsertReview(Long recipeId, Long userId, Integer rating, String contents) {
-        if (recipeId == null || userId == null) {
+    public void upsertReview(Long recipeId, Long accountId, Integer rating, String contents) {
+        if (recipeId == null || accountId == null) {
             throw new IllegalArgumentException("리뷰 요청 값이 올바르지 않습니다.");
         }
+        validateRating(rating);
 
         Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(recipeId)
                 .orElseThrow(() -> new IllegalArgumentException("레시피 정보를 찾을 수 없습니다."));
-        Users user = userRepository.findById(userId)
+        Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
         String normalizedContents = normalizeReviewContents(contents);
 
-        recipeReviewRepository.findByRecipeAndUser(recipe, user)
+        recipeReviewRepository.findByRecipeAndAccount(recipe, account)
                 .ifPresentOrElse(
                         review -> review.update(rating, normalizedContents),
                         () -> recipeReviewRepository.save(RecipeReview.builder()
                                 .recipe(recipe)
-                                .user(user)
+                                .account(account)
                                 .rating(rating)
                                 .contents(normalizedContents)
                                 .build())
@@ -66,8 +67,8 @@ public class RecipeReviewService {
                 .orElseThrow(() -> new IllegalArgumentException("레시피 정보를 찾을 수 없습니다."));
         return recipeReviewRepository.findTop20ByRecipeOrderByRegTimeDesc(recipe).stream()
                 .map(review -> new RecipeReviewResponse(
-                        review.getUser().getId(),
-                        review.getUser().getName(),
+                        review.getAccount().getId(),
+                        review.getAccount().getName(),
                         review.getRating(),
                         review.getContents(),
                         review.getRegTime()))
@@ -75,21 +76,21 @@ public class RecipeReviewService {
     }
 
     @Transactional(readOnly = true)
-    public RecipeReviewResponse getMyReview(Long recipeId, Long userId) {
-        if (recipeId == null || userId == null) {
+    public RecipeReviewResponse getMyReview(Long recipeId, Long accountId) {
+        if (recipeId == null || accountId == null) {
             return null;
         }
         Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(recipeId)
                 .orElse(null);
-        Users user = userRepository.findById(userId)
+        Account account = accountRepository.findById(accountId)
                 .orElse(null);
-        if (recipe == null || user == null) {
+        if (recipe == null || account == null) {
             return null;
         }
-        return recipeReviewRepository.findByRecipeAndUser(recipe, user)
+        return recipeReviewRepository.findByRecipeAndAccount(recipe, account)
                 .map(review -> new RecipeReviewResponse(
-                        review.getUser().getId(),
-                        review.getUser().getName(),
+                        review.getAccount().getId(),
+                        review.getAccount().getName(),
                         review.getRating(),
                         review.getContents(),
                         review.getRegTime()))
@@ -128,5 +129,14 @@ public class RecipeReviewService {
             throw new IllegalArgumentException("리뷰 내용은 500자 이하로 입력해주세요.");
         }
         return trimmed;
+    }
+
+    private void validateRating(Integer rating) {
+        if (rating == null) {
+            throw new IllegalArgumentException("리뷰 평점을 선택해주세요.");
+        }
+        if (rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("리뷰 평점은 1점부터 5점 사이여야 합니다.");
+        }
     }
 }

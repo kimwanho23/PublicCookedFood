@@ -25,3 +25,10 @@ server:
     session:
       cookie:
         secure: true
+app:
+  popular:
+    recipe:
+      score:
+        enabled: ${POPULAR_RECIPE_SCORE_ENABLED:true}
+      snapshot:
+        enabled: ${POPULAR_RECIPE_SNAPSHOT_ENABLED:true}

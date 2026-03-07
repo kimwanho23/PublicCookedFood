@@ -6,11 +6,13 @@ import kwh.PublicCookedFood.food.dto.response.recipe_crse.Recipe_CRSE_ResponseDt
 import kwh.PublicCookedFood.food.dto.response.recipe_info.Recipe_INFO_ResponseDto;
 import kwh.PublicCookedFood.food.dto.response.recipe_irdnt.Recipe_IRDNT_ResponseDto;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
+import kwh.PublicCookedFood.metrics.reco.RecipeScoreEventPublisher;
 import kwh.PublicCookedFood.food.service.RecipeReviewService;
 import kwh.PublicCookedFood.food.service.RecipeService;
-import kwh.PublicCookedFood.user.audit.RecipeAuditPublisher;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.service.BookmarkService;
+import kwh.PublicCookedFood.metrics.view.RecipeViewCounterService;
+import kwh.PublicCookedFood.account.audit.RecipeAuditPublisher;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.service.BookmarkService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,24 +23,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecipeDetailFacade {
 
-    private static final List<String> RECIPE_INGREDIENT_CATEGORIES = List.of("주재료", "부재료", "양념");
+    private static final List<String> RECIPE_INGREDIENT_CATEGORIES = List.of("\uC8FC\uC7AC\uB8CC", "\uBD80\uC7AC\uB8CC", "\uC591\uB150");
 
     private final RecipeService recipeService;
     private final BookmarkService bookmarkService;
     private final RecipeReviewService recipeReviewService;
     private final RecipeAuditPublisher recipeAuditPublisher;
+    private final RecipeViewCounterService recipeViewCounterService;
+    private final RecipeScoreEventPublisher recipeScoreEventPublisher;
 
-    public RecipeDetailViewData loadRecipeDetail(Long recipeId, Users user) {
+    public RecipeDetailViewData loadRecipeDetail(Long recipeId,
+                                                 Account account,
+                                                 boolean increaseViews) {
         Recipe_INFO recipeInfo = recipeService.getRecipeEntityByRecipeId(recipeId);
         Recipe_INFO_ResponseDto infoResponseDto = recipeService.toInfoResponse(recipeInfo);
         List<Recipe_IRDNT_ResponseDto> irdntResponseDto = recipeService.getRecipeIrdnt(recipeId);
         List<Recipe_CRSE_ResponseDto> crseResponseDto = recipeService.getRecipeCrse(recipeId);
+        long viewCount = increaseViews
+                ? recipeViewCounterService.increaseRecipeViewAndGet(recipeId)
+                : recipeViewCounterService.getRecipeViewCount(recipeId);
 
-        boolean isLoggedIn = user != null;
-        boolean isBookmarked = isLoggedIn && bookmarkService.isBookmarked(user, recipeInfo);
+        boolean isLoggedIn = account != null;
+        boolean isBookmarked = isLoggedIn && bookmarkService.isBookmarked(account, recipeInfo);
         RecipeReviewSummaryResponse reviewSummary = recipeReviewService.getSummary(recipeId);
         List<RecipeReviewResponse> reviews = recipeReviewService.getRecentReviews(recipeId);
-        RecipeReviewResponse myReview = isLoggedIn ? recipeReviewService.getMyReview(recipeId, user.getId()) : null;
+        RecipeReviewResponse myReview = isLoggedIn ? recipeReviewService.getMyReview(recipeId, account.getId()) : null;
 
         return new RecipeDetailViewData(
                 isBookmarked,
@@ -46,6 +55,7 @@ public class RecipeDetailFacade {
                 infoResponseDto,
                 irdntResponseDto,
                 crseResponseDto,
+                viewCount,
                 reviewSummary,
                 reviews,
                 myReview
@@ -54,15 +64,16 @@ public class RecipeDetailFacade {
 
     @Transactional
     public ReviewUpsertResult upsertReview(Long recipeId,
-                                           Long userId,
+                                           Long accountId,
                                            Integer rating,
                                            String contents) {
         try {
-            recipeReviewService.upsertReview(recipeId, userId, rating, contents);
-            recipeAuditPublisher.recipeReviewUpsert(userId, recipeId, rating);
-            return ReviewUpsertResult.success("리뷰를 저장했습니다.");
+            recipeReviewService.upsertReview(recipeId, accountId, rating, contents);
+            recipeScoreEventPublisher.publishRecalculateRequest(recipeId, "REVIEW_UPSERT");
+            recipeAuditPublisher.recipeReviewUpsert(accountId, recipeId, rating);
+            return ReviewUpsertResult.success("리뷰가 저장되었습니다.");
         } catch (IllegalArgumentException e) {
-            recipeAuditPublisher.recipeReviewUpsertFailed(userId, recipeId, e.getMessage());
+            recipeAuditPublisher.recipeReviewUpsertFailed(accountId, recipeId, e.getMessage());
             return ReviewUpsertResult.failure(e.getMessage());
         }
     }
@@ -72,6 +83,7 @@ public class RecipeDetailFacade {
                                        Recipe_INFO_ResponseDto infoResponseDto,
                                        List<Recipe_IRDNT_ResponseDto> irdntResponseDto,
                                        List<Recipe_CRSE_ResponseDto> crseResponseDto,
+                                       long viewCount,
                                        RecipeReviewSummaryResponse reviewSummary,
                                        List<RecipeReviewResponse> reviews,
                                        RecipeReviewResponse myReview) {

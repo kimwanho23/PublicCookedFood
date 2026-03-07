@@ -6,6 +6,7 @@ import kwh.PublicCookedFood.common.dto.request.RecipeSearchQuery;
 import kwh.PublicCookedFood.food.dto.response.RecipeCategoryGroupResponse;
 import kwh.PublicCookedFood.food.dto.response.RecipeRankingResponse;
 import kwh.PublicCookedFood.food.dto.response.recipe_info.Recipe_INFO_ResponseDto;
+import kwh.PublicCookedFood.metrics.reco.RecipeRecoSnapshotService;
 import kwh.PublicCookedFood.food.service.RecipeReviewService;
 import kwh.PublicCookedFood.food.service.RecipeService;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +28,23 @@ public class RecipeMainFacade {
     private final RecipeService recipeService;
     private final BoardService boardService;
     private final RecipeReviewService recipeReviewService;
+    private final RecipeRecoSnapshotService recipeRecoSnapshotService;
 
     public HomeViewData loadHomeData() {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
         LocalDateTime monthAgo = LocalDateTime.now().minusDays(30);
         List<Board> popularBoards = boardService.getPopularBoardsSince(weekAgo, 6);
         List<RecipeRankingResponse> recipeRankings = recipeReviewService.getTopReviewRankings(monthAgo, 6);
-        return new HomeViewData(popularBoards, recipeRankings);
+        List<RecipeRecoSnapshotService.RecipeRecommendationItem> lunchRecommendations =
+                recipeRecoSnapshotService.loadRecommendations(RecipeRecoSnapshotService.SLOT_LUNCH, 6);
+        List<RecipeRecoSnapshotService.RecipeRecommendationItem> dinnerRecommendations =
+                recipeRecoSnapshotService.loadRecommendations(RecipeRecoSnapshotService.SLOT_DINNER, 6);
+        return new HomeViewData(
+                popularBoards,
+                recipeRankings,
+                lunchRecommendations,
+                dinnerRecommendations
+        );
     }
 
     public RecipeListViewData loadRecipeList(Pageable pageable,
@@ -178,10 +189,14 @@ public class RecipeMainFacade {
     }
 
     public record HomeViewData(List<Board> popularBoards,
-                               List<RecipeRankingResponse> recipeRankings) {
+                               List<RecipeRankingResponse> recipeRankings,
+                               List<RecipeRecoSnapshotService.RecipeRecommendationItem> lunchRecommendations,
+                               List<RecipeRecoSnapshotService.RecipeRecommendationItem> dinnerRecommendations) {
         public HomeViewData {
             popularBoards = popularBoards == null ? List.of() : List.copyOf(popularBoards);
             recipeRankings = recipeRankings == null ? List.of() : List.copyOf(recipeRankings);
+            lunchRecommendations = lunchRecommendations == null ? List.of() : List.copyOf(lunchRecommendations);
+            dinnerRecommendations = dinnerRecommendations == null ? List.of() : List.copyOf(dinnerRecommendations);
         }
     }
 

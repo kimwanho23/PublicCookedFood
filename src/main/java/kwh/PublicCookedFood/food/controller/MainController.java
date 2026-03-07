@@ -34,6 +34,8 @@ public class MainController {
         RecipeMainFacade.HomeViewData data = recipeMainFacade.loadHomeData();
         model.addAttribute("popularBoards", data.popularBoards());
         model.addAttribute("recipeRankings", data.recipeRankings());
+        model.addAttribute("lunchRecommendations", data.lunchRecommendations());
+        model.addAttribute("dinnerRecommendations", data.dinnerRecommendations());
         return "/foods/main";
     }
 

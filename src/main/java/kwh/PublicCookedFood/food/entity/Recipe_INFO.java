@@ -1,7 +1,7 @@
 package kwh.PublicCookedFood.food.entity;
 
 import jakarta.persistence.*;
-import kwh.PublicCookedFood.user.domain.Bookmark;
+import kwh.PublicCookedFood.account.domain.Bookmark;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;

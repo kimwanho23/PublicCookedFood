@@ -14,6 +14,8 @@
                 <div>
                     <h1 class="h3 mb-2" th:text="${infoResponseDto.getRecipeNMKO()}">레시피 제목</h1>
                     <p class="mb-0 text-white-50" th:text="${infoResponseDto.getSumry()}">요리 설명</p>
+                    <p class="mb-0 small text-white-50"
+                       th:text="|조회 ${recipeViewCount != null ? recipeViewCount : 0}|">조회 0</p>
                 </div>
                 <div class="d-flex align-items-start gap-2" sec:authorize="isAuthenticated()">
                     <form th:if="${isBookmarked}" th:action="@{/bookmarks/{recipeId}(recipeId=${infoResponseDto.recipeID})}" method="post">
@@ -106,7 +108,7 @@
                     <div class="d-flex flex-column gap-2" th:if="${reviews != null and !reviews.isEmpty()}">
                         <article class="surface-soft p-3" th:each="review : ${reviews}">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <strong th:text="${review.userName()}">사용자</strong>
+                                <strong th:text="${review.accountName()}">사용자</strong>
                                 <span class="small text-muted-soft"
                                       th:text="${#temporals.format(review.regTime(), 'yyyy.MM.dd HH:mm')}">2026.02.24 13:00</span>
                             </div>
@@ -119,6 +121,7 @@
                     </div>
                     <p class="text-muted-soft mb-0" th:if="${reviews == null or reviews.isEmpty()}">아직 등록된 리뷰가 없습니다.</p>
                 </section>
+
             </div>
         </div>
     </div>
