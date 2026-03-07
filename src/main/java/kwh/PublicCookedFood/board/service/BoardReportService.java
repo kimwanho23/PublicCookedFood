@@ -76,7 +76,7 @@ public class BoardReportService {
         if (boardId == null || reporterId == null) {
             return false;
         }
-        return boardReportRepository.existsByBoardIdAndReporterId(boardId, reporterId);
+        return boardReportRepository.existsByBoardIdAndReporterIdAndStatus(boardId, reporterId, BoardReportStatus.OPEN);
     }
 
     @Transactional(readOnly = true)

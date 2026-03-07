@@ -15,12 +15,11 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "board_report", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_board_report_board_reporter", columnNames = {"board_id", "reporter_id"})
-}, indexes = {
+@Table(name = "board_report", indexes = {
         @Index(name = "idx_board_report_status_regtime", columnList = "status, regTime"),
         @Index(name = "idx_board_report_reporter_regtime", columnList = "reporter_id, regTime"),
-        @Index(name = "idx_board_report_board_regtime", columnList = "board_id, regTime")
+        @Index(name = "idx_board_report_board_regtime", columnList = "board_id, regTime"),
+        @Index(name = "idx_board_report_board_reporter_status_regtime", columnList = "board_id, reporter_id, status, regTime")
 })
 public class BoardReport extends BaseTimeEntity {
 

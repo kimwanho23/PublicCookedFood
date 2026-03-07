@@ -43,7 +43,7 @@ public class BoardReportPolicy {
     }
 
     public void ensureNotReported(Long boardId, Long reporterId) {
-        if (boardReportRepository.existsByBoardIdAndReporterId(boardId, reporterId)) {
+        if (boardReportRepository.existsByBoardIdAndReporterIdAndStatus(boardId, reporterId, BoardReportStatus.OPEN)) {
             throw new AppException(BoardErrorCode.BOARD_REPORT_DUPLICATED);
         }
     }

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Repository
 public interface BoardReportRepository extends JpaRepository<BoardReport, Long> {
 
-    boolean existsByBoardIdAndReporterId(Long boardId, Long reporterId);
+    boolean existsByBoardIdAndReporterIdAndStatus(Long boardId, Long reporterId, BoardReportStatus status);
 
     long countByBoardId(Long boardId);
 
