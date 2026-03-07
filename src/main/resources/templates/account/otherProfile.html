@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head th:replace="~{fragments/header :: headResources('사용자 프로필')}">
+    <meta charset="UTF-8">
+    <title>사용자 프로필</title>
+</head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container" style="max-width: 860px;">
+        <section class="hero-panel mb-4">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <img class="profile-image-preview"
+                     th:if="${profileAccount.profileImageUrl != null and !#strings.isEmpty(profileAccount.profileImageUrl)}"
+                     th:src="${profileAccount.profileImageUrl}"
+                     onerror="this.onerror=null;this.src='/img/person-black.svg';"
+                     alt="사용자 프로필 이미지">
+                <img class="profile-image-preview"
+                     th:if="${profileAccount.profileImageUrl == null or #strings.isEmpty(profileAccount.profileImageUrl)}"
+                     th:src="@{/img/person-black.svg}"
+                     alt="기본 프로필 이미지">
+                <div>
+                    <h1 class="h4 mb-1" th:text="${profileAccount.name != null ? profileAccount.name : '사용자'}">사용자</h1>
+                    <p class="mb-0 text-white-50">작성글, 작성댓글, 스크랩 활동을 확인할 수 있습니다.</p>
+                    <p class="mb-0 small text-white-50"
+                       th:if="${profileAccount.id != null and profileAccount.name != null}"
+                       th:text="|멘션 코드 @${profileAccount.name}|">멘션 코드</p>
+                </div>
+                <div class="ms-auto d-flex gap-2" th:if="${currentAccountId != null and currentAccountId == profileAccount.id}">
+                    <a class="btn btn-soft btn-sm" th:href="@{/u/profile}">프로필 수정</a>
+                    <a class="btn btn-soft btn-sm" th:href="@{/u/settings}">환경설정</a>
+                </div>
+                <div class="ms-auto d-flex gap-2" th:if="${currentAccountId != null and currentAccountId != profileAccount.id}">
+                    <form th:if="${!myBlockedProfileAccount}"
+                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${profileAccount.id})}"
+                          method="post">
+                        <button type="submit" class="btn btn-soft-danger btn-action-danger btn-sm">사용자 차단</button>
+                    </form>
+                    <form th:if="${myBlockedProfileAccount}"
+                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${profileAccount.id})}"
+                          method="post">
+                        <input type="hidden" name="_method" value="patch">
+                        <button type="submit" class="btn btn-soft btn-sm">차단 해제</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-wrap p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a class="btn btn-sm"
+                       th:classappend="${profileView == 'boards'} ? ' btn-brand' : ' btn-soft'"
+                       th:href="@{/u/{accountId}(accountId=${profileAccount.id})}">작성글</a>
+                    <a class="btn btn-sm"
+                       th:classappend="${profileView == 'comments'} ? ' btn-brand' : ' btn-soft'"
+                       th:href="@{/u/{accountId}/comments(accountId=${profileAccount.id})}">작성댓글</a>
+                    <a class="btn btn-sm"
+                       th:classappend="${profileView == 'scraps'} ? ' btn-brand' : ' btn-soft'"
+                       th:href="@{/u/{accountId}/scraps(accountId=${profileAccount.id})}">스크랩</a>
+                </div>
+
+                <span class="text-muted-soft small"
+                      th:if="${profileView == 'boards'}"
+                      th:text="|총 ${boardPage != null ? boardPage.totalElements : 0}건|">총 0건</span>
+                <span class="text-muted-soft small"
+                      th:if="${profileView == 'comments'}"
+                      th:text="|총 ${commentPage != null ? commentPage.totalElements : 0}건|">총 0건</span>
+                <span class="text-muted-soft small"
+                      th:if="${profileView == 'scraps'}"
+                      th:text="|총 ${scrapPage != null ? scrapPage.totalElements : 0}건|">총 0건</span>
+            </div>
+
+            <div class="alert alert-light border"
+                 th:if="${profileView == 'boards' and (boardPage == null or boardPage.totalElements == 0)}">
+                작성한 게시글이 없습니다.
+            </div>
+            <div class="alert alert-light border"
+                 th:if="${profileView == 'comments' and (commentPage == null or commentPage.totalElements == 0)}">
+                작성한 댓글이 없습니다.
+            </div>
+            <div class="alert alert-light border"
+                 th:if="${profileView == 'scraps' and (scrapPage == null or scrapPage.totalElements == 0)}">
+                스크랩한 게시글이 없습니다.
+            </div>
+
+            <div class="list-group list-group-flush"
+                 th:if="${profileView == 'boards' and boardPage != null and boardPage.totalElements > 0}">
+                <a class="list-group-item list-group-item-action px-0 py-3"
+                   th:each="board : ${boardPage.content}"
+                   th:href="@{/boards/{id}(id=${board.id})}">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <div class="fw-semibold" th:text="${board.title}">게시글 제목</div>
+                            <div class="small text-muted-soft mt-1">
+                                <span th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</span>
+                                <span class="mx-1">|</span>
+                                <span th:text="${#temporals.format(board.regTime, 'yyyy-MM-dd HH:mm')}">작성일</span>
+                            </div>
+                        </div>
+                        <div class="small text-muted-soft text-end">
+                            <div th:text="|조회 ${board.views != null ? board.views : 0}|">조회 0</div>
+                            <div th:text="|추천 ${board.likeCount != null ? board.likeCount : 0} · 댓글 ${board.commentCount != null ? board.commentCount : 0}|">추천 0 · 댓글 0</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="list-group list-group-flush"
+                 th:if="${profileView == 'comments' and commentPage != null and commentPage.totalElements > 0}">
+                <a class="list-group-item list-group-item-action px-0 py-3"
+                   th:each="comment : ${commentPage.content}"
+                   th:href="@{|/boards/${comment.board.id}#comment-${comment.id}|}">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div class="w-100">
+                            <div class="fw-semibold" th:text="${comment.board.title}">게시글 제목</div>
+                            <div class="small text-muted-soft mt-1">
+                                <span th:text="${#temporals.format(comment.regTime, 'yyyy-MM-dd HH:mm')}">작성일</span>
+                            </div>
+                            <div class="mt-2" style="white-space: pre-wrap;" th:text="${comment.contents}">댓글 내용</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="list-group list-group-flush"
+                 th:if="${profileView == 'scraps' and scrapPage != null and scrapPage.totalElements > 0}">
+                <div class="list-group-item px-0 py-3" th:each="board : ${scrapPage.content}">
+                    <a class="text-decoration-none text-reset d-block" th:href="@{/boards/{id}(id=${board.id})}">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="fw-semibold" th:text="${board.title}">게시글 제목</div>
+                                <div class="small text-muted-soft mt-1">
+                                    <span th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</span>
+                                    <span class="mx-1">|</span>
+                                    <span th:text="${#temporals.format(board.regTime, 'yyyy-MM-dd HH:mm')}">작성일</span>
+                                </div>
+                            </div>
+                            <div class="small text-muted-soft text-end">
+                                <div th:text="|조회 ${board.views != null ? board.views : 0}|">조회 0</div>
+                                <div th:text="|추천 ${board.likeCount != null ? board.likeCount : 0} · 댓글 ${board.commentCount != null ? board.commentCount : 0}|">추천 0 · 댓글 0</div>
+                            </div>
+                        </div>
+                    </a>
+                    <form th:if="${currentAccountId != null and currentAccountId == profileAccount.id}"
+                          th:action="@{/boards/{id}/scraps/delete(id=${board.id})}"
+                          method="post"
+                          class="mt-2">
+                        <input type="hidden" name="_method" value="patch">
+                        <input type="hidden" name="redirect" th:value="@{/u/{accountId}/scraps(accountId=${profileAccount.id})}">
+                        <button type="submit" class="btn btn-sm btn-soft">스크랩 해제</button>
+                    </form>
+                </div>
+            </div>
+
+            <nav th:if="${profileView == 'boards' and boardPage != null and boardPage.totalPages > 1}" class="mt-4" aria-label="작성글 페이지 이동">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item" th:classappend="${boardPage.first} ? ' disabled'">
+                        <a class="page-link" th:href="@{/u/{accountId}(accountId=${profileAccount.id}, page=${boardPage.number - 1}, size=${boardPage.size})}">이전</a>
+                    </li>
+                    <li class="page-item"
+                        th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                        th:classappend="${pageNum == boardPage.number} ? ' active'">
+                        <a class="page-link"
+                           th:text="${pageNum + 1}"
+                           th:href="@{/u/{accountId}(accountId=${profileAccount.id}, page=${pageNum}, size=${boardPage.size})}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${boardPage.last} ? ' disabled'">
+                        <a class="page-link" th:href="@{/u/{accountId}(accountId=${profileAccount.id}, page=${boardPage.number + 1}, size=${boardPage.size})}">다음</a>
+                    </li>
+                </ul>
+            </nav>
+
+            <nav th:if="${profileView == 'comments' and commentPage != null and commentPage.totalPages > 1}" class="mt-4" aria-label="작성댓글 페이지 이동">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item" th:classappend="${commentPage.first} ? ' disabled'">
+                        <a class="page-link" th:href="@{/u/{accountId}/comments(accountId=${profileAccount.id}, page=${commentPage.number - 1}, size=${commentPage.size})}">이전</a>
+                    </li>
+                    <li class="page-item"
+                        th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                        th:classappend="${pageNum == commentPage.number} ? ' active'">
+                        <a class="page-link"
+                           th:text="${pageNum + 1}"
+                           th:href="@{/u/{accountId}/comments(accountId=${profileAccount.id}, page=${pageNum}, size=${commentPage.size})}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${commentPage.last} ? ' disabled'">
+                        <a class="page-link" th:href="@{/u/{accountId}/comments(accountId=${profileAccount.id}, page=${commentPage.number + 1}, size=${commentPage.size})}">다음</a>
+                    </li>
+                </ul>
+            </nav>
+
+            <nav th:if="${profileView == 'scraps' and scrapPage != null and scrapPage.totalPages > 1}" class="mt-4" aria-label="스크랩 페이지 이동">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item" th:classappend="${scrapPage.first} ? ' disabled'">
+                        <a class="page-link" th:href="@{/u/{accountId}/scraps(accountId=${profileAccount.id}, page=${scrapPage.number - 1}, size=${scrapPage.size})}">이전</a>
+                    </li>
+                    <li class="page-item"
+                        th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                        th:classappend="${pageNum == scrapPage.number} ? ' active'">
+                        <a class="page-link"
+                           th:text="${pageNum + 1}"
+                           th:href="@{/u/{accountId}/scraps(accountId=${profileAccount.id}, page=${pageNum}, size=${scrapPage.size})}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${scrapPage.last} ? ' disabled'">
+                        <a class="page-link" th:href="@{/u/{accountId}/scraps(accountId=${profileAccount.id}, page=${scrapPage.number + 1}, size=${scrapPage.size})}">다음</a>
+                    </li>
+                </ul>
+            </nav>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
+</body>
+</html>
+

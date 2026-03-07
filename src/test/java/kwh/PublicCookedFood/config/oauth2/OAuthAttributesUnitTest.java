@@ -13,7 +13,7 @@ class OAuthAttributesUnitTest {
     @Test
     void of_naver_mapsNestedResponseAndFiltersNonStringKeys() {
         Map<Object, Object> response = new LinkedHashMap<>();
-        response.put("name", "네이버유저");
+        response.put("name", "naver-account");
         response.put("email", "naver@test.com");
         response.put(1, "ignored");
         response.put("email_verified", "true");
@@ -23,7 +23,7 @@ class OAuthAttributesUnitTest {
 
         OAuthAttributes actual = OAuthAttributes.of("naver", "sub", attributes);
 
-        assertThat(actual.getName()).isEqualTo("네이버유저");
+        assertThat(actual.getName()).isEqualTo("naver-account");
         assertThat(actual.getEmail()).isEqualTo("naver@test.com");
         assertThat(actual.isEmailVerified()).isTrue();
         assertThat(actual.getLoginMethod()).isEqualTo("naver");
@@ -34,7 +34,7 @@ class OAuthAttributesUnitTest {
 
     @Test
     void of_kakao_usesAccountFlagsForEmailVerification() {
-        Map<String, Object> profile = Map.of("nickname", "카카오유저");
+        Map<String, Object> profile = Map.of("nickname", "kakao-account");
         Map<String, Object> account = new HashMap<>();
         account.put("profile", profile);
         account.put("email", "kakao@test.com");
@@ -45,7 +45,7 @@ class OAuthAttributesUnitTest {
 
         OAuthAttributes actual = OAuthAttributes.of("kakao", "sub", attributes);
 
-        assertThat(actual.getName()).isEqualTo("카카오유저");
+        assertThat(actual.getName()).isEqualTo("kakao-account");
         assertThat(actual.getEmail()).isEqualTo("kakao@test.com");
         assertThat(actual.isEmailVerified()).isTrue();
         assertThat(actual.getLoginMethod()).isEqualTo("kakao");
@@ -55,14 +55,14 @@ class OAuthAttributesUnitTest {
     @Test
     void of_defaultsToGoogleWhenProviderIsUnknown() {
         Map<String, Object> attributes = Map.of(
-                "name", "Google User",
+                "name", "Google Account",
                 "email", "google@test.com",
                 "email_verified", true
         );
 
         OAuthAttributes actual = OAuthAttributes.of("github", "sub", attributes);
 
-        assertThat(actual.getName()).isEqualTo("Google User");
+        assertThat(actual.getName()).isEqualTo("Google Account");
         assertThat(actual.getEmail()).isEqualTo("google@test.com");
         assertThat(actual.isEmailVerified()).isTrue();
         assertThat(actual.getLoginMethod()).isEqualTo("google");

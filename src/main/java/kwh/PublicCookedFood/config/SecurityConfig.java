@@ -1,8 +1,10 @@
 package kwh.PublicCookedFood.config;
 
-import kwh.PublicCookedFood.config.oauth2.CustomOAuth2UserService;
+import kwh.PublicCookedFood.config.oauth2.CustomOAuth2AccountService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -29,28 +31,32 @@ public class SecurityConfig {
 
     private final LoginThrottleFilter loginThrottleFilter;
 
-    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomOAuth2AccountService customOAuth2AccountService;
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+
+    private final Environment environment;
 
     public SecurityConfig(CustomLogoutSuccessHandler customLogoutSuccessHandler,
                           CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler,
                           CustomAuthenticationFailureHandler customAuthenticationFailureHandler,
                           SaveRequestFilter saveRequestFilter,
                           LoginThrottleFilter loginThrottleFilter,
-                          CustomOAuth2UserService customOAuth2UserService,
+                          CustomOAuth2AccountService customOAuth2AccountService,
                           CustomAuthenticationEntryPoint customAuthenticationEntryPoint,
-                          CustomAccessDeniedHandler customAccessDeniedHandler) {
+                          CustomAccessDeniedHandler customAccessDeniedHandler,
+                          Environment environment) {
         this.customLogoutSuccessHandler = customLogoutSuccessHandler;
         this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
         this.customAuthenticationFailureHandler = customAuthenticationFailureHandler;
         this.saveRequestFilter = saveRequestFilter;
         this.loginThrottleFilter = loginThrottleFilter;
-        this.customOAuth2UserService = customOAuth2UserService;
+        this.customOAuth2AccountService = customOAuth2AccountService;
         this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
+        this.environment = environment;
     }
 
     @Bean
@@ -80,7 +86,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login((oauth2) -> oauth2
                 .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
-                        .userService(customOAuth2UserService))
+                        .userService(customOAuth2AccountService))
                 .successHandler(customAuthenticationSuccessHandler)
                 .failureUrl("/u/login?oauthError=true"))
                .sessionManagement(session -> session
@@ -88,31 +94,40 @@ public class SecurityConfig {
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::migrateSession)
                 )
 
-                .authorizeHttpRequests((authorizeRequests) -> authorizeRequests
-                        .requestMatchers("/css/**", "/js/**", "/img/**", "/images/**", "/files/**", "/error/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/u/login", "/u/login/**", "/u/signup", "/u/account/**", "/oauth2/**", "/login/**").permitAll()
-                        .requestMatchers(new RegexRequestMatcher("^/u/[0-9]+$", HttpMethod.GET.name())).permitAll()
-                        .requestMatchers(new RegexRequestMatcher("^/u/[0-9]+/(comments|scraps)$", HttpMethod.GET.name())).permitAll()
-                        .requestMatchers("/u/profile", "/u/settings", "/u/logout", "/u/blocks/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/boards/new", "/boards/*/edit", "/boards/scraps").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/recipes/*/reviews").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/boards", "/boards/*/comments", "/boards/*/scraps", "/boards/*/reports").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/boards/*", "/boards/*/delete", "/boards/*/comments/*/delete", "/boards/*/scraps/delete").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/boards/*/likes").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/images/original", "/api/images/boards/*/zip").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/ai/recipes/status").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/ai/recipes/recommend").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/ai/recipes/*/ask").authenticated()
-                        .requestMatchers("/bookmarks/**", "/api/images").authenticated()
-                        .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/", "/main", "/recipes", "/recipes/**", "/boards", "/boards/featured", "/boards/*").permitAll()
-                        .anyRequest().authenticated()
-                ).
+                .authorizeHttpRequests(authorizeRequests -> {
+                    authorizeRequests
+                            .requestMatchers("/css/**", "/js/**", "/img/**", "/images/**", "/files/**", "/error/**").permitAll()
+                            .requestMatchers("/u/login", "/u/login/**", "/u/signup", "/u/account/**", "/oauth2/**", "/login/**").permitAll()
+                            .requestMatchers(new RegexRequestMatcher("^/u/[0-9]+$", HttpMethod.GET.name())).permitAll()
+                            .requestMatchers(new RegexRequestMatcher("^/u/[0-9]+/(comments|scraps)$", HttpMethod.GET.name())).permitAll()
+                            .requestMatchers("/u/profile", "/u/settings", "/u/logout", "/u/blocks/**").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/boards/new", "/boards/*/edit", "/boards/scraps").authenticated()
+                            .requestMatchers(HttpMethod.POST, "/recipes/*/reviews").authenticated()
+                            .requestMatchers(HttpMethod.POST, "/boards", "/boards/*/comments", "/boards/*/scraps", "/boards/*/reports").authenticated()
+                            .requestMatchers(HttpMethod.PATCH, "/boards/*", "/boards/*/delete", "/boards/*/comments/*/delete", "/boards/*/scraps/delete").authenticated()
+                            .requestMatchers(HttpMethod.PUT, "/boards/*/likes").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/api/images/original", "/api/images/boards/*/zip").permitAll()
+                            .requestMatchers("/bookmarks/**", "/api/images").authenticated()
+                            .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
+                            .requestMatchers(HttpMethod.GET, "/", "/main", "/recipes", "/recipes/**", "/boards", "/boards/featured", "/boards/*").permitAll();
+
+                    if (isSwaggerEnabled()) {
+                        authorizeRequests.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
+                    } else {
+                        authorizeRequests.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").denyAll();
+                    }
+
+                    authorizeRequests.anyRequest().authenticated();
+                }).
                 exceptionHandling((exceptionHandling) -> exceptionHandling
                         .accessDeniedHandler(customAccessDeniedHandler)
                         .authenticationEntryPoint(customAuthenticationEntryPoint));
+
         return http.build();
     }
 
+    private boolean isSwaggerEnabled() {
+        return environment.acceptsProfiles(Profiles.of("dev"));
+    }
 
 }

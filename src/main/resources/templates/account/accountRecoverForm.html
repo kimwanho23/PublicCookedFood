@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/header :: headResources('계정 찾기')}">
+    <meta charset="UTF-8">
+    <title>계정 찾기</title>
+</head>
+<body class="app-shell">
+<main class="auth-shell">
+    <section class="auth-card" style="max-width: 640px;">
+        <a class="text-decoration-none" th:href="@{/recipes}">
+            <span class="auth-logo">P</span>
+        </a>
+
+        <h1 class="h4 mb-1">아이디/비밀번호 찾기</h1>
+        <p class="text-muted-soft mb-4">가입할 때 입력한 정보로 계정을 확인합니다.</p>
+
+        <div th:if="${recoverSuccess != null}" class="alert alert-success py-2" th:text="${recoverSuccess}"></div>
+        <div th:if="${recoverError != null}" class="alert alert-danger py-2" th:text="${recoverError}"></div>
+
+        <div class="d-flex gap-2 mb-4">
+            <a class="btn flex-fill"
+               th:classappend="${activeTab == 'find-email'} ? ' btn-brand' : ' btn-outline-secondary'"
+               th:href="@{/u/account/recover(tab='find-email')}">
+                아이디(이메일) 찾기
+            </a>
+            <a class="btn flex-fill"
+               th:classappend="${activeTab == 'reset-password'} ? ' btn-brand' : ' btn-outline-secondary'"
+               th:href="@{/u/account/recover(tab='reset-password')}">
+                비밀번호 재설정
+            </a>
+        </div>
+
+        <section th:if="${activeTab == 'find-email'}">
+            <form th:action="@{/u/account/find-email}" method="post">
+                <div class="mb-3">
+                    <label for="findBirthDate" class="form-label">생년월일</label>
+                    <input type="date" id="findBirthDate" name="birthDate" class="form-control" th:value="${findBirthDate}">
+                </div>
+                <div class="mb-3">
+                    <label for="findPhoneNumber" class="form-label">전화번호</label>
+                    <input type="text" id="findPhoneNumber" name="phoneNumber" class="form-control" th:value="${findPhoneNumber}" placeholder="숫자만 또는 하이픈 포함">
+                </div>
+                <button class="btn btn-brand w-100" type="submit">아이디 찾기</button>
+            </form>
+
+            <div th:if="${foundEmail != null}" class="alert alert-light border mt-3 mb-0">
+                가입된 이메일: <strong th:text="${foundEmail}">te***@mail.com</strong>
+            </div>
+        </section>
+
+        <section th:if="${activeTab == 'reset-password'}">
+            <form th:action="@{/u/account/reset-password}" method="post">
+                <div class="mb-3">
+                    <label for="resetEmail" class="form-label">이메일</label>
+                    <input type="text" id="resetEmail" name="email" class="form-control" th:value="${resetEmail}" placeholder="가입 이메일">
+                </div>
+                <div class="mb-3">
+                    <label for="resetBirthDate" class="form-label">생년월일</label>
+                    <input type="date" id="resetBirthDate" name="birthDate" class="form-control" th:value="${resetBirthDate}">
+                </div>
+                <div class="mb-3">
+                    <label for="resetPhoneNumber" class="form-label">전화번호</label>
+                    <input type="text" id="resetPhoneNumber" name="phoneNumber" class="form-control" th:value="${resetPhoneNumber}" placeholder="숫자만 또는 하이픈 포함">
+                </div>
+                <div class="d-grid mb-3">
+                    <button class="btn btn-outline-secondary"
+                            type="submit"
+                            th:formaction="@{/u/account/reset-password/code}"
+                            formmethod="post">
+                        인증코드 전송
+                    </button>
+                </div>
+                <div class="mb-3">
+                    <label for="verificationCode" class="form-label">이메일 인증코드</label>
+                    <input type="text"
+                           id="verificationCode"
+                           name="verificationCode"
+                           class="form-control"
+                           th:value="${resetVerificationCode}"
+                           placeholder="6자리 숫자 코드">
+                </div>
+                <div class="mb-3">
+                    <label for="newPassword" class="form-label">새 비밀번호</label>
+                    <input type="password" id="newPassword" name="newPassword" class="form-control" placeholder="8자 이상">
+                </div>
+                <div class="mb-4">
+                    <label for="confirmPassword" class="form-label">새 비밀번호 확인</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="새 비밀번호 재입력">
+                </div>
+                <button class="btn btn-brand w-100" type="submit">비밀번호 재설정</button>
+            </form>
+        </section>
+
+        <div class="mt-3">
+            <a class="btn btn-outline-secondary w-100" th:href="@{/u/login}">로그인으로 돌아가기</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

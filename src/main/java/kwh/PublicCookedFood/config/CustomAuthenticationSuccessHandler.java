@@ -3,7 +3,7 @@ package kwh.PublicCookedFood.config;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import kwh.PublicCookedFood.user.dto.CustomUserDetails;
+import kwh.PublicCookedFood.account.dto.CustomAccountDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.DefaultRedirectStrategy;
@@ -62,9 +62,9 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             return null;
         }
         Object principal = authentication.getPrincipal();
-        if (principal instanceof CustomUserDetails customUserDetails
-                && customUserDetails.getUser() != null) {
-            return customUserDetails.getUser().getEmail();
+        if (principal instanceof CustomAccountDetails customAccountDetails
+                && customAccountDetails.getAccount() != null) {
+            return customAccountDetails.getAccount().getEmail();
         }
         return null;
     }
