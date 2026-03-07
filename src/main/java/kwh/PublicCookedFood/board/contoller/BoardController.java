@@ -12,6 +12,7 @@ import kwh.PublicCookedFood.common.dto.request.BoardSearchQuery;
 import kwh.PublicCookedFood.common.web.QueryParamCanonicalizer;
 import kwh.PublicCookedFood.config.oauth2.LoginAccount;
 import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.storage.StorageException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -155,8 +156,16 @@ public class BoardController {
             return BOARD_ADD_VIEW;
         }
 
-        boardFacade.createBoard(account.getId(), boardDto);
-        return "redirect:/boards";
+        try {
+            boardFacade.createBoard(account.getId(), boardDto);
+            return "redirect:/boards";
+        } catch (StorageException e) {
+            boardFacade.applyDefaultSection(boardDto);
+            loadBoardSections(model);
+            model.addAttribute("boardDto", boardDto);
+            model.addAttribute("errorMessage", e.getMessage());
+            return BOARD_ADD_VIEW;
+        }
     }
 
     @GetMapping("/{id:[0-9]+}/edit")
@@ -190,8 +199,17 @@ public class BoardController {
             return BOARD_UPDATE_VIEW;
         }
 
-        boardFacade.updateBoard(account == null ? null : account.getId(), id, boardDto, manageContext.board());
-        return boardDetailRedirect(id);
+        try {
+            boardFacade.updateBoard(account == null ? null : account.getId(), id, boardDto, manageContext.board());
+            return boardDetailRedirect(id);
+        } catch (StorageException e) {
+            boardDto.setId(id);
+            boardFacade.applyDefaultSection(boardDto);
+            loadBoardSections(model);
+            model.addAttribute("boardDto", boardDto);
+            model.addAttribute("errorMessage", e.getMessage());
+            return BOARD_UPDATE_VIEW;
+        }
     }
 
     @PatchMapping("/{id:[0-9]+}/delete")

@@ -12,6 +12,7 @@ import kwh.PublicCookedFood.food.controller.RecipeController;
 import kwh.PublicCookedFood.account.controller.BookmarkController;
 import kwh.PublicCookedFood.account.controller.AccountBlockController;
 import kwh.PublicCookedFood.account.controller.AccountController;
+import kwh.PublicCookedFood.storage.StorageException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -71,9 +72,34 @@ public class GlobalPageExceptionHandler {
         return "redirect:" + resolveRedirectPath(request.getRequestURI());
     }
 
+    @ExceptionHandler(StorageException.class)
+    public String handleStorageException(StorageException e,
+                                         HttpServletRequest request,
+                                         RedirectAttributes redirectAttributes) {
+        log.error("페이지 저장소 처리 실패. uri={}", request.getRequestURI(), e);
+        redirectAttributes.addFlashAttribute("globalErrorCode", CommonErrorCode.STORAGE_ERROR.code());
+        redirectAttributes.addFlashAttribute(
+                "globalErrorMessage",
+                ErrorMessageResolver.resolve(e.getMessage(), CommonErrorCode.STORAGE_ERROR.message())
+        );
+        return "redirect:" + resolveRedirectPath(request.getRequestURI());
+    }
+
     private String resolveRedirectPath(String requestUri) {
         if (requestUri == null || requestUri.isBlank()) {
             return "/recipes";
+        }
+        if (requestUri.startsWith("/u/profile")) {
+            return "/u/profile";
+        }
+        if (requestUri.startsWith("/u/settings") || requestUri.startsWith("/u/blocks")) {
+            return "/u/settings";
+        }
+        if (requestUri.startsWith("/u/signup")) {
+            return "/u/signup";
+        }
+        if (requestUri.startsWith("/u/login")) {
+            return "/u/login";
         }
         if (requestUri.startsWith("/boards")) {
             return "/boards";
