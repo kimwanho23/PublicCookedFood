@@ -40,27 +40,19 @@ class BoardPopularSnapshotServiceUnitTest {
     @Test
     void loadFeaturedRankingPage_returnsBoardsInRankingOrder() {
         Pageable pageable = PageRequest.of(0, 10);
-        BoardPopularSnapshot rank1 = BoardPopularSnapshot.builder()
-                .rankingType(BoardPopularSnapshotService.FEATURED_RANKING_TYPE)
-                .sectionKey("")
-                .rankNo(1)
-                .boardId(2L)
-                .generatedAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
-                .build();
-        BoardPopularSnapshot rank2 = BoardPopularSnapshot.builder()
-                .rankingType(BoardPopularSnapshotService.FEATURED_RANKING_TYPE)
-                .sectionKey("")
-                .rankNo(2)
-                .boardId(1L)
-                .generatedAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
-                .build();
-
-        when(snapshotRepository.countActiveBySlot(eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE), eq(""), any()))
+        when(snapshotRepository.countActiveVisibleBySlot(
+                eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE),
+                eq(""),
+                any(),
+                eq(SoftDeleteState.ACTIVE)))
                 .thenReturn(2L);
-        when(snapshotRepository.findActiveBySlot(eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE), eq(""), any(), eq(pageable)))
-                .thenReturn(List.of(rank1, rank2));
+        when(snapshotRepository.findActiveVisibleBoardIdsBySlot(
+                eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE),
+                eq(""),
+                any(),
+                eq(SoftDeleteState.ACTIVE),
+                eq(pageable)))
+                .thenReturn(List.of(2L, 1L));
 
         Board board1 = Board.builder().id(1L).title("one").state(SoftDeleteState.ACTIVE).hiddenByReport(false).build();
         Board board2 = Board.builder().id(2L).title("two").state(SoftDeleteState.ACTIVE).hiddenByReport(false).build();
@@ -77,7 +69,11 @@ class BoardPopularSnapshotServiceUnitTest {
     @Test
     void loadFeaturedRankingPage_returnsEmptyWhenNoActiveRanking() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(snapshotRepository.countActiveBySlot(eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE), eq(""), any()))
+        when(snapshotRepository.countActiveVisibleBySlot(
+                eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE),
+                eq(""),
+                any(),
+                eq(SoftDeleteState.ACTIVE)))
                 .thenReturn(0L);
 
         Optional<Page<Board>> result = snapshotService.loadFeaturedRankingPage(pageable, null);
@@ -88,7 +84,11 @@ class BoardPopularSnapshotServiceUnitTest {
     @Test
     void loadFeaturedRankingPage_returnsEmptyWhenRankingLookupFails() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(snapshotRepository.countActiveBySlot(eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE), eq(""), any()))
+        when(snapshotRepository.countActiveVisibleBySlot(
+                eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE),
+                eq(""),
+                any(),
+                eq(SoftDeleteState.ACTIVE)))
                 .thenThrow(new DataAccessResourceFailureException("snapshot table missing"));
 
         Optional<Page<Board>> result = snapshotService.loadFeaturedRankingPage(pageable, null);
@@ -99,7 +99,11 @@ class BoardPopularSnapshotServiceUnitTest {
     @Test
     void loadFeaturedRankingPage_propagatesUnexpectedRuntimeException() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(snapshotRepository.countActiveBySlot(eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE), eq(""), any()))
+        when(snapshotRepository.countActiveVisibleBySlot(
+                eq(BoardPopularSnapshotService.FEATURED_RANKING_TYPE),
+                eq(""),
+                any(),
+                eq(SoftDeleteState.ACTIVE)))
                 .thenThrow(new RuntimeException("snapshot mapping bug"));
 
         assertThatThrownBy(() -> snapshotService.loadFeaturedRankingPage(pageable, null))

@@ -57,7 +57,7 @@ class RecipeRecoSnapshotSchedulerUnitTest {
         ReflectionTestUtils.setField(scheduler, "lunchKeywordsRaw", "밥,국,찌개,면,볶음,덮밥");
         ReflectionTestUtils.setField(scheduler, "dinnerKeywordsRaw", "구이,찜,탕,전골,조림,볶음");
 
-        when(recipeStatsRepository.findTopRecipeScoresForSnapshot(PageRequest.of(0, 20)))
+        when(recipeStatsRepository.findTopRecipeScoresForSnapshot(PageRequest.of(0, 100)))
                 .thenReturn(List.of(scoreRow(1L, "12.5"), scoreRow(2L, "11.0")));
         when(recipeInfoRepository.findAllByRecipeIDIn(List.of(1L, 2L)))
                 .thenReturn(List.of(
@@ -102,7 +102,7 @@ class RecipeRecoSnapshotSchedulerUnitTest {
         ReflectionTestUtils.setField(scheduler, "lunchKeywordsRaw", "밥,국,찌개,면,볶음,덮밥");
         ReflectionTestUtils.setField(scheduler, "dinnerKeywordsRaw", "구이,찜,탕,전골,조림,볶음");
 
-        when(recipeStatsRepository.findTopRecipeScoresForSnapshot(PageRequest.of(0, 20)))
+        when(recipeStatsRepository.findTopRecipeScoresForSnapshot(PageRequest.of(0, 100)))
                 .thenReturn(List.of(scoreRow(1L, "10"), scoreRow(2L, "10")));
         when(recipeInfoRepository.findAllByRecipeIDIn(List.of(1L, 2L)))
                 .thenReturn(List.of(

@@ -1,5 +1,7 @@
 package kwh.PublicCookedFood.metrics.popular;
 
+import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.domain.Board;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -22,6 +24,18 @@ public interface BoardPopularSnapshotRepository extends JpaRepository<BoardPopul
                            @Param("sectionKey") String sectionKey,
                            @Param("now") LocalDateTime now);
 
+    @Query("SELECT COUNT(s) FROM BoardPopularSnapshot s, Board b " +
+            "WHERE s.rankingType = :rankingType " +
+            "AND s.sectionKey = :sectionKey " +
+            "AND s.expiresAt > :now " +
+            "AND b.id = s.boardId " +
+            "AND b.state = :state " +
+            "AND b.hiddenByReport = false")
+    long countActiveVisibleBySlot(@Param("rankingType") String rankingType,
+                                  @Param("sectionKey") String sectionKey,
+                                  @Param("now") LocalDateTime now,
+                                  @Param("state") SoftDeleteState state);
+
     @Query("SELECT s FROM BoardPopularSnapshot s " +
             "WHERE s.rankingType = :rankingType AND s.sectionKey = :sectionKey AND s.expiresAt > :now " +
             "ORDER BY s.rankNo ASC")
@@ -29,6 +43,20 @@ public interface BoardPopularSnapshotRepository extends JpaRepository<BoardPopul
                                                 @Param("sectionKey") String sectionKey,
                                                 @Param("now") LocalDateTime now,
                                                 Pageable pageable);
+
+    @Query("SELECT s.boardId FROM BoardPopularSnapshot s, Board b " +
+            "WHERE s.rankingType = :rankingType " +
+            "AND s.sectionKey = :sectionKey " +
+            "AND s.expiresAt > :now " +
+            "AND b.id = s.boardId " +
+            "AND b.state = :state " +
+            "AND b.hiddenByReport = false " +
+            "ORDER BY s.rankNo ASC")
+    List<Long> findActiveVisibleBoardIdsBySlot(@Param("rankingType") String rankingType,
+                                               @Param("sectionKey") String sectionKey,
+                                               @Param("now") LocalDateTime now,
+                                               @Param("state") SoftDeleteState state,
+                                               Pageable pageable);
 
     @Modifying
     @Query("DELETE FROM BoardPopularSnapshot s WHERE s.expiresAt <= :now")
