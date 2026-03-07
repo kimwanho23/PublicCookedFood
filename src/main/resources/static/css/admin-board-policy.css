@@ -1,0 +1,198 @@
+﻿    .board-tab-preview-panel,
+    .board-tab-create-panel,
+    .board-tab-sort-panel {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 1.25rem;
+    }
+
+    .board-tab-section-eyebrow {
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .board-tab-preview-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        min-height: 5rem;
+    }
+
+    .board-tab-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 10rem;
+        max-width: 100%;
+        padding: 0.75rem 0.95rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
+        transition: transform 0.18s ease, opacity 0.18s ease, border-color 0.18s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .board-tab-pill.is-inactive {
+        opacity: 0.58;
+        background: linear-gradient(135deg, rgba(148, 163, 184, 0.16), rgba(148, 163, 184, 0.05));
+    }
+
+    .board-tab-pill.is-default {
+        border-color: rgba(var(--bs-info-rgb), 0.45);
+        box-shadow: 0 0 0 1px rgba(var(--bs-info-rgb), 0.14);
+    }
+
+    .board-tab-pill-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.1;
+        word-break: break-word;
+    }
+
+    .board-tab-pill-badge {
+        margin-left: 0.2rem;
+        flex-shrink: 0;
+        padding: 0.24rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 0.72rem;
+        font-weight: 600;
+    }
+
+    .board-tab-pill-badge.is-default {
+        background: rgba(var(--bs-info-rgb), 0.18);
+        color: rgba(255, 255, 255, 0.92);
+    }
+
+    .board-tab-pill-badge.is-inactive {
+        background: rgba(148, 163, 184, 0.18);
+    }
+
+    .board-tab-empty {
+        width: 100%;
+        padding: 1rem 1.1rem;
+        border-radius: 1rem;
+        border: 1px dashed rgba(255, 255, 255, 0.14);
+        color: rgba(255, 255, 255, 0.64);
+    }
+
+    .board-tab-item {
+        transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .board-tab-item.is-dragging {
+        opacity: 0.55;
+        transform: scale(0.986);
+    }
+
+    .board-tab-item.is-drop-before .board-tab-card {
+        box-shadow: inset 0 3px 0 var(--bs-primary);
+    }
+
+    .board-tab-item.is-drop-after .board-tab-card {
+        box-shadow: inset 0 -3px 0 var(--bs-primary);
+    }
+
+    .board-tab-card {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 1.15rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.025);
+    }
+
+    .board-tab-card.board-tab-handle {
+        cursor: grab;
+    }
+
+    .board-tab-card.board-tab-handle:hover {
+        border-color: rgba(var(--bs-primary-rgb), 0.32);
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .board-tab-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .board-tab-order-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .board-tab-grip {
+        width: 1rem;
+        height: 2.2rem;
+        flex-shrink: 0;
+        border-radius: 999px;
+        opacity: 0.7;
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.56) 1.15px, transparent 1.25px);
+        background-size: 6px 6px;
+        background-position: center;
+    }
+
+    .board-tab-order-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    .board-tab-card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .board-tab-card-meta {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .board-tab-handle {
+        cursor: grab;
+        user-select: none;
+    }
+
+    .board-tab-inline-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .board-tab-autosave-note {
+        font-size: 0.82rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .board-tab-delete-link {
+        font-size: 0.88rem;
+        text-decoration: none;
+    }
+
+    .board-tab-handle:active {
+        cursor: grabbing;
+    }
+
+    .board-tab-status-note {
+        min-height: 1.25rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .board-tab-card-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .board-tab-pill {
+            min-width: 100%;
+        }
+    }

@@ -3,7 +3,9 @@ package kwh.PublicCookedFood.config;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import kwh.PublicCookedFood.recipeSaveLogic.RecipeImportException;
+import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.common.error.CommonErrorCode;
+import kwh.PublicCookedFood.common.error.ErrorCode;
 import kwh.PublicCookedFood.storage.StorageException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -28,15 +30,24 @@ import java.util.stream.Collectors;
 @RestControllerAdvice(annotations = RestController.class)
 public class GlobalApiExceptionHandler {
 
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiErrorResponse> handleAppException(AppException e, HttpServletRequest request) {
+        ErrorCode errorCode = e.getErrorCode();
+        if (errorCode.status().is5xxServerError()) {
+            log.error("Application exception. uri={}, code={}", request.getRequestURI(), errorCode.code(), e);
+        }
+        return buildResponse(errorCode, defaultMessage(e.getMessage(), errorCode.message()), request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e,
                                                                          HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST, buildValidationMessage(e.getBindingResult()), request);
+        return buildResponse(CommonErrorCode.VALIDATION_ERROR, buildValidationMessage(e.getBindingResult()), request);
     }
 
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiErrorResponse> handleBindException(BindException e, HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST, buildValidationMessage(e.getBindingResult()), request);
+        return buildResponse(CommonErrorCode.VALIDATION_ERROR, buildValidationMessage(e.getBindingResult()), request);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -45,51 +56,46 @@ public class GlobalApiExceptionHandler {
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining(", "));
-        return buildResponse(HttpStatus.BAD_REQUEST, message.isBlank() ? "요청 값이 유효하지 않습니다." : message, request);
+        return buildResponse(CommonErrorCode.VALIDATION_ERROR,
+                message.isBlank() ? CommonErrorCode.VALIDATION_ERROR.message() : message,
+                request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e,
                                                                HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST, "요청 값의 타입이 올바르지 않습니다.", request);
+        return buildResponse(CommonErrorCode.INVALID_REQUEST, "요청 값의 타입이 올바르지 않습니다.", request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException e,
                                                                   HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST, defaultMessage(e.getMessage(), "잘못된 요청입니다."), request);
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiErrorResponse> handleIllegalState(IllegalStateException e, HttpServletRequest request) {
-        return buildResponse(HttpStatus.CONFLICT, defaultMessage(e.getMessage(), "요청을 처리할 수 없습니다."), request);
+        return buildResponse(CommonErrorCode.INVALID_REQUEST,
+                defaultMessage(e.getMessage(), CommonErrorCode.INVALID_REQUEST.message()),
+                request);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException e,
                                                                 HttpServletRequest request) {
-        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE,
-                "업로드 가능한 최대 파일 크기를 초과했습니다.", request);
+        return buildResponse(CommonErrorCode.PAYLOAD_TOO_LARGE,
+                CommonErrorCode.PAYLOAD_TOO_LARGE.message(),
+                request);
     }
 
     @ExceptionHandler(StorageException.class)
     public ResponseEntity<ApiErrorResponse> handleStorageException(StorageException e, HttpServletRequest request) {
         log.error("Storage exception. uri={}", request.getRequestURI(), e);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                defaultMessage(e.getMessage(), "파일 저장 중 오류가 발생했습니다."), request);
-    }
-
-    @ExceptionHandler(RecipeImportException.class)
-    public ResponseEntity<ApiErrorResponse> handleRecipeImportException(RecipeImportException e,
-                                                                        HttpServletRequest request) {
-        log.error("Recipe import exception. uri={}", request.getRequestURI(), e);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                defaultMessage(e.getMessage(), "레시피 데이터 동기화 중 오류가 발생했습니다."), request);
+        return buildResponse(CommonErrorCode.STORAGE_ERROR,
+                defaultMessage(e.getMessage(), CommonErrorCode.STORAGE_ERROR.message()),
+                request);
     }
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<ApiErrorResponse> handleNoSuchElement(NoSuchElementException e, HttpServletRequest request) {
-        return buildResponse(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다.", request);
+        return buildResponse(CommonErrorCode.RESOURCE_NOT_FOUND,
+                CommonErrorCode.RESOURCE_NOT_FOUND.message(),
+                request);
     }
 
     @ExceptionHandler(ResponseStatusException.class)
@@ -99,7 +105,11 @@ public class GlobalApiExceptionHandler {
         if (status == null) {
             status = HttpStatus.BAD_REQUEST;
         }
-        return buildResponse(status, defaultMessage(e.getReason(), status.getReasonPhrase()), request);
+        ErrorCode errorCode = resolveErrorCode(status);
+        return buildResponse(status,
+                errorCode.code(),
+                defaultMessage(e.getReason(), errorCode.message()),
+                request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -109,10 +119,19 @@ public class GlobalApiExceptionHandler {
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }
         log.error("Unhandled exception. uri={}", request.getRequestURI(), e);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.", request);
+        return buildResponse(CommonErrorCode.INTERNAL_SERVER_ERROR,
+                CommonErrorCode.INTERNAL_SERVER_ERROR.message(),
+                request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(ErrorCode errorCode,
+                                                           String message,
+                                                           HttpServletRequest request) {
+        return buildResponse(errorCode.status(), errorCode.code(), message, request);
     }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status,
+                                                           String code,
                                                            String message,
                                                            HttpServletRequest request) {
         return ResponseEntity.status(status).body(
@@ -120,10 +139,26 @@ public class GlobalApiExceptionHandler {
                         LocalDateTime.now(),
                         status.value(),
                         status.getReasonPhrase(),
+                        code,
                         message,
                         request.getRequestURI()
                 )
         );
+    }
+
+    private ErrorCode resolveErrorCode(HttpStatus status) {
+        return switch (status) {
+            case BAD_REQUEST -> CommonErrorCode.INVALID_REQUEST;
+            case UNAUTHORIZED -> CommonErrorCode.AUTHENTICATION_REQUIRED;
+            case FORBIDDEN -> CommonErrorCode.ACCESS_DENIED;
+            case NOT_FOUND -> CommonErrorCode.RESOURCE_NOT_FOUND;
+            case CONFLICT -> CommonErrorCode.REQUEST_CONFLICT;
+            case PAYLOAD_TOO_LARGE -> CommonErrorCode.PAYLOAD_TOO_LARGE;
+            case SERVICE_UNAVAILABLE -> CommonErrorCode.SERVICE_UNAVAILABLE;
+            default -> status.is4xxClientError()
+                    ? CommonErrorCode.INVALID_REQUEST
+                    : CommonErrorCode.INTERNAL_SERVER_ERROR;
+        };
     }
 
     private String buildValidationMessage(BindingResult bindingResult) {
@@ -177,6 +212,7 @@ public class GlobalApiExceptionHandler {
             LocalDateTime timestamp,
             int status,
             String error,
+            String code,
             String message,
             String path
     ) {

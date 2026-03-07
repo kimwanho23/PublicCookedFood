@@ -18,74 +18,74 @@ public interface CommentsRepository extends JpaRepository<Comments, Long> {
 
     @Query(
             value = "SELECT c FROM Comments c " +
-                    "JOIN FETCH c.user " +
+                    "JOIN FETCH c.account " +
                     "WHERE c.board.id = :postId AND c.parent IS NULL " +
                     "AND (c.state = :activeState OR c.state = :deletedState) " +
-                    "AND (:excludeBlocked = false OR c.user.id NOT IN :blockedUserIds) " +
+                    "AND (:excludeBlocked = false OR c.account.id NOT IN :blockedAccountIds) " +
                     "ORDER BY c.regTime ASC",
             countQuery = "SELECT COUNT(c) FROM Comments c " +
                     "WHERE c.board.id = :postId AND c.parent IS NULL " +
                     "AND (c.state = :activeState OR c.state = :deletedState) " +
-                    "AND (:excludeBlocked = false OR c.user.id NOT IN :blockedUserIds)"
+                    "AND (:excludeBlocked = false OR c.account.id NOT IN :blockedAccountIds)"
     )
-    Page<Comments> findParentCommentsWithUserByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId,
+    Page<Comments> findParentCommentsWithAccountByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId,
                                                                          @Param("activeState") SoftDeleteState activeState,
                                                                          @Param("deletedState") SoftDeleteState deletedState,
                                                                          @Param("excludeBlocked") boolean excludeBlocked,
-                                                                         @Param("blockedUserIds") Collection<Long> blockedUserIds,
+                                                                         @Param("blockedAccountIds") Collection<Long> blockedAccountIds,
                                                                          Pageable pageable);
 
     @Query("SELECT c FROM Comments c " +
             "WHERE c.board.id = :postId AND c.parent IS NULL " +
             "AND (c.state = :activeState OR c.state = :deletedState) " +
-            "AND (:excludeBlocked = false OR c.user.id NOT IN :blockedUserIds)")
+            "AND (:excludeBlocked = false OR c.account.id NOT IN :blockedAccountIds)")
     List<Comments> findParentCommentsByBoardId(@Param("postId") Long postId,
                                                @Param("activeState") SoftDeleteState activeState,
                                                @Param("deletedState") SoftDeleteState deletedState,
                                                @Param("excludeBlocked") boolean excludeBlocked,
-                                               @Param("blockedUserIds") Collection<Long> blockedUserIds);
+                                               @Param("blockedAccountIds") Collection<Long> blockedAccountIds);
 
     Long countByBoardIdAndState(Long boardId, SoftDeleteState state);
 
     @Query("SELECT COUNT(c) FROM Comments c " +
-            "WHERE c.board.id = :boardId AND c.state = :state AND c.user.id NOT IN :excludedUserIds")
-    Long countByBoardIdAndStateAndUserIdNotIn(@Param("boardId") Long boardId,
-                                              @Param("state") SoftDeleteState state,
-                                              @Param("excludedUserIds") Collection<Long> excludedUserIds);
+            "WHERE c.board.id = :boardId AND c.state = :state AND c.account.id NOT IN :excludedAccountIds")
+    Long countByBoardIdAndStateAndAccountIdNotIn(@Param("boardId") Long boardId,
+                                                 @Param("state") SoftDeleteState state,
+                                                 @Param("excludedAccountIds") Collection<Long> excludedAccountIds);
 
-    Long countByUserIdAndState(Long userId, SoftDeleteState state);
+    Long countByAccountIdAndState(Long accountId, SoftDeleteState state);
 
     @Query("SELECT c FROM Comments c " +
-            "JOIN FETCH c.user " +
+            "JOIN FETCH c.account " +
             "JOIN FETCH c.parent " +
             "WHERE c.board.id = :postId AND c.parent IS NOT NULL " +
             "ORDER BY c.regTime ASC")
-    List<Comments> findRepliesWithUserAndParentByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId);
+    List<Comments> findRepliesWithAccountAndParentByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId);
 
     @Query(
             value = "SELECT c FROM Comments c " +
                     "JOIN FETCH c.board b " +
-                    "JOIN FETCH b.user " +
+                    "JOIN FETCH b.account " +
                     "LEFT JOIN FETCH b.section " +
-                    "WHERE c.user.id = :userId " +
+                    "WHERE c.account.id = :accountId " +
                     "AND c.state = :commentState " +
                     "AND b.state = :boardState " +
                     "AND b.hiddenByReport = false " +
-                    "AND (:excludeBlocked = false OR b.user.id NOT IN :blockedUserIds) " +
+                    "AND (:excludeBlocked = false OR b.account.id NOT IN :blockedAccountIds) " +
                     "ORDER BY c.regTime DESC",
             countQuery = "SELECT COUNT(c) FROM Comments c " +
                     "JOIN c.board b " +
-                    "WHERE c.user.id = :userId " +
+                    "WHERE c.account.id = :accountId " +
                     "AND c.state = :commentState " +
                     "AND b.state = :boardState " +
                     "AND b.hiddenByReport = false " +
-                    "AND (:excludeBlocked = false OR b.user.id NOT IN :blockedUserIds)"
+                    "AND (:excludeBlocked = false OR b.account.id NOT IN :blockedAccountIds)"
     )
-    Page<Comments> findUserCommentsWithBoard(@Param("userId") Long userId,
+    Page<Comments> findAccountCommentsWithBoard(@Param("accountId") Long accountId,
                                              @Param("commentState") SoftDeleteState commentState,
                                              @Param("boardState") SoftDeleteState boardState,
                                              @Param("excludeBlocked") boolean excludeBlocked,
-                                             @Param("blockedUserIds") Collection<Long> blockedUserIds,
+                                             @Param("blockedAccountIds") Collection<Long> blockedAccountIds,
                                              Pageable pageable);
 
     @Modifying

@@ -20,7 +20,7 @@ class BoardSaveRequestFactoryUnitTest {
         assertThat(command.getId()).isNull();
         assertThat(command.getTitle()).isEqualTo("제목");
         assertThat(command.getContents()).isEqualTo("내용");
-        assertThat(command.getUserId()).isEqualTo(7L);
+        assertThat(command.getAccountId()).isEqualTo(7L);
         assertThat(command.getSectionId()).isEqualTo(33L);
         assertThat(command.getViews()).isEqualTo(0L);
         assertThat(command.getLikesCount()).isEqualTo(0L);
@@ -38,7 +38,7 @@ class BoardSaveRequestFactoryUnitTest {
 
         BoardDetailResponse existingBoard = BoardDetailResponse.builder()
                 .id(10L)
-                .userId(5L)
+                .accountId(5L)
                 .views(111L)
                 .likesCount(12L)
                 .commentsCount(3L)
@@ -50,7 +50,7 @@ class BoardSaveRequestFactoryUnitTest {
         assertThat(command.getId()).isEqualTo(10L);
         assertThat(command.getTitle()).isEqualTo("수정 제목");
         assertThat(command.getContents()).isEqualTo("수정 내용");
-        assertThat(command.getUserId()).isEqualTo(5L);
+        assertThat(command.getAccountId()).isEqualTo(5L);
         assertThat(command.getSectionId()).isEqualTo(44L);
         assertThat(command.getViews()).isEqualTo(111L);
         assertThat(command.getLikesCount()).isEqualTo(12L);

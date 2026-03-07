@@ -5,7 +5,7 @@ import kwh.PublicCookedFood.board.dto.request.BoardReportCreateRequest;
 import kwh.PublicCookedFood.board.dto.request.CommentCreateRequest;
 import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
 import kwh.PublicCookedFood.board.dto.response.CommentResponse;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,37 +21,38 @@ public class BoardDetailFacade {
     private final BoardInteractionFacade boardInteractionFacade;
 
     public BoardDetailViewData loadBoardDetail(Long boardId,
-                                               Users user,
-                                               Pageable pageable) {
-        return boardDetailQueryFacade.loadBoardDetail(boardId, user, pageable);
+                                               Account account,
+                                               Pageable pageable,
+                                               boolean increaseViews) {
+        return boardDetailQueryFacade.loadBoardDetail(boardId, account, pageable, increaseViews);
     }
 
-    public OperationResult deleteComment(Users actor, Long boardId, Long commentId) {
+    public OperationResult deleteComment(Account actor, Long boardId, Long commentId) {
         return boardInteractionFacade.deleteComment(actor, boardId, commentId);
     }
 
-    public OperationResult addComment(Users actor,
+    public OperationResult addComment(Account actor,
                                       Long boardId,
                                       CommentCreateRequest commentDto) {
         return boardInteractionFacade.addComment(actor, boardId, commentDto);
     }
 
-    public void addScrap(Long boardId, Long actorUserId) {
-        boardInteractionFacade.addScrap(boardId, actorUserId);
+    public void addScrap(Long boardId, Long actorAccountId) {
+        boardInteractionFacade.addScrap(boardId, actorAccountId);
     }
 
-    public void removeScrap(Long boardId, Long actorUserId) {
-        boardInteractionFacade.removeScrap(boardId, actorUserId);
+    public void removeScrap(Long boardId, Long actorAccountId) {
+        boardInteractionFacade.removeScrap(boardId, actorAccountId);
     }
 
     public OperationResult reportBoard(Long boardId,
-                                       Long actorUserId,
+                                       Long actorAccountId,
                                        BoardReportCreateRequest reportDto) {
-        return boardInteractionFacade.reportBoard(boardId, actorUserId, reportDto);
+        return boardInteractionFacade.reportBoard(boardId, actorAccountId, reportDto);
     }
 
-    public void toggleLike(Long boardId, Long actorUserId) {
-        boardInteractionFacade.toggleLike(boardId, actorUserId);
+    public void toggleLike(Long boardId, Long actorAccountId) {
+        boardInteractionFacade.toggleLike(boardId, actorAccountId);
     }
 
     public record BoardDetailViewData(BoardDetailResponse boardDto,
@@ -62,7 +63,7 @@ public class BoardDetailFacade {
                                       boolean myReport,
                                       boolean myBlockedAuthor,
                                       boolean boardInteractionBlocked,
-                                      Long currentUserId,
+                                      Long currentAccountId,
                                       Page<CommentResponse> comments,
                                       Long commentsCount,
                                       BoardReportReason[] reportReasons) {

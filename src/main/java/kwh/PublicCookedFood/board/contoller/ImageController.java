@@ -1,5 +1,7 @@
 package kwh.PublicCookedFood.board.contoller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kwh.PublicCookedFood.board.facade.BoardImageFacade;
 import lombok.RequiredArgsConstructor;
@@ -19,19 +21,26 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Board Image API")
+@Tag(name = "게시판 이미지 API", description = "게시판 이미지의 업로드와 다운로드를 처리하는 API")
 public class ImageController {
 
     private final BoardImageFacade boardImageFacade;
 
+    @Operation(summary = "임시 이미지 업로드", description = "게시글 작성 전에 이미지를 임시 저장하고 접근 URL을 반환합니다.")
     @PostMapping("/api/images")
-    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadImage(
+            @Parameter(description = "업로드할 이미지 파일", required = true)
+            @RequestParam("file") MultipartFile file
+    ) {
         return ResponseEntity.ok(boardImageFacade.uploadTempImage(file));
     }
 
+    @Operation(summary = "원본 이미지 다운로드", description = "원본 이미지 URL을 기준으로 이미지를 조회하거나 다운로드합니다.")
     @GetMapping("/api/images/original")
     public ResponseEntity<Resource> downloadOriginalImage(
+            @Parameter(description = "조회할 원본 이미지 URL", required = true)
             @RequestParam("url") String imageUrl,
+            @Parameter(description = "true이면 첨부파일 다운로드 형식으로 응답합니다.")
             @RequestParam(value = "download", defaultValue = "false") boolean download
     ) {
         Optional<BoardImageFacade.ImageDownloadViewData> viewDataOptional =
@@ -51,8 +60,12 @@ public class ImageController {
         return bodyBuilder.body(viewData.resource());
     }
 
+    @Operation(summary = "게시글 이미지 ZIP 다운로드", description = "게시글에 포함된 이미지를 ZIP 파일로 묶어 다운로드합니다.")
     @GetMapping("/api/images/boards/{boardId}/zip")
-    public ResponseEntity<StreamingResponseBody> downloadBoardImagesZip(@PathVariable Long boardId) {
+    public ResponseEntity<StreamingResponseBody> downloadBoardImagesZip(
+            @Parameter(description = "이미지를 압축 다운로드할 게시글 ID", required = true)
+            @PathVariable Long boardId
+    ) {
         Optional<BoardImageFacade.BoardImagesZipViewData> viewDataOptional =
                 boardImageFacade.prepareBoardImagesZip(boardId);
         if (viewDataOptional.isEmpty()) {

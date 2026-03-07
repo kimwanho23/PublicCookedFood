@@ -4,11 +4,13 @@ import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardScrap;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.error.BoardErrorCode;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.BoardScrapRepository;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.repository.UserRepository;
-import kwh.PublicCookedFood.user.service.UserBlockService;
+import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
+import kwh.PublicCookedFood.account.service.AccountBlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,32 +29,29 @@ public class BoardScrapService {
 
     private final BoardScrapRepository boardScrapRepository;
     private final BoardRepository boardRepository;
-    private final UserRepository userRepository;
-    private final UserBlockService userBlockService;
+    private final AccountRepository accountRepository;
+    private final AccountBlockService accountBlockService;
 
     @Transactional
-    public void addScrap(Long boardId, Long userId) {
-        if (boardId == null || userId == null) {
+    public void addScrap(Long boardId, Long accountId) {
+        if (boardId == null || accountId == null) {
             throw new IllegalArgumentException("스크랩 요청 값이 올바르지 않습니다.");
         }
-        if (boardScrapRepository.existsByBoardIdAndUserId(boardId, userId)) {
+        if (boardScrapRepository.existsByBoardIdAndAccountId(boardId, accountId)) {
             return;
         }
 
-        Users user = userRepository.findById(userId)
+        Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
-        Board board = boardRepository.findById(boardId)
+        Board board = boardRepository.findByIdWithAccountAndState(boardId, SoftDeleteState.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 게시글입니다."));
-        if (board.getState() != SoftDeleteState.ACTIVE) {
-            throw new IllegalArgumentException("삭제된 게시글은 스크랩할 수 없습니다.");
-        }
-        if (board.getUser() != null && userBlockService.isEitherBlocked(userId, board.getUser().getId())) {
-            throw new IllegalStateException("차단 관계인 사용자의 게시글은 스크랩할 수 없습니다.");
+        if (board.getAccount() != null && accountBlockService.isEitherBlocked(accountId, board.getAccount().getId())) {
+            throw new AppException(BoardErrorCode.BOARD_SCRAP_BLOCKED);
         }
 
         try {
             boardScrapRepository.saveAndFlush(BoardScrap.builder()
-                    .user(user)
+                    .account(account)
                     .board(board)
                     .build());
         } catch (DataIntegrityViolationException ignored) {
@@ -61,19 +60,19 @@ public class BoardScrapService {
     }
 
     @Transactional
-    public void removeScrap(Long boardId, Long userId) {
-        if (boardId == null || userId == null) {
+    public void removeScrap(Long boardId, Long accountId) {
+        if (boardId == null || accountId == null) {
             throw new IllegalArgumentException("스크랩 요청 값이 올바르지 않습니다.");
         }
-        boardScrapRepository.deleteByBoardIdAndUserId(boardId, userId);
+        boardScrapRepository.deleteByBoardIdAndAccountId(boardId, accountId);
     }
 
     @Transactional(readOnly = true)
-    public boolean isScrapped(Long boardId, Long userId) {
-        if (boardId == null || userId == null) {
+    public boolean isScrapped(Long boardId, Long accountId) {
+        if (boardId == null || accountId == null) {
             return false;
         }
-        return boardScrapRepository.existsByBoardIdAndUserId(boardId, userId);
+        return boardScrapRepository.existsByBoardIdAndAccountId(boardId, accountId);
     }
 
     @Transactional(readOnly = true)
@@ -85,47 +84,47 @@ public class BoardScrapService {
     }
 
     @Transactional(readOnly = true)
-    public List<Board> getMyScrappedBoards(Long userId, Collection<Long> blockedUserIds) {
-        if (userId == null) {
+    public List<Board> getMyScrappedBoards(Long accountId, Collection<Long> blockedAccountIds) {
+        if (accountId == null) {
             return List.of();
         }
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
-        return boardScrapRepository.findScrappedBoardsByUserIdAndBoardState(
-                userId,
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        return boardScrapRepository.findScrappedBoardsByAccountIdAndBoardState(
+                accountId,
                 SoftDeleteState.ACTIVE,
-                blockedUserFilter.excludeBlocked(),
-                blockedUserFilter.blockedUserIds());
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds());
     }
 
     @Transactional(readOnly = true)
-    public Page<Board> getScrappedBoardsPage(Long userId, Pageable pageable, Collection<Long> blockedUserIds) {
-        if (userId == null) {
+    public Page<Board> getScrappedBoardsPage(Long accountId, Pageable pageable, Collection<Long> blockedAccountIds) {
+        if (accountId == null) {
             return Page.empty(pageable);
         }
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
-        return boardScrapRepository.findScrappedBoardsPageByUserIdAndBoardState(
-                userId,
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        return boardScrapRepository.findScrappedBoardsPageByAccountIdAndBoardState(
+                accountId,
                 SoftDeleteState.ACTIVE,
-                blockedUserFilter.excludeBlocked(),
-                blockedUserFilter.blockedUserIds(),
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds(),
                 pageable
         );
     }
 
-    private BlockedUserFilter resolveBlockedUserFilter(Collection<Long> blockedUserIds) {
-        if (blockedUserIds == null || blockedUserIds.isEmpty()) {
-            return new BlockedUserFilter(false, Set.of(-1L));
+    private BlockedAccountFilter resolveBlockedAccountFilter(Collection<Long> blockedAccountIds) {
+        if (blockedAccountIds == null || blockedAccountIds.isEmpty()) {
+            return new BlockedAccountFilter(false, Set.of(-1L));
         }
 
-        Set<Long> normalized = blockedUserIds.stream()
+        Set<Long> normalized = blockedAccountIds.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         if (normalized.isEmpty()) {
-            return new BlockedUserFilter(false, Set.of(-1L));
+            return new BlockedAccountFilter(false, Set.of(-1L));
         }
-        return new BlockedUserFilter(true, normalized);
+        return new BlockedAccountFilter(true, normalized);
     }
 
-    private record BlockedUserFilter(boolean excludeBlocked, Collection<Long> blockedUserIds) {
+    private record BlockedAccountFilter(boolean excludeBlocked, Collection<Long> blockedAccountIds) {
     }
 }

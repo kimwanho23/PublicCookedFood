@@ -6,12 +6,14 @@ import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.domain.SoftDeleteState;
 import kwh.PublicCookedFood.board.dto.request.CommentCreateRequest;
 import kwh.PublicCookedFood.board.dto.response.CommentResponse;
+import kwh.PublicCookedFood.board.error.BoardErrorCode;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.CommentsRepository;
+import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.notification.service.NotificationService;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.repository.UserRepository;
-import kwh.PublicCookedFood.user.service.UserBlockService;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
+import kwh.PublicCookedFood.account.service.AccountBlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -34,11 +36,11 @@ public class CommentsService {
 
     private final BoardRepository boardRepository;
 
-    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
 
     private final NotificationService notificationService;
 
-    private final UserBlockService userBlockService;
+    private final AccountBlockService accountBlockService;
 
 
     @Transactional
@@ -61,28 +63,25 @@ public class CommentsService {
                 throw new IllegalArgumentException("삭제된 댓글에는 답글을 작성할 수 없습니다.");
             }
         }
-        Users user = userRepository.findById(commentsDto.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
+        Account account = accountRepository.findById(commentsDto.getAccountId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid account ID"));
 
-        Board board = boardRepository.findById(commentsDto.getBoardId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid board ID"));
-        if (board.getState() != SoftDeleteState.ACTIVE) {
-            throw new IllegalArgumentException("삭제된 게시글에는 댓글을 작성할 수 없습니다.");
+        Board board = boardRepository.findByIdWithAccountAndState(commentsDto.getBoardId(), SoftDeleteState.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("삭제된 게시글에는 댓글을 작성할 수 없습니다."));
+        if (board.getAccount() != null && accountBlockService.isEitherBlocked(account.getId(), board.getAccount().getId())) {
+            throw new AppException(BoardErrorCode.BOARD_COMMENT_BLOCKED);
         }
-        if (board.getUser() != null && userBlockService.isEitherBlocked(user.getId(), board.getUser().getId())) {
-            throw new IllegalStateException("차단 관계인 사용자에게는 댓글을 작성할 수 없습니다.");
-        }
-        if (parent != null && parent.getUser() != null && userBlockService.isEitherBlocked(user.getId(), parent.getUser().getId())) {
-            throw new IllegalStateException("차단 관계인 사용자에게는 댓글을 작성할 수 없습니다.");
+        if (parent != null && parent.getAccount() != null && accountBlockService.isEitherBlocked(account.getId(), parent.getAccount().getId())) {
+            throw new AppException(BoardErrorCode.BOARD_COMMENT_BLOCKED);
         }
 
         Comments comment = Comments.builder()
-                .user(user)
+                .account(account)
                 .board(board)
                 .contents(commentsDto.getContents())
                 .parent(parent)
                 .state(commentsDto.getState() == null ? SoftDeleteState.ACTIVE : commentsDto.getState())
-                .replies(new ArrayList<>()) // 대댓글 초기화
+                .replies(new ArrayList<>())
                 .build();
 
         Comments savedComment = commentsRepository.save(comment);
@@ -90,12 +89,12 @@ public class CommentsService {
         return convertToDto(savedComment);
     }
 
-    public Long getCommentsCount(Long id, Long viewerUserId) {
-        Set<Long> blockedUserIds = userBlockService.getViewRestrictedUserIds(viewerUserId);
-        if (blockedUserIds.isEmpty()) {
+    public Long getCommentsCount(Long id, Long viewerAccountId) {
+        Set<Long> blockedAccountIds = accountBlockService.getViewRestrictedAccountIds(viewerAccountId);
+        if (blockedAccountIds.isEmpty()) {
             return commentsRepository.countByBoardIdAndState(id, SoftDeleteState.ACTIVE);
         }
-        return commentsRepository.countByBoardIdAndStateAndUserIdNotIn(id, SoftDeleteState.ACTIVE, blockedUserIds);
+        return commentsRepository.countByBoardIdAndStateAndAccountIdNotIn(id, SoftDeleteState.ACTIVE, blockedAccountIds);
     }
 
     public Comments getComment(Long id) {
@@ -104,26 +103,26 @@ public class CommentsService {
     }
 
 
-    public Page<CommentResponse> getCommentListWithReplies(Long postId, Pageable pageable, Long viewerUserId) {
-        Set<Long> blockedUserIds = userBlockService.getViewRestrictedUserIds(viewerUserId);
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
-        boolean hasBlockedUsers = blockedUserFilter.excludeBlocked();
+    public Page<CommentResponse> getCommentListWithReplies(Long postId, Pageable pageable, Long viewerAccountId) {
+        Set<Long> blockedAccountIds = accountBlockService.getViewRestrictedAccountIds(viewerAccountId);
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        boolean hasBlockedAccounts = blockedAccountFilter.excludeBlocked();
 
         Page<Comments> parentComments = commentsRepository
-                .findParentCommentsWithUserByBoardIdOrderByRegTimeAsc(
+                .findParentCommentsWithAccountByBoardIdOrderByRegTimeAsc(
                         postId,
                         SoftDeleteState.ACTIVE,
                         SoftDeleteState.DELETED,
-                        blockedUserFilter.excludeBlocked(),
-                        blockedUserFilter.blockedUserIds(),
+                        blockedAccountFilter.excludeBlocked(),
+                        blockedAccountFilter.blockedAccountIds(),
                         pageable);
 
         List<Comments> replies = commentsRepository
-                .findRepliesWithUserAndParentByBoardIdOrderByRegTimeAsc(postId);
+                .findRepliesWithAccountAndParentByBoardIdOrderByRegTimeAsc(postId);
 
-        if (hasBlockedUsers) {
+        if (hasBlockedAccounts) {
             replies = replies.stream()
-                    .filter(reply -> !isBlockedAuthor(reply, blockedUserIds))
+                    .filter(reply -> !isBlockedAuthor(reply, blockedAccountIds))
                     .toList();
         }
 
@@ -132,7 +131,7 @@ public class CommentsService {
                         LinkedHashMap::new, Collectors.toList()));
 
         List<CommentResponse> content = parentComments.getContent().stream()
-                .filter(comment -> !isBlockedAuthor(comment, blockedUserIds))
+                .filter(comment -> !isBlockedAuthor(comment, blockedAccountIds))
                 .filter(comment -> shouldDisplayComment(comment, repliesByParentId))
                 .map(comment -> convertToDto(comment, repliesByParentId, postId))
                 .toList();
@@ -141,8 +140,8 @@ public class CommentsService {
                         postId,
                         SoftDeleteState.ACTIVE,
                         SoftDeleteState.DELETED,
-                        blockedUserFilter.excludeBlocked(),
-                        blockedUserFilter.blockedUserIds())
+                        blockedAccountFilter.excludeBlocked(),
+                        blockedAccountFilter.blockedAccountIds())
                 .stream()
                 .filter(comment -> shouldDisplayComment(comment, repliesByParentId))
                 .count();
@@ -180,42 +179,42 @@ public class CommentsService {
         return false;
     }
 
-    private boolean isBlockedAuthor(Comments comment, Set<Long> blockedUserIds) {
-        if (comment == null || comment.getUser() == null || comment.getUser().getId() == null || blockedUserIds.isEmpty()) {
+    private boolean isBlockedAuthor(Comments comment, Set<Long> blockedAccountIds) {
+        if (comment == null || comment.getAccount() == null || comment.getAccount().getId() == null || blockedAccountIds.isEmpty()) {
             return false;
         }
-        return blockedUserIds.contains(comment.getUser().getId());
+        return blockedAccountIds.contains(comment.getAccount().getId());
     }
 
-    public Page<Comments> getUserCommentPage(Long userId, Pageable pageable, Set<Long> blockedUserIds) {
-        if (userId == null) {
+    public Page<Comments> getAccountCommentPage(Long accountId, Pageable pageable, Set<Long> blockedAccountIds) {
+        if (accountId == null) {
             return Page.empty(pageable);
         }
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
-        return commentsRepository.findUserCommentsWithBoard(
-                userId,
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        return commentsRepository.findAccountCommentsWithBoard(
+                accountId,
                 SoftDeleteState.ACTIVE,
                 SoftDeleteState.ACTIVE,
-                blockedUserFilter.excludeBlocked(),
-                blockedUserFilter.blockedUserIds(),
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds(),
                 pageable
         );
     }
 
-    private BlockedUserFilter resolveBlockedUserFilter(Set<Long> blockedUserIds) {
-        if (blockedUserIds == null || blockedUserIds.isEmpty()) {
-            return new BlockedUserFilter(false, Set.of(-1L));
+    private BlockedAccountFilter resolveBlockedAccountFilter(Set<Long> blockedAccountIds) {
+        if (blockedAccountIds == null || blockedAccountIds.isEmpty()) {
+            return new BlockedAccountFilter(false, Set.of(-1L));
         }
-        Set<Long> normalized = blockedUserIds.stream()
+        Set<Long> normalized = blockedAccountIds.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         if (normalized.isEmpty()) {
-            return new BlockedUserFilter(false, Set.of(-1L));
+            return new BlockedAccountFilter(false, Set.of(-1L));
         }
-        return new BlockedUserFilter(true, normalized);
+        return new BlockedAccountFilter(true, normalized);
     }
 
-    private record BlockedUserFilter(boolean excludeBlocked, Set<Long> blockedUserIds) {
+    private record BlockedAccountFilter(boolean excludeBlocked, Set<Long> blockedAccountIds) {
     }
 
     private CommentResponse convertToDto(Comments comment) {
@@ -229,9 +228,9 @@ public class CommentsService {
     private CommentResponse convertToDto(Comments comment, Map<Long, List<Comments>> repliesByParentId, Long boardId) {
         CommentResponse dto = new CommentResponse();
         dto.setId(comment.getId());
-        dto.setUserId(comment.getUser().getId());
-        dto.setName(comment.getUser().getName());
-        dto.setProfileImageUrl(comment.getUser().getProfileImageUrl());
+        dto.setAccountId(comment.getAccount().getId());
+        dto.setName(comment.getAccount().getName());
+        dto.setProfileImageUrl(comment.getAccount().getProfileImageUrl());
         dto.setBoardId(boardId);
         dto.setContents(comment.getContents());
         dto.setParentId(comment.getParent() != null ? comment.getParent().getId() : null);

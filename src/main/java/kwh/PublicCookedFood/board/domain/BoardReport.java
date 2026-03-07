@@ -2,7 +2,7 @@ package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.common.BaseTimeEntity;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,7 +36,7 @@ public class BoardReport extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id", referencedColumnName = "id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Users reporter;
+    private Account reporter;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -51,7 +51,7 @@ public class BoardReport extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "processed_by", referencedColumnName = "id")
-    private Users processor;
+    private Account processor;
 
     @Column(name = "processed_note", length = 500)
     private String processedNote;
@@ -68,11 +68,11 @@ public class BoardReport extends BaseTimeEntity {
     @Builder
     public BoardReport(Long id,
                        Board board,
-                       Users reporter,
+                       Account reporter,
                        BoardReportReason reason,
                        String details,
                        BoardReportStatus status,
-                       Users processor,
+                       Account processor,
                        String processedNote,
                        LocalDateTime processedTime,
                        Integer priorityScore,
@@ -94,7 +94,7 @@ public class BoardReport extends BaseTimeEntity {
         updateStatus(status, null, null, null);
     }
 
-    public void updateStatus(BoardReportStatus status, Users processor, String processedNote, LocalDateTime processedTime) {
+    public void updateStatus(BoardReportStatus status, Account processor, String processedNote, LocalDateTime processedTime) {
         BoardReportStatus normalizedStatus = status == null ? BoardReportStatus.OPEN : status;
         this.status = normalizedStatus;
 

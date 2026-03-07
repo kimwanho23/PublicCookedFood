@@ -17,7 +17,7 @@ public class CommentResponse {
 
     private Long id;
 
-    private Long userId;
+    private Long accountId;
 
     private String name;
 

@@ -2,8 +2,8 @@ package kwh.PublicCookedFood.board.policy;
 
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.service.UserBlockService;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.service.AccountBlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,41 +11,41 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class BoardAuthorizationPolicy {
 
-    private final UserBlockService userBlockService;
+    private final AccountBlockService accountBlockService;
 
-    public boolean canManageBoard(Users actor, BoardDetailResponse board) {
-        if (actor == null || actor.getId() == null || board == null || board.getUserId() == null) {
+    public boolean canManageBoard(Account actor, BoardDetailResponse board) {
+        if (actor == null || actor.getId() == null || board == null || board.getAccountId() == null) {
             return false;
         }
-        return board.getUserId().equals(actor.getId());
+        return board.getAccountId().equals(actor.getId());
     }
 
-    public boolean canManageComment(Users actor, Long boardId, Comments comment) {
+    public boolean canManageComment(Account actor, Long boardId, Comments comment) {
         if (actor == null || actor.getId() == null || boardId == null || comment == null) {
             return false;
         }
         if (comment.getBoard() == null || comment.getBoard().getId() == null) {
             return false;
         }
-        if (comment.getUser() == null || comment.getUser().getId() == null) {
+        if (comment.getAccount() == null || comment.getAccount().getId() == null) {
             return false;
         }
 
         return comment.getBoard().getId().equals(boardId)
-                && comment.getUser().getId().equals(actor.getId());
+                && comment.getAccount().getId().equals(actor.getId());
     }
 
-    public boolean isViewRestricted(Users viewer, Long authorUserId) {
-        if (viewer == null || viewer.getId() == null || authorUserId == null) {
+    public boolean isViewRestricted(Account viewer, Long authorAccountId) {
+        if (viewer == null || viewer.getId() == null || authorAccountId == null) {
             return false;
         }
-        return userBlockService.isEitherBlocked(viewer.getId(), authorUserId);
+        return accountBlockService.isEitherBlocked(viewer.getId(), authorAccountId);
     }
 
-    public boolean isAuthorBlockedByViewer(Long viewerUserId, Long authorUserId) {
-        if (viewerUserId == null || authorUserId == null || viewerUserId.equals(authorUserId)) {
+    public boolean isAuthorBlockedByViewer(Long viewerAccountId, Long authorAccountId) {
+        if (viewerAccountId == null || authorAccountId == null || viewerAccountId.equals(authorAccountId)) {
             return false;
         }
-        return userBlockService.isBlocked(viewerUserId, authorUserId);
+        return accountBlockService.isBlocked(viewerAccountId, authorAccountId);
     }
 }

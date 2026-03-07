@@ -19,4 +19,6 @@ public interface BoardSectionRepository extends JpaRepository<BoardSection, Long
     Optional<BoardSection> findBySectionKey(String sectionKey);
 
     boolean existsBySectionKey(String sectionKey);
+
+    Optional<BoardSection> findFirstByOrderByDisplayOrderDescIdDesc();
 }

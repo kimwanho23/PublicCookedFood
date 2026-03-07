@@ -18,31 +18,31 @@
             <div class="row g-3">
                 <div class="col-6 col-lg-2">
                     <article class="surface-soft p-3 h-100">
-                        <p class="small text-muted-soft mb-1">OPEN</p>
+                        <p class="small text-muted-soft mb-1" th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).OPEN.label}">처리 대기</p>
                         <p class="h4 mb-0" th:text="${openCount}">0</p>
                     </article>
                 </div>
                 <div class="col-6 col-lg-2">
                     <article class="surface-soft p-3 h-100">
-                        <p class="small text-muted-soft mb-1">RESOLVED</p>
+                        <p class="small text-muted-soft mb-1" th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).RESOLVED.label}">처리 완료</p>
                         <p class="h4 mb-0" th:text="${resolvedCount}">0</p>
                     </article>
                 </div>
                 <div class="col-6 col-lg-2">
                     <article class="surface-soft p-3 h-100">
-                        <p class="small text-muted-soft mb-1">REJECTED</p>
+                        <p class="small text-muted-soft mb-1" th:text="${T(kwh.PublicCookedFood.board.domain.BoardReportStatus).REJECTED.label}">반려</p>
                         <p class="h4 mb-0" th:text="${rejectedCount}">0</p>
                     </article>
                 </div>
                 <div class="col-6 col-lg-2">
                     <article class="surface-soft p-3 h-100">
-                        <p class="small text-muted-soft mb-1">ALL REPORTS</p>
+                        <p class="small text-muted-soft mb-1">전체 신고</p>
                         <p class="h4 mb-0" th:text="${allCount}">0</p>
                     </article>
                 </div>
                 <div class="col-6 col-lg-2">
                     <article class="surface-soft p-3 h-100">
-                        <p class="small text-muted-soft mb-1">HIDDEN POSTS</p>
+                        <p class="small text-muted-soft mb-1">숨김 게시글</p>
                         <p class="h4 mb-0" th:text="${hiddenByReportCount}">0</p>
                     </article>
                 </div>
@@ -111,15 +111,21 @@
                         <th scope="col" style="min-width: 180px;">시간</th>
                         <th scope="col" style="min-width: 160px;">사용자</th>
                         <th scope="col" style="min-width: 180px;">액션</th>
-                        <th scope="col" style="min-width: 260px;">상세</th>
+                        <th scope="col" style="min-width: 260px;">대상</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="item : ${recentActivities}">
                         <td th:text="${item.regTime != null ? #temporals.format(item.regTime, 'yyyy.MM.dd HH:mm:ss') : '-'}">2026.02.24 20:00:00</td>
-                        <td th:text="${item.user != null ? item.user.name : '-'}">사용자</td>
+                        <td>
+                            <a th:if="${item.accountId != null}"
+                               th:href="@{/u/{accountId}(accountId=${item.accountId})}"
+                               th:text="${item.accountName != null and !#strings.isEmpty(item.accountName) ? item.accountName : '사용자'}">사용자</a>
+                            <span th:if="${item.accountId == null}"
+                                  th:text="${item.accountName != null and !#strings.isEmpty(item.accountName) ? item.accountName : '-'}">-</span>
+                        </td>
                         <td><span class="badge text-bg-light" th:text="${item.action}">ACTION</span></td>
-                        <td th:text="${item.detail != null and !#strings.isEmpty(item.detail) ? item.detail : '-'}">detail</td>
+                        <td th:text="${item.detail != null and !#strings.isEmpty(item.detail) ? item.detail : '-'}">target</td>
                     </tr>
                     </tbody>
                 </table>

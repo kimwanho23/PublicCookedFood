@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class CommentCreateRequest {
 
-    private Long userId;
+    private Long accountId;
 
     private Long boardId;
 

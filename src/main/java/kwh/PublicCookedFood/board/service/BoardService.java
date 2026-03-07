@@ -9,16 +9,20 @@ import kwh.PublicCookedFood.board.dto.request.BoardSaveRequest;
 import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.CommentsRepository;
-import kwh.PublicCookedFood.user.domain.Users;
-import kwh.PublicCookedFood.user.repository.UserRepository;
+import kwh.PublicCookedFood.metrics.popular.BoardPopularSnapshotService;
+import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -35,6 +39,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BoardService {
 
     private static final Safelist BOARD_CONTENT_SAFELIST = Safelist.relaxed()
@@ -61,29 +66,64 @@ public class BoardService {
     private final ImageService imageService;
     private final BoardSectionService boardSectionService;
     private final BoardPolicyService boardPolicyService;
-    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final BoardPopularSnapshotService boardPopularSnapshotService;
 
-    public Page<Board> getBoardList(Pageable pageable, String sectionKey, Long authorId, Collection<Long> blockedUserIds) {
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
-        return boardRepository.findAllByStateWithUser(
+    public Page<Board> getBoardList(Pageable pageable, String sectionKey, Long authorId, Collection<Long> blockedAccountIds) {
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        return boardRepository.findAllByStateWithAccount(
                 SoftDeleteState.ACTIVE,
-                blockedUserFilter.excludeBlocked(),
-                blockedUserFilter.blockedUserIds(),
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds(),
                 authorId,
                 sectionKey,
                 pageable);
     }
 
+    public Page<Board> getBoardListOrderByViews(Pageable pageable,
+                                                String sectionKey,
+                                                Long authorId,
+                                                Collection<Long> blockedAccountIds) {
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        try {
+            return boardRepository.findAllByStateWithAccountOrderByViewStats(
+                    SoftDeleteState.ACTIVE,
+                    blockedAccountFilter.excludeBlocked(),
+                    blockedAccountFilter.blockedAccountIds(),
+                    authorId,
+                    sectionKey,
+                    pageable);
+        } catch (DataAccessException e) {
+            log.warn("Failed to query board list ordered by view stats; falling back to board.views sort. sectionKey={}, authorId={}",
+                    sectionKey, authorId, e);
+            return boardRepository.findAllByStateWithAccount(
+                    SoftDeleteState.ACTIVE,
+                    blockedAccountFilter.excludeBlocked(),
+                    blockedAccountFilter.blockedAccountIds(),
+                    authorId,
+                    sectionKey,
+                    withViewFallbackSort(pageable)
+            );
+        }
+    }
+
     public Page<Board> getFeaturedBoardList(Pageable pageable,
                                             String sectionKey,
                                             Long authorId,
-                                            Collection<Long> blockedUserIds) {
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
+                                            Collection<Long> blockedAccountIds) {
+        if (canServeFeaturedFromSnapshot(authorId, blockedAccountIds)) {
+            var snapshotPage = boardPopularSnapshotService.loadFeaturedRankingPage(pageable, sectionKey);
+            if (snapshotPage.isPresent()) {
+                return snapshotPage.get();
+            }
+        }
+
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
         long threshold = boardPolicyService.getFeaturedLikeThreshold();
-        return boardRepository.findFeaturedByStateWithUser(
+        return boardRepository.findFeaturedByStateWithAccount(
                 SoftDeleteState.ACTIVE,
-                blockedUserFilter.excludeBlocked(),
-                blockedUserFilter.blockedUserIds(),
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds(),
                 authorId,
                 threshold,
                 sectionKey,
@@ -91,7 +131,7 @@ public class BoardService {
     }
 
     public BoardDetailResponse getBoardDetail(Long id){
-        Board board = boardRepository.findByIdWithUserAndState(id, SoftDeleteState.ACTIVE)
+        Board board = boardRepository.findByIdWithAccountAndState(id, SoftDeleteState.ACTIVE)
                 .orElseThrow(() -> new NoSuchElementException("유효한 게시글을 찾을 수 없습니다."));
         return BoardDetailResponse.from(board);
     }
@@ -100,32 +140,63 @@ public class BoardService {
     public Page<Board> findByKeyword(String search,
                                      String sectionKey,
                                      Long authorId,
-                                     Collection<Long> blockedUserIds,
+                                     Collection<Long> blockedAccountIds,
                                      Pageable pageable) {
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
-        return boardRepository.findByTitleContainingAndStateWithUser(
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        return boardRepository.findByTitleContainingAndStateWithAccount(
                 search,
                 SoftDeleteState.ACTIVE,
-                blockedUserFilter.excludeBlocked(),
-                blockedUserFilter.blockedUserIds(),
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds(),
                 authorId,
                 sectionKey,
                 pageable);
     }
 
     @Transactional(readOnly = true)
+    public Page<Board> findByKeywordOrderByViews(String search,
+                                                 String sectionKey,
+                                                 Long authorId,
+                                                 Collection<Long> blockedAccountIds,
+                                                 Pageable pageable) {
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        try {
+            return boardRepository.findByTitleContainingAndStateWithAccountOrderByViewStats(
+                    search,
+                    SoftDeleteState.ACTIVE,
+                    blockedAccountFilter.excludeBlocked(),
+                    blockedAccountFilter.blockedAccountIds(),
+                    authorId,
+                    sectionKey,
+                    pageable);
+        } catch (DataAccessException e) {
+            log.warn("Failed to query board search ordered by view stats; falling back to board.views sort. sectionKey={}, authorId={}",
+                    sectionKey, authorId, e);
+            return boardRepository.findByTitleContainingAndStateWithAccount(
+                    search,
+                    SoftDeleteState.ACTIVE,
+                    blockedAccountFilter.excludeBlocked(),
+                    blockedAccountFilter.blockedAccountIds(),
+                    authorId,
+                    sectionKey,
+                    withViewFallbackSort(pageable)
+            );
+        }
+    }
+
+    @Transactional(readOnly = true)
     public Page<Board> findFeaturedByKeyword(String search,
                                              String sectionKey,
                                              Long authorId,
-                                             Collection<Long> blockedUserIds,
+                                             Collection<Long> blockedAccountIds,
                                              Pageable pageable) {
-        BlockedUserFilter blockedUserFilter = resolveBlockedUserFilter(blockedUserIds);
+        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
         long threshold = boardPolicyService.getFeaturedLikeThreshold();
-        return boardRepository.findFeaturedByTitleContainingAndStateWithUser(
+        return boardRepository.findFeaturedByTitleContainingAndStateWithAccount(
                 search,
                 SoftDeleteState.ACTIVE,
-                blockedUserFilter.excludeBlocked(),
-                blockedUserFilter.blockedUserIds(),
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds(),
                 authorId,
                 threshold,
                 sectionKey,
@@ -138,8 +209,8 @@ public class BoardService {
         String sanitizedTitle = Jsoup.clean(boardDto.getTitle() == null ? "" : boardDto.getTitle(), Safelist.none());
         String sanitizedContents = sanitizeBoardContents(rawContents);
         BoardSection section = boardSectionService.resolveSectionForWrite(boardDto.getSectionId());
-        Users user = userRepository.findById(boardDto.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
+        Account account = accountRepository.findById(boardDto.getAccountId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid account ID"));
         boolean hiddenByReport = false;
         if (boardDto.getId() != null) {
             hiddenByReport = boardRepository.findById(boardDto.getId())
@@ -152,7 +223,7 @@ public class BoardService {
                 .id(boardDto.getId())
                 .title(boardDto.getTitle())
                 .contents(boardDto.getContents())
-                .user(user)
+                .account(account)
                 .section(section)
                 .views(boardDto.getViews())
                 .likeCount(boardDto.getLikesCount())
@@ -209,21 +280,38 @@ public class BoardService {
         return boardPolicyService.getThumbnailDisplayMode();
     }
 
-    private BlockedUserFilter resolveBlockedUserFilter(Collection<Long> blockedUserIds) {
-        if (blockedUserIds == null || blockedUserIds.isEmpty()) {
-            return new BlockedUserFilter(false, Set.of(-1L));
+    private BlockedAccountFilter resolveBlockedAccountFilter(Collection<Long> blockedAccountIds) {
+        if (blockedAccountIds == null || blockedAccountIds.isEmpty()) {
+            return new BlockedAccountFilter(false, Set.of(-1L));
         }
 
-        Set<Long> normalized = blockedUserIds.stream()
+        Set<Long> normalized = blockedAccountIds.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         if (normalized.isEmpty()) {
-            return new BlockedUserFilter(false, Set.of(-1L));
+            return new BlockedAccountFilter(false, Set.of(-1L));
         }
-        return new BlockedUserFilter(true, normalized);
+        return new BlockedAccountFilter(true, normalized);
     }
 
-    private record BlockedUserFilter(boolean excludeBlocked, Collection<Long> blockedUserIds) {
+    private record BlockedAccountFilter(boolean excludeBlocked, Collection<Long> blockedAccountIds) {
+    }
+
+    private boolean canServeFeaturedFromSnapshot(Long authorId, Collection<Long> blockedAccountIds) {
+        if (authorId != null) {
+            return false;
+        }
+        return blockedAccountIds == null || blockedAccountIds.isEmpty();
+    }
+
+    private Pageable withViewFallbackSort(Pageable pageable) {
+        int pageNumber = pageable == null ? 0 : pageable.getPageNumber();
+        int pageSize = pageable == null ? 15 : pageable.getPageSize();
+        Sort fallbackSort = Sort.by(
+                Sort.Order.desc("views"),
+                Sort.Order.desc("regTime")
+        );
+        return PageRequest.of(pageNumber, pageSize, fallbackSort);
     }
 
     private String sanitizeBoardContents(String rawContents) {

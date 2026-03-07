@@ -15,7 +15,9 @@
         </section>
 
         <section class="section-wrap p-4">
-            <form th:action="@{/boards/{id}(id=${boardDto.getId()})}" th:object="${boardDto}" method="post" th:attr="data-board-id=${boardDto.getId()}">
+            <form th:action="@{/boards/{id}(id=${boardDto.getId()})}" th:object="${boardDto}" method="post"
+                  th:attr="data-board-id=${boardDto.getId()},data-board-draft-storage-key=|boardDraft:edit:${boardDto.getId()}|"
+                  data-board-restore-confirm-message="임시 저장된 수정 내용이 있습니다. 복원할까요?">
                 <input type="hidden" name="_method" value="patch">
 
                 <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
@@ -45,7 +47,7 @@
                               aria-label="게시글 내용"
                               spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
                     <div class="field-error" th:errors="*{contents}"></div>
-                    <div class="form-text">멘션은 <code>@닉네임</code> 형태로 입력하면 알림이 전달됩니다.</div>
+                    <div class="form-text">멘션은 <code>@닉네임</code> 형태로 입력하면 알림이 전달됩니다. 닉네임은 사용자마다 고유합니다.</div>
                 </div>
 
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -63,20 +65,7 @@
     </div>
 
     <script th:src="@{/js/board-editor.js}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (!window.PubCookBoardEditor || typeof window.PubCookBoardEditor.init !== 'function') {
-                return;
-            }
-            var formElement = document.querySelector('form[data-board-id]');
-            var boardId = formElement ? formElement.getAttribute('data-board-id') : '';
-            window.PubCookBoardEditor.init({
-                draftStorageKey: boardId ? 'boardDraft:edit:' + boardId : 'boardDraft:edit:unknown',
-                formSelector: 'form[data-board-id]',
-                restoreConfirmMessage: '임시 저장된 수정 내용이 있습니다. 복원할까요?'
-            });
-        });
-    </script>
+    <script th:src="@{/js/board-editor-page.js}"></script>
 </main>
 
 <footer th:replace="~{fragments/footer :: siteFooter}"></footer>

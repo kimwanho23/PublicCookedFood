@@ -1,11 +1,9 @@
 package kwh.PublicCookedFood.board.facade;
 
-import kwh.PublicCookedFood.board.domain.BoardPolicy;
 import kwh.PublicCookedFood.board.domain.BoardSection;
 import kwh.PublicCookedFood.board.domain.BoardThumbnailDisplayMode;
 import kwh.PublicCookedFood.board.dto.response.BoardPolicyResponse;
 import kwh.PublicCookedFood.board.dto.response.BoardSectionResponse;
-import kwh.PublicCookedFood.board.service.BoardPolicyService;
 import kwh.PublicCookedFood.board.service.BoardSectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +15,7 @@ import java.util.List;
 public class BoardAdminApiFacade {
 
     private final BoardSectionService boardSectionService;
-    private final BoardPolicyService boardPolicyService;
+    private final BoardAdminPolicyFacade boardAdminPolicyFacade;
 
     public List<BoardSectionResponse> getSections() {
         return boardSectionService.getAllSections().stream()
@@ -44,17 +42,31 @@ public class BoardAdminApiFacade {
         boardSectionService.deleteSection(sectionId);
     }
 
-    public BoardPolicyResponse getBoardPolicy() {
-        return BoardPolicyResponse.from(boardPolicyService.getPolicy());
+    public List<BoardSectionResponse> reorderSections(List<Long> sectionIds) {
+        return boardSectionService.reorderSections(sectionIds).stream()
+                .map(BoardSectionResponse::from)
+                .toList();
     }
 
-    public BoardPolicyResponse updateFeaturedThreshold(Integer featuredLikeThreshold) {
-        BoardPolicy boardPolicy = boardPolicyService.updateFeaturedLikeThreshold(featuredLikeThreshold);
-        return BoardPolicyResponse.from(boardPolicy);
+    public BoardPolicyResponse updatePolicy(Integer featuredLikeThreshold,
+                                            BoardThumbnailDisplayMode thumbnailDisplayMode,
+                                            Long actorAccountId) {
+        boardAdminPolicyFacade.updateBoardPolicy(featuredLikeThreshold, thumbnailDisplayMode, actorAccountId);
+        return loadPolicy();
     }
 
-    public BoardPolicyResponse updateThumbnailDisplayMode(BoardThumbnailDisplayMode thumbnailDisplayMode) {
-        BoardPolicy boardPolicy = boardPolicyService.updateThumbnailDisplayMode(thumbnailDisplayMode);
-        return BoardPolicyResponse.from(boardPolicy);
+    public BoardPolicyResponse updateFeaturedThreshold(Integer featuredLikeThreshold, Long actorAccountId) {
+        boardAdminPolicyFacade.updateBoardPolicy(featuredLikeThreshold, null, actorAccountId);
+        return loadPolicy();
+    }
+
+    public BoardPolicyResponse updateThumbnailDisplayMode(BoardThumbnailDisplayMode thumbnailDisplayMode, Long actorAccountId) {
+        boardAdminPolicyFacade.updateBoardPolicy(null, thumbnailDisplayMode, actorAccountId);
+        return loadPolicy();
+    }
+
+    private BoardPolicyResponse loadPolicy() {
+        BoardAdminFacade.PolicyViewData data = boardAdminPolicyFacade.loadPolicyData();
+        return data.policy();
     }
 }
