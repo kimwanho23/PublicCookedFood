@@ -8,12 +8,12 @@ SET @bookmark_table_exists := (
       AND table_name = 'bookmark'
 );
 
-SET @bookmark_has_user_id := (
+SET @bookmark_has_account_id := (
     SELECT COUNT(*)
     FROM information_schema.columns
     WHERE table_schema = DATABASE()
       AND table_name = 'bookmark'
-      AND column_name = 'user_id'
+      AND column_name = 'account_id'
 );
 
 SET @bookmark_has_email := (
@@ -50,11 +50,11 @@ SET @bookmark_has_recipe_id := (
       AND column_name = 'recipe_ID'
 );
 
-SET @user_table_exists := (
+SET @account_table_exists := (
     SELECT COUNT(*)
     FROM information_schema.tables
     WHERE table_schema = DATABASE()
-      AND table_name = 'user'
+      AND table_name = 'accounts'
 );
 
 SET @recipe_info_table_exists := (
@@ -88,20 +88,20 @@ SET @likes_table_name := (
     LIMIT 1
 );
 
-SET @board_has_user_id := (
+SET @board_has_account_id := (
     SELECT COUNT(*)
     FROM information_schema.columns
     WHERE table_schema = DATABASE()
       AND table_name = @board_table_name
-      AND column_name = 'user_id'
+      AND column_name = 'account_id'
 );
 
-SET @comments_has_user_id := (
+SET @comments_has_account_id := (
     SELECT COUNT(*)
     FROM information_schema.columns
     WHERE table_schema = DATABASE()
       AND table_name = @comments_table_name
-      AND column_name = 'user_id'
+      AND column_name = 'account_id'
 );
 
 SET @comments_has_post_id := (
@@ -120,12 +120,12 @@ SET @comments_has_parent_id := (
       AND column_name = 'parent_id'
 );
 
-SET @likes_has_user_id := (
+SET @likes_has_account_id := (
     SELECT COUNT(*)
     FROM information_schema.columns
     WHERE table_schema = DATABASE()
       AND table_name = @likes_table_name
-      AND column_name = 'user_id'
+      AND column_name = 'account_id'
 );
 
 SET @likes_has_post_id := (
@@ -185,20 +185,20 @@ SET @board_image_table_exists := (
       AND LOWER(table_name) = 'board_image'
 );
 
--- 1) Legacy backfill: email -> user_id
+-- 1) Legacy backfill: email -> account_id
 SET @backfill_sql := IF(
     @bookmark_table_exists > 0
-    AND @bookmark_has_user_id > 0
+    AND @bookmark_has_account_id > 0
     AND @bookmark_has_email > 0
-    AND @user_table_exists > 0,
-    'UPDATE bookmark b JOIN `user` u ON u.email = b.email SET b.user_id = u.id WHERE b.user_id IS NULL AND b.email IS NOT NULL',
+    AND @account_table_exists > 0,
+    'UPDATE bookmark b JOIN `accounts` a ON a.email = b.email SET b.account_id = a.id WHERE b.account_id IS NULL AND b.email IS NOT NULL',
     'SELECT 1'
 );
 PREPARE stmt_backfill FROM @backfill_sql;
 EXECUTE stmt_backfill;
 DEALLOCATE PREPARE stmt_backfill;
 
--- 1-1) Legacy email column was NOT NULL in old schema; make it nullable so inserts(user_id, recipe_ID) work.
+-- 1-1) Legacy email column was NOT NULL in old schema; make it nullable so inserts(account_id, recipe_ID) work.
 SET @make_email_nullable_sql := IF(
     @bookmark_table_exists > 0
     AND @bookmark_has_email > 0
@@ -211,22 +211,22 @@ PREPARE stmt_make_email_nullable FROM @make_email_nullable_sql;
 EXECUTE stmt_make_email_nullable;
 DEALLOCATE PREPARE stmt_make_email_nullable;
 
--- 2) Remove rows still missing user_id
+-- 2) Remove rows still missing account_id
 SET @delete_null_user_sql := IF(
-    @bookmark_table_exists > 0 AND @bookmark_has_user_id > 0,
-    'DELETE FROM bookmark WHERE user_id IS NULL',
+    @bookmark_table_exists > 0 AND @bookmark_has_account_id > 0,
+    'DELETE FROM bookmark WHERE account_id IS NULL',
     'SELECT 1'
 );
 PREPARE stmt_delete_null_user FROM @delete_null_user_sql;
 EXECUTE stmt_delete_null_user;
 DEALLOCATE PREPARE stmt_delete_null_user;
 
--- 3) Remove rows referencing deleted/non-existing users
+-- 3) Remove rows referencing deleted/non-existing accounts
 SET @delete_orphan_user_sql := IF(
     @bookmark_table_exists > 0
-    AND @bookmark_has_user_id > 0
-    AND @user_table_exists > 0,
-    'DELETE b FROM bookmark b LEFT JOIN `user` u ON b.user_id = u.id WHERE u.id IS NULL',
+    AND @bookmark_has_account_id > 0
+    AND @account_table_exists > 0,
+    'DELETE b FROM bookmark b LEFT JOIN `accounts` a ON b.account_id = a.id WHERE a.id IS NULL',
     'SELECT 1'
 );
 PREPARE stmt_delete_orphan_user FROM @delete_orphan_user_sql;
@@ -245,36 +245,36 @@ PREPARE stmt_delete_orphan_recipe FROM @delete_orphan_recipe_sql;
 EXECUTE stmt_delete_orphan_recipe;
 DEALLOCATE PREPARE stmt_delete_orphan_recipe;
 
--- 5) Remove duplicated rows before unique(user_id, recipe_ID) constraint checks
+-- 5) Remove duplicated rows before unique(account_id, recipe_ID) constraint checks
 SET @delete_duplicate_sql := IF(
     @bookmark_table_exists > 0
-    AND @bookmark_has_user_id > 0
+    AND @bookmark_has_account_id > 0
     AND @bookmark_has_recipe_id > 0,
-    'DELETE b1 FROM bookmark b1 JOIN bookmark b2 ON b1.user_id = b2.user_id AND b1.recipe_ID = b2.recipe_ID AND b1.id > b2.id',
+    'DELETE b1 FROM bookmark b1 JOIN bookmark b2 ON b1.account_id = b2.account_id AND b1.recipe_ID = b2.recipe_ID AND b1.id > b2.id',
     'SELECT 1'
 );
 PREPARE stmt_delete_duplicate FROM @delete_duplicate_sql;
 EXECUTE stmt_delete_duplicate;
 DEALLOCATE PREPARE stmt_delete_duplicate;
 
--- 6) Cleanup board rows pointing to missing users
+-- 6) Cleanup board rows pointing to missing accounts
 SET @delete_orphan_board_user_sql := IF(
     @board_table_name IS NOT NULL
-    AND @board_has_user_id > 0
-    AND @user_table_exists > 0,
-    CONCAT('DELETE b FROM `', @board_table_name, '` b LEFT JOIN `user` u ON b.user_id = u.id WHERE u.id IS NULL'),
+    AND @board_has_account_id > 0
+    AND @account_table_exists > 0,
+    CONCAT('DELETE b FROM `', @board_table_name, '` b LEFT JOIN `accounts` a ON b.account_id = a.id WHERE a.id IS NULL'),
     'SELECT 1'
 );
 PREPARE stmt_delete_orphan_board_user FROM @delete_orphan_board_user_sql;
 EXECUTE stmt_delete_orphan_board_user;
 DEALLOCATE PREPARE stmt_delete_orphan_board_user;
 
--- 7) Cleanup comments rows pointing to missing users/boards/parents
+-- 7) Cleanup comments rows pointing to missing accounts/boards/parents
 SET @delete_orphan_comments_user_sql := IF(
     @comments_table_name IS NOT NULL
-    AND @comments_has_user_id > 0
-    AND @user_table_exists > 0,
-    CONCAT('DELETE c FROM `', @comments_table_name, '` c LEFT JOIN `user` u ON c.user_id = u.id WHERE u.id IS NULL'),
+    AND @comments_has_account_id > 0
+    AND @account_table_exists > 0,
+    CONCAT('DELETE c FROM `', @comments_table_name, '` c LEFT JOIN `accounts` a ON c.account_id = a.id WHERE a.id IS NULL'),
     'SELECT 1'
 );
 PREPARE stmt_delete_orphan_comments_user FROM @delete_orphan_comments_user_sql;
@@ -302,12 +302,12 @@ PREPARE stmt_delete_orphan_comments_parent FROM @delete_orphan_comments_parent_s
 EXECUTE stmt_delete_orphan_comments_parent;
 DEALLOCATE PREPARE stmt_delete_orphan_comments_parent;
 
--- 8) Cleanup likes rows pointing to missing users/boards
+-- 8) Cleanup likes rows pointing to missing accounts/boards
 SET @delete_orphan_likes_user_sql := IF(
     @likes_table_name IS NOT NULL
-    AND @likes_has_user_id > 0
-    AND @user_table_exists > 0,
-    CONCAT('DELETE l FROM `', @likes_table_name, '` l LEFT JOIN `user` u ON l.user_id = u.id WHERE u.id IS NULL'),
+    AND @likes_has_account_id > 0
+    AND @account_table_exists > 0,
+    CONCAT('DELETE l FROM `', @likes_table_name, '` l LEFT JOIN `accounts` a ON l.account_id = a.id WHERE a.id IS NULL'),
     'SELECT 1'
 );
 PREPARE stmt_delete_orphan_likes_user FROM @delete_orphan_likes_user_sql;

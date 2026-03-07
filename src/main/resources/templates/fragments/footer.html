@@ -15,12 +15,12 @@
             <div class="d-flex gap-3 small">
                 <a th:href="@{/recipes}">레시피</a>
                 <a th:href="@{/boards}">게시판</a>
-                <a sec:authorize="isAuthenticated()" th:href="@{/u/{userId}(userId=${#authentication.principal.user.id})}">내 프로필</a>
+                <a sec:authorize="isAuthenticated()" th:href="@{/u/{accountId}(accountId=${#authentication.principal.account.id})}">내 프로필</a>
                 <a sec:authorize="isAuthenticated()" th:href="@{/u/profile}">프로필 수정</a>
                 <a sec:authorize="isAuthenticated()" th:href="@{/u/settings}">환경설정</a>
                 <a sec:authorize="!isAuthenticated()" th:href="@{/u/login}">로그인</a>
             </div>
-            <p class="mb-0 small text-muted-soft">© 2026 PubCook</p>
+            <p class="mb-0 small text-muted-soft">&copy; 2026 PubCook</p>
         </div>
     </div>
 </footer>

@@ -1,8 +1,8 @@
 package kwh.PublicCookedFood.config.oauth2;
 
-import kwh.PublicCookedFood.user.domain.Role;
-import kwh.PublicCookedFood.user.domain.Gender;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Role;
+import kwh.PublicCookedFood.account.domain.Gender;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -40,10 +40,10 @@ public class OAuthAttributes {
         return Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
     }
 
-    public static OAuthAttributes of(String registrationId, String userNameAttributeName, Map<String, Object> attributes) {
+    public static OAuthAttributes of(String registrationId, String principalNameAttributeName, Map<String, Object> attributes) {
         String provider = registrationId == null ? "google" : registrationId.toLowerCase(Locale.ROOT);
         Map<String, Object> safeAttributes = attributes == null ? Map.of() : attributes;
-        String nameAttributeKey = userNameAttributeName;
+        String nameAttributeKey = principalNameAttributeName;
         OAuthProfile profile;
 
         switch (provider) {
@@ -135,10 +135,13 @@ public class OAuthAttributes {
         return Collections.unmodifiableMap(new LinkedHashMap<>(source));
     }
 
+    public Account toEntity() {
+        return toEntity(name);
+    }
 
-    public Users toEntity() {
-        return Users.builder()
-                .name(name)
+    public Account toEntity(String resolvedName) {
+        return Account.builder()
+                .name(resolvedName)
                 .email(email)
                 .gender(Gender.OTHER)
                 .notificationEnabled(true)
