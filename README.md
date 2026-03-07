@@ -13,18 +13,28 @@ MySQL
 ## 환경 변수
 - `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
 - `MAIL_USERNAME`, `MAIL_PASSWORD`
+- `SPRING_PROFILES_ACTIVE`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`
 - `GOOGLE_REDIRECT_URI`, `NAVER_REDIRECT_URI`
-- `RECIPE_API_KEY`
 - `FILE_DIR`
 
 ## 로컬 실행 (.env)
-1. 루트에서 `.env.example`을 복사해 `.env`를 만듭니다.
-2. `.env`의 `DB_PASSWORD` 등 값을 실제 값으로 채웁니다.
+1. 루트에 `.env` 파일을 직접 생성합니다.
+2. 위 환경 변수 목록 중 필요한 값을 `.env`에 채우고, 로컬 실행은 `SPRING_PROFILES_ACTIVE=dev`로 맞춥니다.
 3. 앱 실행: `./gradlew bootRun`
 
-=======
+## WSL 실행 원칙
+- 프로젝트는 가능하면 `/mnt/c/...`가 아니라 WSL Linux 파일시스템 경로에서 실행하는 것이 맞습니다.
+- `/mnt/c/...` 경로에서는 Gradle 캐시/락 파일 때문에 `Input/output error`나 파일 잠금 문제가 날 수 있습니다.
+- 권장 경로 예시:
+  - `~/workspace/PublicCookedFood`
+- 현재 경로를 바로 옮기기 어렵다면 `./gradlew-local`은 임시 우회용으로만 사용합니다.
+
+## DB/Migration 원칙
+- 애플리케이션은 `.env`의 `DB_URL`이 가리키는 단일 DB를 기준으로 실행합니다.
+- 이 저장소에는 추가 검증용 DB를 생성하는 보조 스크립트를 유지하지 않습니다.
+- 스키마 변경은 `src/main/resources/db/migration` 아래 migration으로만 관리합니다.
 # ERD DIAGRAM
 ![food data](https://github.com/user-attachments/assets/f49d8d6e-270d-4446-80ad-7641c599b0a6)
 
