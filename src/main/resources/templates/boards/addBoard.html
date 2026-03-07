@@ -21,6 +21,7 @@
                 <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
                     <p class="mb-1" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>
                 </div>
+                <div th:if="${errorMessage != null}" class="alert alert-danger py-2" th:text="${errorMessage}">오류 메시지</div>
 
                 <div class="mb-3">
                     <label for="title" class="form-label">제목</label>

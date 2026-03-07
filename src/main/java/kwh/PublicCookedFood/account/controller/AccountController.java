@@ -11,6 +11,7 @@ import kwh.PublicCookedFood.account.dto.request.AccountSaveDto;
 import kwh.PublicCookedFood.account.dto.request.AccountUpdateDto;
 import kwh.PublicCookedFood.account.facade.AccountAuthFacade;
 import kwh.PublicCookedFood.account.facade.AccountProfileFacade;
+import kwh.PublicCookedFood.storage.StorageException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -119,7 +120,13 @@ public class AccountController {
             return "/account/profile";
         }
 
-        AccountProfileFacade.ProfileUpdateResult updateResult = accountProfileFacade.updateProfile(account, accountUpdateDto);
+        AccountProfileFacade.ProfileUpdateResult updateResult;
+        try {
+            updateResult = accountProfileFacade.updateProfile(account, accountUpdateDto);
+        } catch (StorageException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return "/account/profile";
+        }
         if (!updateResult.success()) {
             model.addAttribute("errorMessage", updateResult.errorMessage());
             return "/account/profile";
