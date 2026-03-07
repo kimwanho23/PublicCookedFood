@@ -4,12 +4,17 @@ import kwh.PublicCookedFood.food.entity.Recipe_INFO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface Recipe_INFO_Repository extends JpaRepository<Recipe_INFO, Long>, JpaSpecificationExecutor<Recipe_INFO>, Recipe_INFO_RepositoryCustom  {
     Optional<Recipe_INFO> findByRecipeID(Long RecipeID);
+
+    @Query("SELECT r FROM Recipe_INFO r WHERE r.recipeID IN :recipeIds")
+    List<Recipe_INFO> findAllByRecipeIDIn(@Param("recipeIds") Collection<Long> recipeIds);
 
     @Query("SELECT DISTINCT r.tyNM FROM Recipe_INFO r")
     List<String> findDistinctTyNM(); //음식별 카테고리

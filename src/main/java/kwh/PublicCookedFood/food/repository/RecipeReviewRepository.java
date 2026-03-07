@@ -2,7 +2,7 @@ package kwh.PublicCookedFood.food.repository;
 
 import kwh.PublicCookedFood.food.entity.RecipeReview;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +14,7 @@ import java.util.Optional;
 
 public interface RecipeReviewRepository extends JpaRepository<RecipeReview, Long> {
 
-    Optional<RecipeReview> findByRecipeAndUser(Recipe_INFO recipe, Users user);
+    Optional<RecipeReview> findByRecipeAndAccount(Recipe_INFO recipe, Account account);
 
     List<RecipeReview> findTop20ByRecipeOrderByRegTimeDesc(Recipe_INFO recipe);
 
@@ -30,11 +30,25 @@ public interface RecipeReviewRepository extends JpaRepository<RecipeReview, Long
             "ORDER BY COUNT(r.id) DESC, AVG(r.rating) DESC, MAX(r.regTime) DESC")
     List<RecipeReviewRankingProjection> findTopReviewRankingsSince(@Param("since") LocalDateTime since, Pageable pageable);
 
+    @Query("SELECT r.recipe.recipeID AS recipeId, MAX(r.regTime) AS latestReviewTime " +
+            "FROM RecipeReview r " +
+            "GROUP BY r.recipe.recipeID")
+    List<RecipeReviewRecencyProjection> findLatestReviewTimeByRecipeId();
+
+    @Query("SELECT MAX(r.regTime) FROM RecipeReview r WHERE r.recipe.recipeID = :recipeId")
+    Optional<LocalDateTime> findLatestReviewTimeByRecipeId(@Param("recipeId") Long recipeId);
+
     interface RecipeReviewRankingProjection {
         Recipe_INFO getRecipe();
 
         Long getReviewCount();
 
         Double getAvgRating();
+    }
+
+    interface RecipeReviewRecencyProjection {
+        Long getRecipeId();
+
+        LocalDateTime getLatestReviewTime();
     }
 }

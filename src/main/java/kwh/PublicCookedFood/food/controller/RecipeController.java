@@ -1,9 +1,10 @@
 package kwh.PublicCookedFood.food.controller;
 
 import io.swagger.v3.oas.annotations.Hidden;
-import kwh.PublicCookedFood.config.oauth2.LoginUser;
+import jakarta.servlet.http.HttpServletRequest;
+import kwh.PublicCookedFood.config.oauth2.LoginAccount;
 import kwh.PublicCookedFood.food.facade.RecipeDetailFacade;
-import kwh.PublicCookedFood.user.domain.Users;
+import kwh.PublicCookedFood.account.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.support.RequestContextUtils;
+
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -23,14 +27,19 @@ public class RecipeController {
     private final RecipeDetailFacade recipeDetailFacade;
 
     @GetMapping("/{id}")
-    public String foodDetail(@PathVariable Long id, @LoginUser Users user, Model model){
-        RecipeDetailFacade.RecipeDetailViewData viewData = recipeDetailFacade.loadRecipeDetail(id, user);
+    public String foodDetail(@PathVariable Long id,
+                             @LoginAccount Account account,
+                             Model model,
+                             HttpServletRequest request){
+        boolean increaseViews = shouldIncreaseViews(request);
+        RecipeDetailFacade.RecipeDetailViewData viewData = recipeDetailFacade.loadRecipeDetail(id, account, increaseViews);
 
         model.addAttribute("isBookmarked", viewData.bookmarked());
         model.addAttribute("categories", viewData.categories());
         model.addAttribute("infoResponseDto", viewData.infoResponseDto());
         model.addAttribute("irdntResponseDto", viewData.irdntResponseDto());
         model.addAttribute("crseResponseDto", viewData.crseResponseDto());
+        model.addAttribute("recipeViewCount", viewData.viewCount());
         model.addAttribute("reviewSummary", viewData.reviewSummary());
         model.addAttribute("reviews", viewData.reviews());
         model.addAttribute("myReview", viewData.myReview());
@@ -39,21 +48,31 @@ public class RecipeController {
 
     @PostMapping("/{id}/reviews")
     public String upsertReview(@PathVariable Long id,
-                               @LoginUser Users user,
+                               @LoginAccount Account account,
                                @RequestParam Integer rating,
                                @RequestParam(required = false) String contents,
                                RedirectAttributes redirectAttributes) {
-        if (user == null) {
+        if (account == null) {
             return "redirect:/u/login";
         }
 
         RecipeDetailFacade.ReviewUpsertResult result =
-                recipeDetailFacade.upsertReview(id, user.getId(), rating, contents);
+                recipeDetailFacade.upsertReview(id, account.getId(), rating, contents);
         if (result.success()) {
             redirectAttributes.addFlashAttribute("reviewMessage", result.message());
         } else {
             redirectAttributes.addFlashAttribute("reviewErrorMessage", result.message());
         }
+        redirectAttributes.addFlashAttribute("skipViewIncrease", true);
         return "redirect:/recipes/" + id;
+    }
+
+    private boolean shouldIncreaseViews(HttpServletRequest request) {
+        if (request == null) {
+            return true;
+        }
+        Map<String, ?> flashMap = RequestContextUtils.getInputFlashMap(request);
+        Object skipViewIncrease = flashMap == null ? null : flashMap.get("skipViewIncrease");
+        return !Boolean.TRUE.equals(skipViewIncrease);
     }
 }
