@@ -33,8 +33,9 @@ public class BoardDetailFacade {
 
     public OperationResult addComment(Account actor,
                                       Long boardId,
-                                      CommentCreateRequest commentDto) {
-        return boardInteractionFacade.addComment(actor, boardId, commentDto);
+                                      CommentCreateRequest commentDto,
+                                      int commentSize) {
+        return boardInteractionFacade.addComment(actor, boardId, commentDto, commentSize);
     }
 
     public void addScrap(Long boardId, Long actorAccountId) {
@@ -80,14 +81,19 @@ public class BoardDetailFacade {
     }
 
     public record OperationResult(boolean success,
-                                  String message) {
+                                  String message,
+                                  String redirectPath) {
 
         public static OperationResult success(String message) {
-            return new OperationResult(true, message);
+            return new OperationResult(true, message, null);
+        }
+
+        public static OperationResult success(String message, String redirectPath) {
+            return new OperationResult(true, message, redirectPath);
         }
 
         public static OperationResult failure(String message) {
-            return new OperationResult(false, message);
+            return new OperationResult(false, message, null);
         }
     }
 }

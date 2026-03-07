@@ -8,6 +8,7 @@ import kwh.PublicCookedFood.board.policy.BoardAuthorizationPolicy;
 import kwh.PublicCookedFood.board.service.BoardReportService;
 import kwh.PublicCookedFood.board.service.BoardScrapService;
 import kwh.PublicCookedFood.board.service.BoardService;
+import kwh.PublicCookedFood.board.service.CommentNavigationService;
 import kwh.PublicCookedFood.board.service.CommentsService;
 import kwh.PublicCookedFood.board.service.LikeService;
 import kwh.PublicCookedFood.common.error.AppException;
@@ -31,6 +32,7 @@ public class BoardInteractionFacade {
     private final LikeService likeService;
     private final BoardAuditPublisher boardAuditPublisher;
     private final BoardAuthorizationPolicy boardAuthorizationPolicy;
+    private final CommentNavigationService commentNavigationService;
 
     @Transactional
     public BoardDetailFacade.OperationResult deleteComment(Account actor, Long boardId, Long commentId) {
@@ -48,14 +50,21 @@ public class BoardInteractionFacade {
     @Transactional
     public BoardDetailFacade.OperationResult addComment(Account actor,
                                                         Long boardId,
-                                                        CommentCreateRequest commentDto) {
+                                                        CommentCreateRequest commentDto,
+                                                        int commentSize) {
         try {
             commentDto.setAccountId(actor.getId());
             commentDto.setBoardId(boardId);
             CommentResponse savedComment = commentsService.createComment(commentDto);
             boardService.updateCommentCounts(boardId);
             boardAuditPublisher.boardCommentCreate(actor.getId(), boardId, savedComment.getId(), commentDto.getParentId());
-            return BoardDetailFacade.OperationResult.success(null);
+            String redirectPath = commentNavigationService.buildCommentTargetPath(
+                    boardId,
+                    savedComment.getId(),
+                    actor.getId(),
+                    commentSize
+            );
+            return BoardDetailFacade.OperationResult.success(null, redirectPath);
         } catch (AppException | IllegalArgumentException e) {
             return failOperation(
                     e,

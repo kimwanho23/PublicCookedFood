@@ -36,7 +36,7 @@ class AccountBlockControllerUnitTest {
         );
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
-        String viewName = accountBlockController.block(account, 2L, request, redirectAttributes);
+        String viewName = accountBlockController.block(account, 2L, null, request, redirectAttributes);
 
         assertThat(viewName).isEqualTo("redirect:/boards/10?page=2");
         assertThat(redirectAttributes.getFlashAttributes().get("blockMessage"))
@@ -57,7 +57,7 @@ class AccountBlockControllerUnitTest {
         );
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
-        String viewName = accountBlockController.unblock(account, 2L, request, redirectAttributes);
+        String viewName = accountBlockController.unblock(account, 2L, null, request, redirectAttributes);
 
         assertThat(viewName).isEqualTo("redirect:/boards");
         assertThat(redirectAttributes.getFlashAttributes().get("blockMessage"))

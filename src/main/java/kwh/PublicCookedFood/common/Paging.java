@@ -13,15 +13,22 @@ import java.util.stream.Collectors;
 public class Paging
 {
     public static <T> void addPagingAttributes(Model model, Page<T> pageList, Pageable pageable) {
-        int totalPages = pageList.getTotalPages();
-        int currentPage = pageable.getPageNumber();
+        int totalPages = pageList == null ? 0 : pageList.getTotalPages();
+        int requestedPage = pageable == null ? 0 : pageable.getPageNumber();
+        int currentPage = 0;
+        int startPage = 0;
+        int endPage = 0;
+        boolean hasPreviousGroup = false;
+        boolean hasNextGroup = false;
 
-        int currentGroup = currentPage / 10;
-        int startPage = currentGroup * 10;
-        int endPage = Math.min(startPage + 9, totalPages - 1);
-
-        boolean hasPreviousGroup = startPage > 0;
-        boolean hasNextGroup = endPage < totalPages - 1;
+        if (totalPages > 0) {
+            currentPage = Math.max(0, Math.min(requestedPage, totalPages - 1));
+            int currentGroup = currentPage / 10;
+            startPage = currentGroup * 10;
+            endPage = Math.min(startPage + 9, totalPages - 1);
+            hasPreviousGroup = startPage > 0;
+            hasNextGroup = endPage < totalPages - 1;
+        }
 
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);

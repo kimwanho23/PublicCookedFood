@@ -45,7 +45,7 @@ class BoardDetailControllerUnitTest {
         Account account = loginAccount(100L);
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
-        String viewName = boardDetailController.likes(10L, account, redirectAttributes);
+        String viewName = boardDetailController.likes(10L, account, null, redirectAttributes);
 
         verify(boardDetailFacade).toggleLike(10L, 100L);
         assertThat(viewName).isEqualTo("redirect:/boards/10");
@@ -63,7 +63,7 @@ class BoardDetailControllerUnitTest {
         when(boardDetailFacade.loadBoardDetail(eq(10L), isNull(), eq(pageable), eq(true)))
                 .thenReturn(viewData);
 
-        String viewName = boardDetailController.boardDetail(null, 10L, model, pageable, request);
+        String viewName = boardDetailController.boardDetail(null, 10L, model, 0, 50, request);
 
         verify(boardDetailFacade).loadBoardDetail(10L, null, pageable, true);
         assertThat(viewName).isEqualTo("/boards/boardDetail");
@@ -82,7 +82,24 @@ class BoardDetailControllerUnitTest {
         when(boardDetailFacade.loadBoardDetail(eq(10L), isNull(), eq(pageable), eq(false)))
                 .thenReturn(viewData);
 
-        String viewName = boardDetailController.boardDetail(null, 10L, model, pageable, request);
+        String viewName = boardDetailController.boardDetail(null, 10L, model, 0, 50, request);
+
+        verify(boardDetailFacade).loadBoardDetail(10L, null, pageable, false);
+        assertThat(viewName).isEqualTo("/boards/boardDetail");
+    }
+
+    @Test
+    void boardDetail_skipsViewIncreaseWhenRequestParamExists() {
+        Pageable pageable = PageRequest.of(0, 50);
+        Model model = new ExtendedModelMap();
+        BoardDetailFacade.BoardDetailViewData viewData = detailViewData(pageable);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addParameter("skipViewIncrease", "true");
+
+        when(boardDetailFacade.loadBoardDetail(eq(10L), isNull(), eq(pageable), eq(false)))
+                .thenReturn(viewData);
+
+        String viewName = boardDetailController.boardDetail(null, 10L, model, 0, 50, request);
 
         verify(boardDetailFacade).loadBoardDetail(10L, null, pageable, false);
         assertThat(viewName).isEqualTo("/boards/boardDetail");
@@ -96,14 +113,12 @@ class BoardDetailControllerUnitTest {
         bindingResult.rejectValue("contents", "NotBlank", "댓글 내용을 확인해주세요.");
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
-        String viewName = boardDetailController.addComment(account, 10L, request, bindingResult, redirectAttributes);
+        String viewName = boardDetailController.addComment(account, 10L, 2, 30, request, bindingResult, redirectAttributes);
 
-        verify(boardDetailFacade, never()).addComment(eq(account), eq(10L), eq(request));
-        assertThat(viewName).isEqualTo("redirect:/boards/10");
+        verify(boardDetailFacade, never()).addComment(eq(account), eq(10L), eq(request), eq(30));
+        assertThat(viewName).isEqualTo("redirect:/boards/10?commentPage=2&commentSize=30#board-comments");
         assertThat(redirectAttributes.getFlashAttributes().get("commentError"))
                 .isEqualTo("댓글 내용을 확인해주세요.");
-        assertThat(redirectAttributes.getFlashAttributes().get("skipViewIncrease"))
-                .isEqualTo(Boolean.TRUE);
     }
 
     @Test
