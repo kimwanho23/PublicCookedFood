@@ -5,7 +5,7 @@
     <title>Delete Comment Modal</title>
 </head>
 <body>
-<div th:fragment="deleteCommentModal(actionUrl, commentId)">
+<div th:fragment="deleteCommentModal(actionUrl, commentId, commentPage, commentSize)">
     <div class="modal fade"
          th:id="'deleteCommentModal' + ${commentId}"
          tabindex="-1"
@@ -21,6 +21,8 @@
                 <div class="modal-footer">
                     <form th:action="${actionUrl}" method="post" class="d-flex gap-2 ms-auto">
                         <input type="hidden" name="_method" value="patch">
+                        <input type="hidden" name="commentPage" th:value="${commentPage}">
+                        <input type="hidden" name="commentSize" th:value="${commentSize}">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
                         <button type="submit" class="btn btn-soft-danger btn-action-danger">삭제</button>
                     </form>

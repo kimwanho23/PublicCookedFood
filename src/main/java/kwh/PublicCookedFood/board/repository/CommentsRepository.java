@@ -16,6 +16,18 @@ import java.util.List;
 @Repository
 public interface CommentsRepository extends JpaRepository<Comments, Long> {
 
+    @Query("SELECT c FROM Comments c " +
+            "JOIN FETCH c.account " +
+            "WHERE c.board.id = :postId AND c.parent IS NULL " +
+            "AND (c.state = :activeState OR c.state = :deletedState) " +
+            "AND (:excludeBlocked = false OR c.account.id NOT IN :blockedAccountIds) " +
+            "ORDER BY c.regTime ASC")
+    List<Comments> findParentCommentsWithAccountByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId,
+                                                                           @Param("activeState") SoftDeleteState activeState,
+                                                                           @Param("deletedState") SoftDeleteState deletedState,
+                                                                           @Param("excludeBlocked") boolean excludeBlocked,
+                                                                           @Param("blockedAccountIds") Collection<Long> blockedAccountIds);
+
     @Query(
             value = "SELECT c FROM Comments c " +
                     "JOIN FETCH c.account " +
@@ -28,12 +40,12 @@ public interface CommentsRepository extends JpaRepository<Comments, Long> {
                     "AND (c.state = :activeState OR c.state = :deletedState) " +
                     "AND (:excludeBlocked = false OR c.account.id NOT IN :blockedAccountIds)"
     )
-    Page<Comments> findParentCommentsWithAccountByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId,
-                                                                         @Param("activeState") SoftDeleteState activeState,
-                                                                         @Param("deletedState") SoftDeleteState deletedState,
-                                                                         @Param("excludeBlocked") boolean excludeBlocked,
-                                                                         @Param("blockedAccountIds") Collection<Long> blockedAccountIds,
-                                                                         Pageable pageable);
+    Page<Comments> findParentCommentsPageWithAccountByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId,
+                                                                                @Param("activeState") SoftDeleteState activeState,
+                                                                                @Param("deletedState") SoftDeleteState deletedState,
+                                                                                @Param("excludeBlocked") boolean excludeBlocked,
+                                                                                @Param("blockedAccountIds") Collection<Long> blockedAccountIds,
+                                                                                Pageable pageable);
 
     @Query("SELECT c FROM Comments c " +
             "WHERE c.board.id = :postId AND c.parent IS NULL " +
@@ -58,9 +70,22 @@ public interface CommentsRepository extends JpaRepository<Comments, Long> {
     @Query("SELECT c FROM Comments c " +
             "JOIN FETCH c.account " +
             "JOIN FETCH c.parent " +
-            "WHERE c.board.id = :postId AND c.parent IS NOT NULL " +
-            "ORDER BY c.regTime ASC")
-    List<Comments> findRepliesWithAccountAndParentByBoardIdOrderByRegTimeAsc(@Param("postId") Long postId);
+            "WHERE c.board.id = :postId " +
+            "AND c.parent IS NOT NULL " +
+            "AND c.rootParentId IN :rootParentIds " +
+            "AND (:excludeBlocked = false OR c.account.id NOT IN :blockedAccountIds) " +
+            "ORDER BY c.commentPath ASC")
+    List<Comments> findRepliesWithAccountAndParentByBoardIdAndRootParentIdInOrderByCommentPathAsc(@Param("postId") Long postId,
+                                                                                                   @Param("rootParentIds") Collection<Long> rootParentIds,
+                                                                                                   @Param("excludeBlocked") boolean excludeBlocked,
+                                                                                                   @Param("blockedAccountIds") Collection<Long> blockedAccountIds);
+
+    @Query("SELECT c FROM Comments c " +
+            "LEFT JOIN FETCH c.parent " +
+            "JOIN FETCH c.board " +
+            "LEFT JOIN FETCH c.account " +
+            "WHERE c.id IN :commentIds")
+    List<Comments> findWithBoardAndParentByIdIn(@Param("commentIds") Collection<Long> commentIds);
 
     @Query(
             value = "SELECT c FROM Comments c " +

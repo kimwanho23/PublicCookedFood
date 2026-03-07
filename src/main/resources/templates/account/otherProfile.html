@@ -111,7 +111,7 @@
                  th:if="${profileView == 'comments' and commentPage != null and commentPage.totalElements > 0}">
                 <a class="list-group-item list-group-item-action px-0 py-3"
                    th:each="comment : ${commentPage.content}"
-                   th:href="@{|/boards/${comment.board.id}#comment-${comment.id}|}">
+                   th:href="${@commentNavigationService.buildCommentTargetPath(comment.board.id, comment.id, currentAccountId)}">
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <div class="w-100">
                             <div class="fw-semibold" th:text="${comment.board.title}">게시글 제목</div>

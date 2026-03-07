@@ -17,6 +17,7 @@ import kwh.PublicCookedFood.account.service.AccountBlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CommentsService {
+
+    private static final int COMMENT_SCAN_BATCH_SIZE = 100;
+    private static final int COMMENT_PATH_SEGMENT_WIDTH = 19;
+    private static final String COMMENT_PATH_SEPARATOR = "/";
 
     private final CommentsRepository commentsRepository;
 
@@ -80,11 +85,19 @@ public class CommentsService {
                 .board(board)
                 .contents(commentsDto.getContents())
                 .parent(parent)
+                .rootParentId(parent == null ? null : parent.getEffectiveRootParentId())
+                .depth(parent == null ? 0 : parent.getDepth() + 1)
                 .state(commentsDto.getState() == null ? SoftDeleteState.ACTIVE : commentsDto.getState())
                 .replies(new ArrayList<>())
                 .build();
 
         Comments savedComment = commentsRepository.save(comment);
+        String commentPath = buildCommentPath(savedComment.getId(), parent);
+        if (parent == null) {
+            savedComment.initializeThreadMetadata(savedComment.getId(), 0, commentPath);
+        } else {
+            savedComment.initializeThreadMetadata(parent.getEffectiveRootParentId(), parent.getDepth() + 1, commentPath);
+        }
         notificationService.notifyOnNewComment(savedComment);
         return convertToDto(savedComment);
     }
@@ -106,47 +119,141 @@ public class CommentsService {
     public Page<CommentResponse> getCommentListWithReplies(Long postId, Pageable pageable, Long viewerAccountId) {
         Set<Long> blockedAccountIds = accountBlockService.getViewRestrictedAccountIds(viewerAccountId);
         BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
-        boolean hasBlockedAccounts = blockedAccountFilter.excludeBlocked();
+        Pageable effectivePageable = pageable == null || pageable.isUnpaged()
+                ? Pageable.unpaged()
+                : PageRequest.of(Math.max(pageable.getPageNumber(), 0), Math.max(pageable.getPageSize(), 1), pageable.getSort());
 
-        Page<Comments> parentComments = commentsRepository
-                .findParentCommentsWithAccountByBoardIdOrderByRegTimeAsc(
-                        postId,
-                        SoftDeleteState.ACTIVE,
-                        SoftDeleteState.DELETED,
-                        blockedAccountFilter.excludeBlocked(),
-                        blockedAccountFilter.blockedAccountIds(),
-                        pageable);
-
-        List<Comments> replies = commentsRepository
-                .findRepliesWithAccountAndParentByBoardIdOrderByRegTimeAsc(postId);
-
-        if (hasBlockedAccounts) {
-            replies = replies.stream()
-                    .filter(reply -> !isBlockedAuthor(reply, blockedAccountIds))
+        if (effectivePageable.isUnpaged()) {
+            List<Comments> parentComments = commentsRepository.findParentCommentsWithAccountByBoardIdOrderByRegTimeAsc(
+                    postId,
+                    SoftDeleteState.ACTIVE,
+                    SoftDeleteState.DELETED,
+                    blockedAccountFilter.excludeBlocked(),
+                    blockedAccountFilter.blockedAccountIds()
+            );
+            Map<Long, List<Comments>> repliesByParentId = loadRepliesByRootParentIds(postId, parentComments, blockedAccountFilter);
+            List<Comments> visibleParentComments = parentComments.stream()
+                    .filter(comment -> shouldDisplayComment(comment, repliesByParentId))
                     .toList();
+            List<CommentResponse> content = visibleParentComments.stream()
+                    .map(comment -> convertToDto(comment, repliesByParentId, postId))
+                    .toList();
+            return new PageImpl<>(content, Pageable.unpaged(), visibleParentComments.size());
         }
 
-        Map<Long, List<Comments>> repliesByParentId = replies.stream()
-                .collect(Collectors.groupingBy(comment -> comment.getParent().getId(),
-                        LinkedHashMap::new, Collectors.toList()));
+        long pageStartIndex = effectivePageable.getOffset();
+        long pageEndExclusive = pageStartIndex + effectivePageable.getPageSize();
+        List<Comments> selectedParentComments = new ArrayList<>();
+        int visibleParentCount = 0;
+        int batchPage = 0;
 
-        List<CommentResponse> content = parentComments.getContent().stream()
-                .filter(comment -> !isBlockedAuthor(comment, blockedAccountIds))
-                .filter(comment -> shouldDisplayComment(comment, repliesByParentId))
-                .map(comment -> convertToDto(comment, repliesByParentId, postId))
+        while (true) {
+            Page<Comments> parentBatch = commentsRepository.findParentCommentsPageWithAccountByBoardIdOrderByRegTimeAsc(
+                    postId,
+                    SoftDeleteState.ACTIVE,
+                    SoftDeleteState.DELETED,
+                    blockedAccountFilter.excludeBlocked(),
+                    blockedAccountFilter.blockedAccountIds(),
+                    PageRequest.of(batchPage, COMMENT_SCAN_BATCH_SIZE)
+            );
+            if (parentBatch.isEmpty()) {
+                break;
+            }
+
+            List<Comments> batchParents = parentBatch.getContent();
+            Map<Long, List<Comments>> batchRepliesByParentId = loadRepliesByRootParentIds(postId, batchParents, blockedAccountFilter);
+            for (Comments parentComment : batchParents) {
+                if (!shouldDisplayComment(parentComment, batchRepliesByParentId)) {
+                    continue;
+                }
+                if (visibleParentCount >= pageStartIndex && visibleParentCount < pageEndExclusive) {
+                    selectedParentComments.add(parentComment);
+                }
+                visibleParentCount++;
+            }
+
+            if (parentBatch.isLast()) {
+                break;
+            }
+            batchPage++;
+        }
+
+        Map<Long, List<Comments>> pageRepliesByParentId = loadRepliesByRootParentIds(postId, selectedParentComments, blockedAccountFilter);
+        List<CommentResponse> content = selectedParentComments.stream()
+                .map(comment -> convertToDto(comment, pageRepliesByParentId, postId))
                 .toList();
+        return new PageImpl<>(content, effectivePageable, visibleParentCount);
+    }
 
-        long visibleParentCount = commentsRepository.findParentCommentsByBoardId(
-                        postId,
-                        SoftDeleteState.ACTIVE,
-                        SoftDeleteState.DELETED,
-                        blockedAccountFilter.excludeBlocked(),
-                        blockedAccountFilter.blockedAccountIds())
-                .stream()
-                .filter(comment -> shouldDisplayComment(comment, repliesByParentId))
-                .count();
+    private Map<Long, List<Comments>> loadRepliesByRootParentIds(Long postId,
+                                                                 List<Comments> parentComments,
+                                                                 BlockedAccountFilter blockedAccountFilter) {
+        Set<Long> rootParentIds = extractRootParentIds(parentComments);
+        if (postId == null || rootParentIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Comments> replies = commentsRepository.findRepliesWithAccountAndParentByBoardIdAndRootParentIdInOrderByCommentPathAsc(
+                postId,
+                rootParentIds,
+                blockedAccountFilter.excludeBlocked(),
+                blockedAccountFilter.blockedAccountIds()
+        );
+        if (replies.isEmpty()) {
+            return Map.of();
+        }
 
-        return new PageImpl<>(content, pageable, visibleParentCount);
+        return replies.stream()
+                .collect(Collectors.groupingBy(comment -> comment.getParent().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+    }
+
+    private Set<Long> extractRootParentIds(List<Comments> parentComments) {
+        if (parentComments == null || parentComments.isEmpty()) {
+            return Set.of();
+        }
+        return parentComments.stream()
+                .map(Comments::getEffectiveRootParentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private String buildCommentPath(Long savedCommentId, Comments parent) {
+        String currentSegment = formatCommentPathSegment(savedCommentId);
+        if (parent == null) {
+            return currentSegment;
+        }
+        String parentPath = resolveCommentPath(parent);
+        if (parentPath == null || parentPath.isBlank()) {
+            return currentSegment;
+        }
+        return parentPath + COMMENT_PATH_SEPARATOR + currentSegment;
+    }
+
+    private String resolveCommentPath(Comments comment) {
+        if (comment == null) {
+            return null;
+        }
+        if (comment.getCommentPath() != null && !comment.getCommentPath().isBlank()) {
+            return comment.getCommentPath();
+        }
+        Long commentId = comment.getId();
+        if (comment.getParent() == null) {
+            return formatCommentPathSegment(commentId);
+        }
+        String parentPath = resolveCommentPath(comment.getParent());
+        String currentSegment = formatCommentPathSegment(commentId);
+        if (parentPath == null || parentPath.isBlank()) {
+            return currentSegment;
+        }
+        return parentPath + COMMENT_PATH_SEPARATOR + currentSegment;
+    }
+
+    private String formatCommentPathSegment(Long commentId) {
+        if (commentId == null) {
+            return "";
+        }
+        return String.format("%0" + COMMENT_PATH_SEGMENT_WIDTH + "d", commentId);
     }
 
     private boolean shouldDisplayComment(Comments comment, Map<Long, List<Comments>> repliesByParentId) {
@@ -177,13 +284,6 @@ public class CommentsService {
             }
         }
         return false;
-    }
-
-    private boolean isBlockedAuthor(Comments comment, Set<Long> blockedAccountIds) {
-        if (comment == null || comment.getAccount() == null || comment.getAccount().getId() == null || blockedAccountIds.isEmpty()) {
-            return false;
-        }
-        return blockedAccountIds.contains(comment.getAccount().getId());
     }
 
     public Page<Comments> getAccountCommentPage(Long accountId, Pageable pageable, Set<Long> blockedAccountIds) {

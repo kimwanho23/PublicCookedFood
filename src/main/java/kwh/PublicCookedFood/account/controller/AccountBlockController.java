@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -26,6 +27,7 @@ public class AccountBlockController {
     @PostMapping("/{targetAccountId}")
     public String block(@LoginAccount Account account,
                         @PathVariable @Positive Long targetAccountId,
+                        @RequestParam(required = false) String redirect,
                         HttpServletRequest request,
                         RedirectAttributes redirectAttributes) {
         if (account == null) {
@@ -36,12 +38,13 @@ public class AccountBlockController {
         AccountBlockFacade.BlockOperationResult operationResult = accountBlockFacade.block(account.getId(), targetAccountId);
         redirectAttributes.addFlashAttribute("blockMessage", operationResult.message());
         markSkipViewIncrease(redirectAttributes);
-        return redirectToReferer(request);
+        return resolveRedirect(redirect, request);
     }
 
     @PatchMapping("/{targetAccountId}")
     public String unblock(@LoginAccount Account account,
                           @PathVariable @Positive Long targetAccountId,
+                          @RequestParam(required = false) String redirect,
                           HttpServletRequest request,
                           RedirectAttributes redirectAttributes) {
         if (account == null) {
@@ -52,10 +55,14 @@ public class AccountBlockController {
         AccountBlockFacade.BlockOperationResult operationResult = accountBlockFacade.unblock(account.getId(), targetAccountId);
         redirectAttributes.addFlashAttribute("blockMessage", operationResult.message());
         markSkipViewIncrease(redirectAttributes);
-        return redirectToReferer(request);
+        return resolveRedirect(redirect, request);
     }
 
-    private String redirectToReferer(HttpServletRequest request) {
+    private String resolveRedirect(String redirect, HttpServletRequest request) {
+        String safeRedirect = SafeRedirectSupport.normalizeRelativePath(redirect);
+        if (safeRedirect != null) {
+            return SafeRedirectSupport.toRedirect(safeRedirect);
+        }
         return SafeRedirectSupport.resolveRefererRedirect(request, "/boards");
     }
 

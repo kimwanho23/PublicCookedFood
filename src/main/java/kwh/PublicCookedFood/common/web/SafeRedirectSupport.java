@@ -67,11 +67,16 @@ public final class SafeRedirectSupport {
             return null;
         }
 
-        String query = uri.getQuery();
-        if (query == null || query.isBlank()) {
-            return path;
+        StringBuilder safePath = new StringBuilder(path);
+        String query = uri.getRawQuery();
+        if (query != null && !query.isBlank()) {
+            safePath.append('?').append(query);
         }
-        return path + "?" + query;
+        String fragment = uri.getRawFragment();
+        if (fragment != null && !fragment.isBlank()) {
+            safePath.append('#').append(fragment);
+        }
+        return safePath.toString();
     }
 
     private static boolean isSameOrigin(URI source, URI target) {
