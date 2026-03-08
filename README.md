@@ -70,11 +70,16 @@ RestClient를 이용해서 API를 호출하여 데이터베이스에 파싱하�
 docker compose up -d --build
 ```
 
+Default public entry point is `http://localhost:8080` through NGINX. `app1` and `app2` stay on the internal Docker network.
+Session sharing works through Redis, but SSE notifications are still node-local until they are moved to a shared pub/sub path.
+
 Docker Hub에 푸시된 이미지를 기준으로 실행하려면 `APP_IMAGE`를 지정하고 전용 compose 파일을 사용합니다.
 
 ```bash
 APP_IMAGE=32up/public-cooked-food:latest docker compose -f compose.dockerhub.yml up -d
 ```
+
+If you want a different public port, set `APP_HOST_PORT` before starting the stack.
 
 GitHub Actions로 Docker Hub에 이미지를 자동 푸시하려면 아래 설정이 필요합니다.
 
