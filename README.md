@@ -66,6 +66,8 @@ RestClient를 이용해서 API를 호출하여 데이터베이스에 파싱하�
 
 로컬 빌드 기반 스택은 아래처럼 실행합니다.
 
+`compose.yml` 하나를 베이스로 사용합니다. 기본값은 로컬 빌드 이미지(`public-cooked-food-app:local`)이고, 배포 이미지를 검증하거나 서버에서 실행할 때만 `APP_IMAGE`를 published tag로 덮어씁니다.
+
 ```bash
 docker compose up -d --build
 ```
@@ -73,10 +75,11 @@ docker compose up -d --build
 Default public entry point is `http://localhost:8081` through NGINX. `app1` and `app2` stay on the internal Docker network.
 Session sharing works through Redis, but SSE notifications are still node-local until they are moved to a shared pub/sub path.
 
-Docker Hub에 푸시된 이미지를 기준으로 실행하려면 `APP_IMAGE`를 지정하고 전용 compose 파일을 사용합니다.
+Docker Hub에 푸시된 이미지를 기준으로 검증하거나 배포하려면 같은 `compose.yml`에서 `APP_IMAGE`만 바꿉니다.
 
 ```bash
-APP_IMAGE=32up/public-cooked-food:latest docker compose -f compose.dockerhub.yml up -d
+APP_IMAGE=32up/public-cooked-food:latest docker compose pull app1 app2
+APP_IMAGE=32up/public-cooked-food:latest docker compose up -d
 ```
 
 If you want a different public port, set `APP_HOST_PORT` before starting the stack.

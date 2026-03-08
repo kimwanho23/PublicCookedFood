@@ -16,6 +16,22 @@ x-app-environment: &app-environment
   SESSION_COOKIE_SECURE: "false"
   FILE_DIR: /data/storage/
 
+x-app-service: &app-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: ${APP_IMAGE:-public-cooked-food-app:local}
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  expose:
+    - "8080"
+  volumes:
+    - app-storage:/data/storage
+  restart: unless-stopped
+
 services:
   mysql:
     image: mysql:8.0
@@ -70,44 +86,18 @@ services:
     restart: unless-stopped
 
   app1:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: public-cooked-food-app:local
+    <<: *app-service
     container_name: publiccookedfood-app1
     environment:
       <<: *app-environment
       SERVER_PORT: 8080
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    expose:
-      - "8080"
-    volumes:
-      - app-storage:/data/storage
-    restart: unless-stopped
 
   app2:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: public-cooked-food-app:local
+    <<: *app-service
     container_name: publiccookedfood-app2
     environment:
       <<: *app-environment
       SERVER_PORT: 8080
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    expose:
-      - "8080"
-    volumes:
-      - app-storage:/data/storage
-    restart: unless-stopped
 
 volumes:
   redis-data:
