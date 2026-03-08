@@ -5,9 +5,9 @@ import kwh.PublicCookedFood.food.dto.response.RecipeRankingResponse;
 import kwh.PublicCookedFood.food.service.RecipeReviewService;
 import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.metrics.reco.RecipeRecoSnapshotService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,8 +32,17 @@ class RecipeMainFacadeUnitTest {
     @Mock
     private RecipeRecoSnapshotService recipeRecoSnapshotService;
 
-    @InjectMocks
     private RecipeMainFacade recipeMainFacade;
+
+    @BeforeEach
+    void setUp() {
+        recipeMainFacade = new RecipeMainFacade(
+                recipeService,
+                boardService,
+                recipeReviewService,
+                recipeRecoSnapshotService
+        );
+    }
 
     @Test
     void loadHomeData_includesLunchAndDinnerRecommendations() {

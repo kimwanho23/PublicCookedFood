@@ -6,9 +6,9 @@ import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
 import kwh.PublicCookedFood.account.service.AccountBlockService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -33,12 +33,21 @@ class NotificationDispatchSupportUnitTest {
     @Mock
     private NotificationSseService notificationSseService;
 
-    @InjectMocks
     private NotificationDispatchSupport notificationDispatchSupport;
+
+    @BeforeEach
+    void setUp() {
+        notificationDispatchSupport = new NotificationDispatchSupport(
+                notificationRepository,
+                accountRepository,
+                accountBlockService,
+                notificationSseService
+        );
+    }
 
     @Test
     void resolveMentionedUsers_resolvesMentionByUniqueNickname() {
-        when(accountRepository.findByNameIn(Set.of("tester"))).thenReturn(List.of(account(10L, "tester")));
+        when(accountRepository.findByNameIn(Set.of("tester"))).thenReturn(List.of(account()));
 
         Set<Account> mentionedUsers = notificationDispatchSupport.resolveMentionedUsers("안녕 @tester", 1L);
 
@@ -54,11 +63,11 @@ class NotificationDispatchSupportUnitTest {
         assertThat(mentionedUsers).isEmpty();
     }
 
-    private Account account(Long id, String name) {
+    private Account account() {
         return Account.builder()
-                .id(id)
-                .email(name + id + "@test.com")
-                .name(name)
+                .id(10L)
+                .email("tester" + 10L + "@test.com")
+                .name("tester")
                 .authority(Role.USER)
                 .loginMethod("Current")
                 .build();

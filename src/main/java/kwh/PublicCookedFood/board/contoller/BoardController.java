@@ -36,10 +36,10 @@ import java.util.List;
 public class BoardController {
 
     private static final String LOGIN_REDIRECT = "redirect:/u/login";
-    private static final String BOARD_LIST_VIEW = "/boards/boardList";
+    private static final String BOARD_LIST_VIEW = "boards/boardList";
     private static final String BOARD_RESULTS_FRAGMENT_VIEW = "boards/boardList :: boardResults";
-    private static final String BOARD_ADD_VIEW = "/boards/addBoard";
-    private static final String BOARD_UPDATE_VIEW = "/boards/updateBoard";
+    private static final String BOARD_ADD_VIEW = "boards/addBoard";
+    private static final String BOARD_UPDATE_VIEW = "boards/updateBoard";
 
     private final BoardFacade boardFacade;
 
@@ -73,7 +73,7 @@ public class BoardController {
         }
         List<Board> scrappedBoards = boardFacade.loadMyScrappedBoards(account.getId());
         model.addAttribute("scrappedBoards", scrappedBoards);
-        return "/boards/boardScraps";
+        return "boards/boardScraps";
     }
 
     private String renderBoardList(Model model,

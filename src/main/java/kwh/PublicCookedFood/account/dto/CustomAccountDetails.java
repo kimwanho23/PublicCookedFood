@@ -2,22 +2,28 @@ package kwh.PublicCookedFood.account.dto;
 
 import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.domain.Account;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-public class CustomAccountDetails implements UserDetails, OAuth2User {
+public final class CustomAccountDetails implements UserDetails, OAuth2User {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
+    @Getter
     private transient Account account;
     private final Long accountId;
     private final String accountName;
@@ -31,44 +37,30 @@ public class CustomAccountDetails implements UserDetails, OAuth2User {
 
     //formLogin
     public CustomAccountDetails(Account account) {
-        this.account = account;
-        this.accountId = account != null ? account.getId() : null;
-        this.accountName = account != null ? account.getName() : null;
-        this.roleKey = account != null && account.getAuthority() != null ? account.getAuthority().getKey() : null;
-        this.password = account != null ? account.getPassword() : null;
-        this.email = account != null ? account.getEmail() : null;
-        this.notificationEnabled = account != null && account.isNotificationEnabled();
-        this.loginMethod = account != null ? account.getLoginMethod() : null;
-        this.attributes = Map.of();
+        this(account, Map.of());
     }
 
     //OAuth2Login
     public CustomAccountDetails(Account account, Map<String, Object> attributes) {
-        this.account = account;
-        this.accountId = account != null ? account.getId() : null;
-        this.accountName = account != null ? account.getName() : null;
-        this.roleKey = account != null && account.getAuthority() != null ? account.getAuthority().getKey() : null;
-        this.password = account != null ? account.getPassword() : null;
-        this.email = account != null ? account.getEmail() : null;
-        this.notificationEnabled = account != null && account.isNotificationEnabled();
-        this.loginMethod = account != null ? account.getLoginMethod() : null;
+        Account safeAccount = requireAccount(account);
+        this.account = safeAccount;
+        this.accountId = Objects.requireNonNull(safeAccount.getId(), "account.id");
+        this.accountName = requireNonBlank(safeAccount.getName(), "account.name");
+        this.roleKey = resolveRoleKey(safeAccount);
+        this.password = safeAccount.getPassword();
+        this.email = requireNonBlank(safeAccount.getEmail(), "account.email");
+        this.notificationEnabled = safeAccount.isNotificationEnabled();
+        this.loginMethod = requireNonBlank(safeAccount.getLoginMethod(), "account.loginMethod");
         this.attributes = toImmutableMap(attributes);
-    }
-
-    public Account getAccount() {
-        return account;
     }
 
     @Override
     public Map<String, Object> getAttributes() {
-        return attributes.isEmpty() ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
+        return attributes;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (roleKey == null || roleKey.isBlank()) {
-            return Collections.emptyList();
-        }
         return List.of(() -> roleKey);
     }
 
@@ -94,36 +86,56 @@ public class CustomAccountDetails implements UserDetails, OAuth2User {
         return Collections.unmodifiableMap(new LinkedHashMap<>(source));
     }
 
+    @Serial
     private void readObject(ObjectInputStream inputStream) throws IOException, ClassNotFoundException {
         inputStream.defaultReadObject();
-        this.account = rebuildAccountSnapshot();
+        try {
+            this.account = rebuildAccountSnapshot();
+        } catch (RuntimeException e) {
+            InvalidObjectException invalidObjectException =
+                    new InvalidObjectException("Invalid serialized CustomAccountDetails");
+            invalidObjectException.initCause(e);
+            throw invalidObjectException;
+        }
     }
 
     private Account rebuildAccountSnapshot() {
-        if (email == null && accountId == null) {
-            return null;
-        }
         Role role = resolveRole(roleKey);
+        String restoredEmail = requireNonBlank(email, "email");
         return Account.builder()
-                .id(accountId)
-                .name(accountName == null || accountName.isBlank() ? email : accountName)
-                .email(email)
+                .id(Objects.requireNonNull(accountId, "accountId"))
+                .name(accountName == null || accountName.isBlank() ? restoredEmail : accountName)
+                .email(restoredEmail)
                 .password(password)
                 .authority(role)
                 .notificationEnabled(notificationEnabled)
-                .loginMethod(loginMethod)
+                .loginMethod(requireNonBlank(loginMethod, "loginMethod"))
                 .build();
     }
 
     private static Role resolveRole(String key) {
-        if (key == null || key.isBlank()) {
-            return null;
-        }
+        String resolvedKey = requireNonBlank(key, "roleKey");
         for (Role role : Role.values()) {
-            if (key.equals(role.getKey())) {
+            if (resolvedKey.equals(role.getKey())) {
                 return role;
             }
         }
-        return null;
+        throw new IllegalArgumentException("Unknown role key: " + resolvedKey);
+    }
+
+    private static Account requireAccount(Account account) {
+        return Objects.requireNonNull(account, "account");
+    }
+
+    private static String resolveRoleKey(Account account) {
+        Role authority = Objects.requireNonNull(account.getAuthority(), "account.authority");
+        return requireNonBlank(authority.getKey(), "account.authority.key");
+    }
+
+    private static String requireNonBlank(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        return value;
     }
 }

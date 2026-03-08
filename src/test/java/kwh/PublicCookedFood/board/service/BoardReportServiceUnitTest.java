@@ -7,9 +7,9 @@ import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.notification.service.NotificationService;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,8 +39,19 @@ class BoardReportServiceUnitTest {
     @Mock
     private BoardReportTextSanitizer boardReportTextSanitizer;
 
-    @InjectMocks
     private BoardReportService boardReportService;
+
+    @BeforeEach
+    void setUp() {
+        boardReportService = new BoardReportService(
+                boardReportRepository,
+                boardRepository,
+                accountRepository,
+                notificationService,
+                boardReportPolicy,
+                boardReportTextSanitizer
+        );
+    }
 
     @Test
     void createReport_throwsAppExceptionWhenReportAlreadyExists() {

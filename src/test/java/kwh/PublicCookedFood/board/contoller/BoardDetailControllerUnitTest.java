@@ -67,7 +67,7 @@ class BoardDetailControllerUnitTest {
         String viewName = boardDetailController.boardDetail(null, 10L, model, 0, 50, request);
 
         verify(boardDetailFacade).loadBoardDetail(10L, null, pageable, true);
-        assertThat(viewName).isEqualTo("/boards/boardDetail");
+        assertThat(viewName).isEqualTo("boards/boardDetail");
     }
 
     @Test
@@ -86,7 +86,7 @@ class BoardDetailControllerUnitTest {
         String viewName = boardDetailController.boardDetail(null, 10L, model, 0, 50, request);
 
         verify(boardDetailFacade).loadBoardDetail(10L, null, pageable, false);
-        assertThat(viewName).isEqualTo("/boards/boardDetail");
+        assertThat(viewName).isEqualTo("boards/boardDetail");
     }
 
     @Test
@@ -106,7 +106,7 @@ class BoardDetailControllerUnitTest {
         String viewName = boardDetailController.boardDetail(null, 10L, model, 1, 50, request);
 
         verify(boardDetailFacade).loadBoardDetail(10L, null, pageable, false);
-        assertThat(viewName).isEqualTo("/boards/boardDetail");
+        assertThat(viewName).isEqualTo("boards/boardDetail");
     }
 
     @Test

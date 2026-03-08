@@ -36,7 +36,7 @@ public class MainController {
         model.addAttribute("recipeRankings", data.recipeRankings());
         model.addAttribute("lunchRecommendations", data.lunchRecommendations());
         model.addAttribute("dinnerRecommendations", data.dinnerRecommendations());
-        return "/foods/main";
+        return "foods/main";
     }
 
     @GetMapping("/recipes")
@@ -69,7 +69,7 @@ public class MainController {
         model.addAttribute("selectedSearch", viewData.selectedSearch());
         model.addAttribute("categories", viewData.categories());
 
-        return "/foods/index";
+        return "foods/index";
     }
 
     private boolean isAjaxRequest(HttpServletRequest request) {

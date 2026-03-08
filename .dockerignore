@@ -1,0 +1,10 @@
+.git
+.github
+.gradle
+.idea
+build
+docs
+NUL
+*.iml
+*.log
+.env

@@ -52,7 +52,7 @@ class MainControllerUnitTest {
         Model model = new ExtendedModelMap();
         String viewName = mainController.home(model);
 
-        assertThat(viewName).isEqualTo("/foods/main");
+        assertThat(viewName).isEqualTo("foods/main");
         assertThat(model.getAttribute("popularBoards")).isEqualTo(homeData.popularBoards());
         assertThat(model.getAttribute("recipeRankings")).isEqualTo(homeData.recipeRankings());
         assertThat(model.getAttribute("lunchRecommendations")).isEqualTo(homeData.lunchRecommendations());

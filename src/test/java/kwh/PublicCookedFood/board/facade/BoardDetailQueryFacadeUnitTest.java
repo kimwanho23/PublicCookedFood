@@ -11,9 +11,9 @@ import kwh.PublicCookedFood.board.service.CommentsService;
 import kwh.PublicCookedFood.board.service.LikeService;
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.metrics.view.ViewCounterService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -55,8 +55,20 @@ class BoardDetailQueryFacadeUnitTest {
     @Mock
     private ViewCounterService viewCounterService;
 
-    @InjectMocks
     private BoardDetailQueryFacade boardDetailQueryFacade;
+
+    @BeforeEach
+    void setUp() {
+        boardDetailQueryFacade = new BoardDetailQueryFacade(
+                boardService,
+                commentsService,
+                likeService,
+                boardScrapService,
+                boardReportService,
+                boardAuthorizationPolicy,
+                viewCounterService
+        );
+    }
 
     @Test
     void loadBoardDetail_increasesViewsWhenFlagIsTrue() {

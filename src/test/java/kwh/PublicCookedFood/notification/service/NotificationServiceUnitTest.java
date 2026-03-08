@@ -8,9 +8,9 @@ import kwh.PublicCookedFood.account.audit.NotificationAuditPublisher;
 import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -43,12 +43,23 @@ class NotificationServiceUnitTest {
     @Mock
     private NotificationViewSupport notificationViewSupport;
 
-    @InjectMocks
     private NotificationService notificationService;
+
+    @BeforeEach
+    void setUp() {
+        notificationService = new NotificationService(
+                notificationRepository,
+                accountRepository,
+                notificationAuditPublisher,
+                notificationDispatchFacade,
+                notificationSseService,
+                notificationViewSupport
+        );
+    }
 
     @Test
     void updateNotificationEnabled_disableClearsActiveEmitters() {
-        Account account = createAccount(1L, true);
+        Account account = createAccount();
         when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
         boolean enabled = notificationService.updateNotificationEnabled(1L, false);
@@ -81,12 +92,12 @@ class NotificationServiceUnitTest {
         assertThat(emitter).isSameAs(expected);
     }
 
-    private Account createAccount(Long id, boolean notificationEnabled) {
+    private Account createAccount() {
         return Account.builder()
-                .id(id)
-                .email("notification-" + id + "@test.com")
+                .id(1L)
+                .email("notification-" + 1L + "@test.com")
                 .name("알림테스터")
-                .notificationEnabled(notificationEnabled)
+                .notificationEnabled(true)
                 .authority(Role.USER)
                 .loginMethod("Current")
                 .build();

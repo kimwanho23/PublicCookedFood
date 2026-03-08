@@ -88,7 +88,7 @@ public class AccountAuthFacade {
             return;
         }
 
-        CustomAccountDetails updatedPrincipal = currentPrincipal.getAttributes() == null
+        CustomAccountDetails updatedPrincipal = currentPrincipal.getAttributes().isEmpty()
                 ? new CustomAccountDetails(savedAccount)
                 : new CustomAccountDetails(savedAccount, currentPrincipal.getAttributes());
 

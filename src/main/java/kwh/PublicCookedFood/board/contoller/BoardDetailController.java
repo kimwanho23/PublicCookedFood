@@ -40,7 +40,7 @@ import java.util.Map;
 public class BoardDetailController {
 
     private static final String LOGIN_REDIRECT = "redirect:/u/login";
-    private static final String BOARD_DETAIL_VIEW = "/boards/boardDetail";
+    private static final String BOARD_DETAIL_VIEW = "boards/boardDetail";
 
     private final BoardDetailFacade boardDetailFacade;
 
@@ -205,10 +205,6 @@ public class BoardDetailController {
 
     private String redirectIfUnauthenticated(Account account) {
         return account == null ? LOGIN_REDIRECT : null;
-    }
-
-    private String boardDetailRedirect(Long boardId) {
-        return "redirect:/boards/" + boardId;
     }
 
     private String resolveSafeRedirectPath(String redirect, Long boardId) {

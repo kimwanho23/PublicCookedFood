@@ -9,9 +9,9 @@ import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.metrics.view.RecipeViewCounterService;
 import kwh.PublicCookedFood.account.audit.RecipeAuditPublisher;
 import kwh.PublicCookedFood.account.service.BookmarkService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -45,8 +45,19 @@ class RecipeDetailFacadeUnitTest {
     @Mock
     private RecipeScoreEventPublisher recipeScoreEventPublisher;
 
-    @InjectMocks
     private RecipeDetailFacade recipeDetailFacade;
+
+    @BeforeEach
+    void setUp() {
+        recipeDetailFacade = new RecipeDetailFacade(
+                recipeService,
+                bookmarkService,
+                recipeReviewService,
+                recipeAuditPublisher,
+                recipeViewCounterService,
+                recipeScoreEventPublisher
+        );
+    }
 
     @Test
     void loadRecipeDetail_increasesViewsWhenFlagIsTrue() {

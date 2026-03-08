@@ -17,10 +17,20 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
   application:
     name: PublicCookedFood
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:2s}
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  session:
+    store-type: ${SESSION_STORE_TYPE:none}
+    redis:
+      namespace: ${SESSION_REDIS_NAMESPACE:public-cooked-food:session}
   datasource:
     password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -94,6 +104,9 @@ springdoc:
 file:
   dir: ${FILE_DIR:C:/cookboardImageFile/}
 app:
+  session:
+    cookie:
+      name: ${SESSION_COOKIE_NAME:JSESSIONID}
   image:
     schema-auto-migrate: ${IMAGE_SCHEMA_AUTO_MIGRATE:false}
     processing:

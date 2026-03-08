@@ -62,6 +62,30 @@ RestClient를 이용해서 API를 호출하여 데이터베이스에 파싱하�
 
 ![image (2)](https://github.com/user-attachments/assets/279a125a-1306-4086-8a0e-2eec4343a1a8)
 
+## Docker
+
+로컬 빌드 기반 스택은 아래처럼 실행합니다.
+
+```bash
+docker compose up -d --build
+```
+
+Docker Hub에 푸시된 이미지를 기준으로 실행하려면 `APP_IMAGE`를 지정하고 전용 compose 파일을 사용합니다.
+
+```bash
+APP_IMAGE=32up/public-cooked-food:latest docker compose -f compose.dockerhub.yml up -d
+```
+
+GitHub Actions로 Docker Hub에 이미지를 자동 푸시하려면 아래 설정이 필요합니다.
+
+- Repository variable `DOCKERHUB_USERNAME`
+- Repository variable `DOCKERHUB_REPOSITORY`
+- Repository secret `DOCKERHUB_TOKEN`
+
+`DOCKERHUB_TOKEN`은 계정 비밀번호가 아니라 Docker Hub access token을 넣는 기준입니다.
+
+워크플로우는 [docker-publish.yml](./.github/workflows/docker-publish.yml) 에 있습니다. `CI`가 `main`에서 성공하면 `latest`와 `sha-<commit>` 태그를 Docker Hub에 푸시합니다.
+
 # 2. 자유 게시판 기능
 요리 커뮤니티 느낌으로 구상해 본 자유 게시판입니다.
 로그인 된 사용자만 글의 작성 / 수정 / 삭제나 글에 추천이 가능합니다.

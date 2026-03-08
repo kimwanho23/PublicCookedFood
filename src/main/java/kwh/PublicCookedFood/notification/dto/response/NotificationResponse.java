@@ -4,6 +4,7 @@ import kwh.PublicCookedFood.notification.domain.Notification;
 import kwh.PublicCookedFood.notification.domain.NotificationType;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public record NotificationResponse(
         Long id,
@@ -19,28 +20,30 @@ public record NotificationResponse(
         String targetPath
 ) {
     public static NotificationResponse from(Notification notification) {
+        Notification safeNotification = Objects.requireNonNull(notification, "notification");
         String targetPath = "/boards";
-        if (notification != null && notification.getBoard() != null && notification.getBoard().getId() != null) {
-            targetPath = "/boards/" + notification.getBoard().getId();
-            if (notification.getComment() != null && notification.getComment().getId() != null) {
-                targetPath = targetPath + "#comment-" + notification.getComment().getId();
+        if (safeNotification.getBoard() != null && safeNotification.getBoard().getId() != null) {
+            targetPath = "/boards/" + safeNotification.getBoard().getId();
+            if (safeNotification.getComment() != null && safeNotification.getComment().getId() != null) {
+                targetPath = targetPath + "#comment-" + safeNotification.getComment().getId();
             }
         }
-        return from(notification, targetPath);
+        return from(safeNotification, targetPath);
     }
 
     public static NotificationResponse from(Notification notification, String targetPath) {
+        Notification safeNotification = Objects.requireNonNull(notification, "notification");
         return new NotificationResponse(
-                notification.getId(),
-                notification.getType(),
-                notification.getActor().getId(),
-                notification.getActor().getName(),
-                notification.getBoard().getId(),
-                notification.getComment() == null ? null : notification.getComment().getId(),
-                notification.getContentPreview(),
-                notification.isRead(),
-                notification.getReadTime(),
-                notification.getRegTime(),
+                safeNotification.getId(),
+                safeNotification.getType(),
+                safeNotification.getActor().getId(),
+                safeNotification.getActor().getName(),
+                safeNotification.getBoard().getId(),
+                safeNotification.getComment() == null ? null : safeNotification.getComment().getId(),
+                safeNotification.getContentPreview(),
+                safeNotification.isRead(),
+                safeNotification.getReadTime(),
+                safeNotification.getRegTime(),
                 targetPath
         );
     }

@@ -10,10 +10,10 @@ import kwh.PublicCookedFood.metrics.popular.BoardPopularSnapshotService;
 import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,8 +48,20 @@ class BoardServiceTest {
     @Mock
     private BoardPopularSnapshotService boardPopularSnapshotService;
 
-    @InjectMocks
     private BoardService boardService;
+
+    @BeforeEach
+    void setUp() {
+        boardService = new BoardService(
+                boardRepository,
+                commentsRepository,
+                imageService,
+                boardSectionService,
+                boardPolicyService,
+                accountRepository,
+                boardPopularSnapshotService
+        );
+    }
 
     @Test
     void write() {
