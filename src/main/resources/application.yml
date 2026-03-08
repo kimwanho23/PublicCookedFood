@@ -69,14 +69,14 @@ spring:
       client:
         registration:
           naver:
-            redirect-uri: ${NAVER_REDIRECT_URI:http://localhost:${SERVER_PORT:8081}/login/oauth2/code/naver}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope: name,email
             authorization-grant-type: authorization_code
             client-secret: ${NAVER_CLIENT_SECRET:}
             client-id: ${NAVER_CLIENT_ID:}
             client-name: Naver
           google:
-            redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:${SERVER_PORT:8081}/login/oauth2/code/google}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             client-secret: ${GOOGLE_CLIENT_SECRET:}
             client-id: ${GOOGLE_CLIENT_ID:}
             scope: profile,email
@@ -88,6 +88,7 @@ spring:
             token-uri: https://nid.naver.com/oauth2.0/token
 server:
   port: ${SERVER_PORT:8081}
+  forward-headers-strategy: framework
   servlet:
     session:
       tracking-modes: cookie
