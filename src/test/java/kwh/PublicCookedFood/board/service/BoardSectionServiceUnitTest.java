@@ -85,7 +85,7 @@ class BoardSectionServiceUnitTest {
                 .displayOrder(1)
                 .active(true)
                 .build();
-        when(boardSectionRepository.findAllById(any())).thenReturn(List.of(first, second));
+        when(boardSectionRepository.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of(first, second));
 
         List<BoardSection> reordered = boardSectionService.reorderSections(List.of(20L, 10L));
 

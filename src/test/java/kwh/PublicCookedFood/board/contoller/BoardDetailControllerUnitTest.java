@@ -16,6 +16,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -55,7 +56,7 @@ class BoardDetailControllerUnitTest {
 
     @Test
     void boardDetail_increasesViewsByDefault() {
-        Pageable pageable = PageRequest.of(0, 50);
+        Pageable pageable = commentPageable(0, 50);
         Model model = new ExtendedModelMap();
         BoardDetailFacade.BoardDetailViewData viewData = detailViewData(pageable);
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -71,7 +72,7 @@ class BoardDetailControllerUnitTest {
 
     @Test
     void boardDetail_skipsViewIncreaseWhenFlagExists() {
-        Pageable pageable = PageRequest.of(0, 50);
+        Pageable pageable = commentPageable(0, 50);
         Model model = new ExtendedModelMap();
         BoardDetailFacade.BoardDetailViewData viewData = detailViewData(pageable);
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -89,17 +90,20 @@ class BoardDetailControllerUnitTest {
     }
 
     @Test
-    void boardDetail_skipsViewIncreaseWhenRequestParamExists() {
-        Pageable pageable = PageRequest.of(0, 50);
+    void boardDetail_skipsViewIncreaseWhenCommentPageNavigationOccurs() {
+        Pageable pageable = commentPageable(1, 50);
         Model model = new ExtendedModelMap();
         BoardDetailFacade.BoardDetailViewData viewData = detailViewData(pageable);
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addParameter("skipViewIncrease", "true");
+        request.setRequestURI("/boards/10");
+        request.addHeader("Referer", "http://localhost/boards/10?commentPage=0&commentSize=50");
+        request.addParameter("commentPage", "1");
+        request.addParameter("commentSize", "50");
 
         when(boardDetailFacade.loadBoardDetail(eq(10L), isNull(), eq(pageable), eq(false)))
                 .thenReturn(viewData);
 
-        String viewName = boardDetailController.boardDetail(null, 10L, model, 0, 50, request);
+        String viewName = boardDetailController.boardDetail(null, 10L, model, 1, 50, request);
 
         verify(boardDetailFacade).loadBoardDetail(10L, null, pageable, false);
         assertThat(viewName).isEqualTo("/boards/boardDetail");
@@ -180,6 +184,10 @@ class BoardDetailControllerUnitTest {
                 .authority(Role.USER)
                 .loginMethod("Current")
                 .build();
+    }
+
+    private Pageable commentPageable(int commentPage, int commentSize) {
+        return PageRequest.of(commentPage, commentSize, Sort.by(Sort.Order.asc("regTime")));
     }
 }
 

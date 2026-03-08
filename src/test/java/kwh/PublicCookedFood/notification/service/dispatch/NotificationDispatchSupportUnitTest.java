@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,7 @@ class NotificationDispatchSupportUnitTest {
 
     @Test
     void resolveMentionedUsers_resolvesMentionByUniqueNickname() {
-        when(accountRepository.findByName("tester")).thenReturn(java.util.Optional.of(account(10L, "tester")));
+        when(accountRepository.findByNameIn(Set.of("tester"))).thenReturn(List.of(account(10L, "tester")));
 
         Set<Account> mentionedUsers = notificationDispatchSupport.resolveMentionedUsers("안녕 @tester", 1L);
 
@@ -46,7 +47,7 @@ class NotificationDispatchSupportUnitTest {
 
     @Test
     void resolveMentionedUsers_ignoresUnknownNickname() {
-        when(accountRepository.findByName("tester")).thenReturn(java.util.Optional.empty());
+        when(accountRepository.findByNameIn(Set.of("tester"))).thenReturn(List.of());
 
         Set<Account> mentionedUsers = notificationDispatchSupport.resolveMentionedUsers("안녕 @tester", 1L);
 
