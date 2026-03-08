@@ -70,7 +70,7 @@ RestClient를 이용해서 API를 호출하여 데이터베이스에 파싱하�
 docker compose up -d --build
 ```
 
-Default public entry point is `http://localhost:8080` through NGINX. `app1` and `app2` stay on the internal Docker network.
+Default public entry point is `http://localhost:8081` through NGINX. `app1` and `app2` stay on the internal Docker network.
 Session sharing works through Redis, but SSE notifications are still node-local until they are moved to a shared pub/sub path.
 
 Docker Hub에 푸시된 이미지를 기준으로 실행하려면 `APP_IMAGE`를 지정하고 전용 compose 파일을 사용합니다.
