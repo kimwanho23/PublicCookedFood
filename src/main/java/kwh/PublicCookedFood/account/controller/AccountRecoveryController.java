@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Hidden
 public class AccountRecoveryController {
 
-    private static final String ACCOUNT_RECOVER_VIEW = "/account/accountRecoverForm";
+    private static final String ACCOUNT_RECOVER_VIEW = "account/accountRecoverForm";
     private static final String TAB_FIND_EMAIL = "find-email";
     private static final String TAB_RESET_PASSWORD = "reset-password";
 

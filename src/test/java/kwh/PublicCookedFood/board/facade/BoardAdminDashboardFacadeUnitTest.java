@@ -14,9 +14,9 @@ import kwh.PublicCookedFood.account.domain.AccountActivityLog;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
 import kwh.PublicCookedFood.account.service.AccountActivityLogService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -57,8 +57,22 @@ class BoardAdminDashboardFacadeUnitTest {
     @Mock
     private AccountRepository accountRepository;
 
-    @InjectMocks
     private BoardAdminDashboardFacade boardAdminDashboardFacade;
+
+    @BeforeEach
+    void setUp() {
+        boardAdminDashboardFacade = new BoardAdminDashboardFacade(
+                boardReportService,
+                boardService,
+                recipeReviewService,
+                accountActivityLogService,
+                boardRepository,
+                commentsRepository,
+                boardReportRepository,
+                recipeInfoRepository,
+                accountRepository
+        );
+    }
 
     @Test
     void loadDashboardData_mapsRecentActivitiesToReadableTargets() {

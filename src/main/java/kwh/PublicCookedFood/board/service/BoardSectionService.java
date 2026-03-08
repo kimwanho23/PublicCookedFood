@@ -27,7 +27,6 @@ public class BoardSectionService {
 
     private static final String DEFAULT_SECTION_KEY = "general";
     private static final String DEFAULT_SECTION_NAME = "일반";
-    private static final Integer DEFAULT_DISPLAY_ORDER = 0;
     private static final String GENERATED_SECTION_KEY_PREFIX = "section";
     private static final int SECTION_KEY_MAX_LENGTH = 50;
 

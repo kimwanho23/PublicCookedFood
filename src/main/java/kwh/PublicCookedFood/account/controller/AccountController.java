@@ -40,7 +40,7 @@ public class AccountController {
     public String saveForm(@ModelAttribute("accountSaveDto") AccountSaveDto accountSaveDto,
                            HttpServletRequest request) {
         accountAuthFacade.rememberPreviousPage(request, "/u/signup");
-        return "/account/signUpForm";
+        return "account/signUpForm";
     }
 
     @PostMapping(value = "/signup")
@@ -48,13 +48,13 @@ public class AccountController {
                        BindingResult bindingResult,
                        Model model) {
         if (bindingResult.hasErrors()) {
-            return "/account/signUpForm";
+            return "account/signUpForm";
         }
 
         AccountAuthFacade.SignupResult signupResult = accountAuthFacade.signup(accountSaveDto);
         if (!signupResult.success()) {
             model.addAttribute("errorMessage", signupResult.errorMessage());
-            return "/account/signUpForm";
+            return "account/signUpForm";
         }
         return "redirect:/recipes";
     }
@@ -68,7 +68,7 @@ public class AccountController {
         }
         accountProfileFacade.populateAccountUpdateDto(accountUpdateDto, account);
         model.addAttribute("account", account);
-        return "/account/profile";
+        return "account/profile";
     }
 
     @GetMapping("/settings")
@@ -78,7 +78,7 @@ public class AccountController {
         }
         model.addAttribute("account", account);
         model.addAttribute("blockedAccounts", accountProfileFacade.getBlockedAccounts(account.getId()));
-        return "/account/settings";
+        return "account/settings";
     }
 
     @GetMapping({"/{accountId:[0-9]+}", "/{accountId:[0-9]+}/{view:comments|scraps}"})
@@ -101,7 +101,7 @@ public class AccountController {
         model.addAttribute("profileAccount", viewData.profileAccount());
         model.addAttribute("currentAccountId", viewData.currentAccountId());
         model.addAttribute("myBlockedProfileAccount", viewData.myBlockedProfileAccount());
-        return "/account/otherProfile";
+        return "account/otherProfile";
     }
 
     @PutMapping("/profile")
@@ -117,7 +117,7 @@ public class AccountController {
 
         if (bindingResult.hasErrors()) {
             accountAuthFacade.markProfileUpdateFailedValidation(account.getId());
-            return "/account/profile";
+            return "account/profile";
         }
 
         AccountProfileFacade.ProfileUpdateResult updateResult;
@@ -125,11 +125,11 @@ public class AccountController {
             updateResult = accountProfileFacade.updateProfile(account, accountUpdateDto);
         } catch (StorageException e) {
             model.addAttribute("errorMessage", e.getMessage());
-            return "/account/profile";
+            return "account/profile";
         }
         if (!updateResult.success()) {
             model.addAttribute("errorMessage", updateResult.errorMessage());
-            return "/account/profile";
+            return "account/profile";
         }
 
         Account savedAccount = updateResult.savedAccount();
