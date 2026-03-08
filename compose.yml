@@ -64,7 +64,7 @@ services:
       app2:
         condition: service_started
     ports:
-      - "${APP_HOST_PORT:-8080}:80"
+      - "${APP_HOST_PORT:-8081}:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
