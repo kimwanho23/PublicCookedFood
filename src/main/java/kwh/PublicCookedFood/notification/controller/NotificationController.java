@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Positive;
 import kwh.PublicCookedFood.config.oauth2.LoginAccount;
+import kwh.PublicCookedFood.notification.dto.response.NotificationInitialStateResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationListResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationSettingResponse;
 import kwh.PublicCookedFood.notification.facade.NotificationFacade;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,8 +39,20 @@ public class NotificationController {
 
     @Operation(summary = "실시간 알림 구독", description = "SSE 연결을 열어 현재 로그인 사용자의 실시간 알림을 구독합니다.")
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@Parameter(hidden = true) @LoginAccount Account account) {
+    public SseEmitter subscribe(@AuthenticationPrincipal(expression = "account") Account account) {
         return notificationFacade.subscribe(account);
+    }
+
+    @Operation(summary = "알림 초기 상태 조회", description = "헤더 초기 렌더에 필요한 현재 알림 상태를 조회합니다.")
+    @GetMapping("/initial-state")
+    public ResponseEntity<NotificationInitialStateResponse> getInitialState(
+            @Parameter(hidden = true) @LoginAccount Account account,
+            @Parameter(description = "true이면 읽지 않은 알림만 조회합니다.")
+            @RequestParam(defaultValue = "false") boolean unreadOnly,
+            @ParameterObject
+            @PageableDefault(page = 0, size = 8, sort = "regTime", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(notificationFacade.getInitialState(account, pageable, unreadOnly));
     }
 
     @Operation(summary = "알림 목록 조회", description = "현재 로그인 사용자의 알림 목록을 페이징하여 조회합니다.")

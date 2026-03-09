@@ -2,7 +2,6 @@ package kwh.PublicCookedFood.notification.service;
 
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.config.properties.NotificationSseProperties;
-import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
 import kwh.PublicCookedFood.notification.error.NotificationErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +25,6 @@ public class NotificationSseService {
 
     private static final long SSE_TIMEOUT_MS = 60L * 60L * 1000L;
 
-    private final NotificationViewSupport notificationViewSupport;
     private final Map<Long, Map<String, SseEmitter>> emitters = new ConcurrentHashMap<>();
     private final AtomicLong sseSendAttempts = new AtomicLong(0);
     private final AtomicLong sseSendSuccess = new AtomicLong(0);
@@ -126,8 +124,7 @@ public class NotificationSseService {
     private void sendConnectedEvent(Long receiverId, String emitterId, SseEmitter emitter) {
         sendToEmitter(receiverId, emitterId, emitter, "connected",
                 Map.of(
-                        "timestamp", System.currentTimeMillis(),
-                        "unreadCount", notificationViewSupport.countVisibleUnreadNotifications(receiverId)
+                        "timestamp", System.currentTimeMillis()
                 ));
     }
 
@@ -137,11 +134,8 @@ public class NotificationSseService {
             return;
         }
         sseNotificationEvents.incrementAndGet();
-        long unreadCount = notificationViewSupport.countVisibleUnreadNotifications(receiverId);
-        NotificationResponse latest = notificationViewSupport.loadVisibleNotification(receiverId, notificationId);
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("unreadCount", unreadCount);
-        payload.put("latest", latest);
+        payload.put("notificationId", notificationId);
         payload.put("timestamp", System.currentTimeMillis());
 
         for (Map.Entry<String, SseEmitter> entry : accountEmitters.entrySet()) {

@@ -557,6 +557,12 @@
                 return '/api/notifications?' + params.toString();
             }
 
+            function getNotificationInitialStateApiUrl() {
+                const params = new URLSearchParams({page: '0', size: '8'});
+                params.set('unreadOnly', unreadOnly ? 'true' : 'false');
+                return '/api/notifications/initial-state?' + params.toString();
+            }
+
             function readUnreadOnlyDefault() {
                 if (settingsApi && typeof settingsApi.isNotificationUnreadOnlyDefault === 'function') {
                     return settingsApi.isNotificationUnreadOnlyDefault();
@@ -682,18 +688,20 @@
                 return response.ok;
             }
 
-            async function loadNotificationSetting() {
-                const response = await fetch('/api/notifications/setting', {
+            async function loadInitialNotificationState() {
+                const response = await fetch(getNotificationInitialStateApiUrl(), {
                     method: 'GET',
                     headers: makeHeaders(false)
                 });
                 if (!response.ok) {
-                    return notificationEnabled;
+                    return false;
                 }
                 const payload = await response.json();
                 notificationEnabled = payload.enabled !== false;
                 enabledToggle.checked = notificationEnabled;
-                return notificationEnabled;
+                renderNotifications(payload.notifications || []);
+                setBadgeCount(payload.unreadCount || 0);
+                return true;
             }
 
             async function updateNotificationSetting(enabled) {
@@ -742,16 +750,13 @@
                 }
                 reconnectTimer = window.setTimeout(function () {
                     reconnectTimer = null;
-                    void (async function reconnectIfEnabled() {
-                        try {
-                            await loadNotificationSetting();
-                        } catch (ignored) {
-                        }
-                        if (!notificationEnabled) {
-                            return;
-                        }
+                    if (!notificationEnabled) {
+                        return;
+                    }
+                    try {
                         connectNotificationStream();
-                    })();
+                    } catch (ignored) {
+                    }
                 }, 4000);
             }
 
@@ -767,18 +772,10 @@
                 }
                 eventSource = new EventSource('/api/notifications/stream');
 
-                eventSource.addEventListener('connected', function (event) {
-                    const payload = parseEventData(event);
-                    if (payload && typeof payload.unreadCount === 'number') {
-                        setBadgeCount(payload.unreadCount);
-                    }
+                eventSource.addEventListener('connected', function () {
                 });
 
-                eventSource.addEventListener('notification', function (event) {
-                    const payload = parseEventData(event);
-                    if (payload && typeof payload.unreadCount === 'number') {
-                        setBadgeCount(payload.unreadCount);
-                    }
+                eventSource.addEventListener('notification', function () {
                     void refreshNotifications();
                 });
 
@@ -901,6 +898,7 @@
                     return;
                 }
                 connectNotificationStream();
+                void refreshNotifications();
             });
 
             window.addEventListener('pubcook-ui-settings-change', function (event) {
@@ -924,11 +922,13 @@
 
             async function initializeNotifications() {
                 applyUnreadOnlyPreference(readUnreadOnlyDefault(), false);
-                await loadNotificationSetting();
+                const initialized = await loadInitialNotificationState();
+                if (!initialized) {
+                    return;
+                }
                 if (notificationEnabled) {
                     connectNotificationStream();
                 }
-                await refreshNotifications();
             }
 
             void initializeNotifications();
