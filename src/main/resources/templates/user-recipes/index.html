@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head th:replace="~{fragments/header :: headResources('사용자 레시피')}">
+    <meta charset="UTF-8">
+    <title>사용자 레시피</title>
+</head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel hero-panel-recipe mb-4">
+            <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
+                <div>
+                    <h1 class="display-title h3 mb-2">사용자 레시피</h1>
+                    <p class="mb-0 text-white-50">직접 만든 레시피를 단계별로 정리하고, 다른 사용자와 리뷰와 댓글을 주고받을 수 있습니다.</p>
+                </div>
+                <div class="d-flex flex-wrap align-items-end gap-2">
+                    <a class="btn btn-light" sec:authorize="isAuthenticated()" th:href="@{/user-recipes/new}">레시피 작성</a>
+                    <a class="btn btn-outline-light" sec:authorize="!isAuthenticated()" th:href="@{/u/login}">로그인 후 작성</a>
+                </div>
+            </div>
+        </section>
+
+        <div th:if="${recipeMessage != null}" class="alert alert-success py-2 mb-3" th:text="${recipeMessage}">처리 완료</div>
+        <div th:if="${recipeErrorMessage != null}" class="alert alert-danger py-2 mb-3" th:text="${recipeErrorMessage}">처리 실패</div>
+
+        <section class="section-wrap p-4">
+            <div class="results-toolbar mb-3">
+                <div>
+                    <h2 class="h5 mb-1">최신 사용자 레시피</h2>
+                    <span class="small text-muted-soft" th:if="${recipePage != null}" th:text="|총 ${recipePage.totalElements}건|">총 0건</span>
+                </div>
+            </div>
+
+            <div class="alert alert-light border" th:if="${recipePage == null or recipePage.totalElements == 0}">
+                아직 등록된 사용자 레시피가 없습니다. 첫 번째 레시피를 올려보세요.
+            </div>
+
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-4" th:if="${recipePage != null and recipePage.totalElements > 0}">
+                <div class="col" th:each="recipe : ${recipePage}">
+                    <article class="recipe-card recipe-card-clickable"
+                             th:attr="data-recipe-url=@{/user-recipes/{id}(id=${recipe.id()})}">
+                        <a th:href="@{/user-recipes/{id}(id=${recipe.id()})}" class="recipe-card-link">
+                            <div class="recipe-thumb-link">
+                                <img th:src="${recipe.thumbnailUrl()}" alt="사용자 레시피 썸네일" class="recipe-thumb">
+                            </div>
+                            <div class="p-3">
+                                <p class="recipe-kicker">User Recipe</p>
+                                <p class="recipe-title" th:text="${recipe.title()}">레시피 제목</p>
+                                <p class="recipe-summary"
+                                   th:text="${recipe.summary() != null and !#strings.isEmpty(recipe.summary()) ? recipe.summary() : '소개가 아직 등록되지 않았습니다.'}">
+                                    레시피 소개
+                                </p>
+                                <div class="recipe-meta d-flex flex-wrap gap-2 mb-2">
+                                    <span class="meta-pill" th:if="${recipe.cookingTime() != null and !#strings.isEmpty(recipe.cookingTime())}" th:text="${recipe.cookingTime()}">20분</span>
+                                    <span class="meta-pill" th:if="${recipe.servings() != null and !#strings.isEmpty(recipe.servings())}" th:text="${recipe.servings()}">2인분</span>
+                                    <span class="meta-pill" th:if="${recipe.difficulty() != null and !#strings.isEmpty(recipe.difficulty())}" th:text="${recipe.difficulty()}">초급</span>
+                                </div>
+                                <div class="small text-muted-soft">
+                                    <span th:text="${recipe.authorName()}">작성자</span>
+                                    <span>·</span>
+                                    <span th:text="${#temporals.format(recipe.regTime(), 'yyyy.MM.dd')}">2026.03.09</span>
+                                </div>
+                            </div>
+                        </a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-wrap p-3 mt-3" th:if="${recipePage != null and recipePage.totalPages > 1}">
+            <div th:replace="~{fragments/paginationFragment :: pagination('/user-recipes', ${startPage}, ${endPage}, ${currentPage}, ${totalPages}, ${hasPreviousGroup}, ${hasNextGroup}, ${null}, ${null}, ${null}, ${null}, ${null}, ${null}, ${null})}"></div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
+</body>
+</html>

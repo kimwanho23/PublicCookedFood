@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kwh.PublicCookedFood.board.facade.BoardImageFacade;
+import kwh.PublicCookedFood.board.service.ImageService;
+import kwh.PublicCookedFood.storage.StorageCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -25,6 +27,7 @@ import java.util.Optional;
 public class ImageController {
 
     private final BoardImageFacade boardImageFacade;
+    private final ImageService imageService;
 
     @Operation(summary = "임시 이미지 업로드", description = "게시글 작성 전에 이미지를 임시 저장하고 접근 URL을 반환합니다.")
     @PostMapping("/api/images")
@@ -33,6 +36,15 @@ public class ImageController {
             @RequestParam("file") MultipartFile file
     ) {
         return ResponseEntity.ok(boardImageFacade.uploadTempImage(file));
+    }
+
+    @Operation(summary = "사용자 레시피 이미지 업로드", description = "사용자 레시피 작성/수정에 사용할 이미지를 임시 저장하고 접근 URL을 반환합니다.")
+    @PostMapping("/api/images/user-recipes")
+    public ResponseEntity<String> uploadUserRecipeImage(
+            @Parameter(description = "업로드할 이미지 파일", required = true)
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(imageService.uploadTempImage(file, StorageCategory.USER_RECIPE_IMAGE));
     }
 
     @Operation(summary = "원본 이미지 다운로드", description = "원본 이미지 URL을 기준으로 이미지를 조회하거나 다운로드합니다.")

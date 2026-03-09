@@ -31,9 +31,15 @@ public class ImageTempUploadService {
 
     @Transactional
     public String uploadTempImage(MultipartFile file) {
+        return uploadTempImage(file, StorageCategory.IMAGE);
+    }
+
+    @Transactional
+    public String uploadTempImage(MultipartFile file, StorageCategory storageCategory) {
         validateImageFile(file);
         imageSchemaService.ensureLegacyImagesSchemaCompatibleIfEnabled();
-        StoredResource stored = storageService.store(file, StorageCategory.IMAGE);
+        StorageCategory resolvedCategory = storageCategory == null ? StorageCategory.IMAGE : storageCategory;
+        StoredResource stored = storageService.store(file, resolvedCategory);
         try {
             Images savedImage = Images.createTemporary(
                     limitLength(stored.originalFilename(), MAX_ORIGINAL_FILENAME_LENGTH),
@@ -45,13 +51,13 @@ public class ImageTempUploadService {
             imagesRepository.saveAndFlush(savedImage);
             return stored.resourceUrl();
         } catch (DataIntegrityViolationException e) {
-            storageService.delete(StorageCategory.IMAGE, stored.savedFilename());
+            storageService.delete(resolvedCategory, stored.savedFilename());
             if (isPostIdNullConstraintViolation(e)) {
                 throw new StorageException("DB 스키마 오류: images.post_id가 NOT NULL 입니다. post_id를 NULL 허용으로 변경해야 합니다.", e);
             }
             throw new StorageException("이미지 메타데이터 저장 중 제약조건 오류가 발생했습니다.", e);
         } catch (RuntimeException e) {
-            storageService.delete(StorageCategory.IMAGE, stored.savedFilename());
+            storageService.delete(resolvedCategory, stored.savedFilename());
             throw new StorageException("이미지 메타데이터 저장에 실패했습니다.", e);
         }
     }

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head th:replace="~{fragments/header :: headResources('사용자 레시피 상세')}">
+    <meta charset="UTF-8">
+    <title>사용자 레시피 상세</title>
+</head>
+<body class="app-shell d-flex flex-column">
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-shell">
+    <div class="container">
+        <section class="hero-panel mb-4">
+            <p class="small text-white-50 mb-2">User Recipe</p>
+            <h1 class="h3 mb-2" th:text="${recipe.title()}">레시피 제목</h1>
+            <p class="mb-0 text-white-50"
+               th:text="${recipe.summary() != null and !#strings.isEmpty(recipe.summary()) ? recipe.summary() : '소개가 아직 등록되지 않았습니다.'}">
+                레시피 소개
+            </p>
+        </section>
+
+        <div id="userRecipeAlerts">
+            <div th:if="${recipeMessage != null}" class="alert alert-success py-2 mb-3" th:text="${recipeMessage}">등록 완료</div>
+            <div th:if="${recipeErrorMessage != null}" class="alert alert-danger py-2 mb-3" th:text="${recipeErrorMessage}">레시피 오류</div>
+            <div th:if="${commentError != null}" class="alert alert-danger py-2 mb-3" th:text="${commentError}">댓글 오류</div>
+            <div th:if="${reviewMessage != null}" class="alert alert-success py-2 mb-3" th:text="${reviewMessage}">리뷰 저장 완료</div>
+            <div th:if="${reviewErrorMessage != null}" class="alert alert-danger py-2 mb-3" th:text="${reviewErrorMessage}">리뷰 저장 실패</div>
+        </div>
+
+        <section class="section-wrap p-4 mb-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="meta-pill" th:text="${recipe.authorName()}">작성자</span>
+                    <span class="meta-pill" th:if="${recipe.cookingTime() != null and !#strings.isEmpty(recipe.cookingTime())}" th:text="${recipe.cookingTime()}">20분</span>
+                    <span class="meta-pill" th:if="${recipe.servings() != null and !#strings.isEmpty(recipe.servings())}" th:text="${recipe.servings()}">2인분</span>
+                    <span class="meta-pill" th:if="${recipe.difficulty() != null and !#strings.isEmpty(recipe.difficulty())}" th:text="${recipe.difficulty()}">초급</span>
+                    <span class="meta-pill" th:text="${#temporals.format(recipe.regTime(), 'yyyy.MM.dd HH:mm')}">2026.03.09</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-start">
+                    <a class="btn btn-outline-secondary" th:href="@{/user-recipes}">목록으로</a>
+                    <a class="btn btn-soft" sec:authorize="isAuthenticated()" th:href="@{/user-recipes/new}">새 레시피 작성</a>
+                    <a class="btn btn-soft"
+                       sec:authorize="isAuthenticated()"
+                       th:if="${isRecipeOwner}"
+                       th:href="@{/user-recipes/{id}/edit(id=${recipe.id()})}">레시피 수정</a>
+                    <form th:if="${isRecipeOwner}"
+                          th:action="@{/user-recipes/{id}/delete(id=${recipe.id()})}"
+                          method="post"
+                          onsubmit="return window.confirm('이 사용자 레시피를 삭제할까요?');">
+                        <input type="hidden" name="_method" value="patch">
+                        <button type="submit" class="btn btn-soft-danger btn-action-danger">레시피 삭제</button>
+                    </form>
+                </div>
+            </div>
+            <img th:src="${recipe.thumbnailUrl()}"
+                 alt="사용자 레시피 대표 이미지"
+                 class="img-fluid rounded-4 border w-100">
+        </section>
+
+        <section class="section-wrap p-4 mb-4">
+            <h2 class="h5 mb-3">재료 목록</h2>
+            <div th:each="group : ${ingredientGroups}" class="mb-3">
+                <div class="surface-soft p-3 mb-2">
+                    <strong th:text="${group.displayName}">주재료</strong>
+                </div>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between"
+                        th:each="ingredient : ${recipe.ingredients()}"
+                        th:if="${ingredient.ingredientGroup() == group.name()}">
+                        <span th:text="${ingredient.ingredientName()}">재료</span>
+                        <span class="text-muted-soft" th:text="${ingredient.amountText()}">용량</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section-wrap p-4 mb-4">
+            <h2 class="h5 mb-3">조리 순서</h2>
+            <div th:each="step : ${recipe.steps()}" class="mb-4 pb-4 border-bottom">
+                <p class="mb-2 fw-semibold" th:text="|${step.stepNo()}. ${step.contents()}|">1. 조리 단계</p>
+                <p class="small text-muted-soft mb-2"
+                   th:if="${step.tip() != null and !#strings.isEmpty(step.tip())}"
+                   th:text="${step.tip()}">단계 팁</p>
+                <img th:if="${step.imageUrl() != null and !#strings.isEmpty(step.imageUrl())}"
+                     th:src="${step.imageUrl()}"
+                     alt="조리 단계 이미지"
+                     class="img-fluid rounded-3 border">
+            </div>
+        </section>
+
+        <section id="recipe-reviews" class="section-wrap p-4 mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h2 class="h5 mb-0">리뷰</h2>
+                        <span class="badge text-bg-light"
+                              th:text="|평점 ${reviewSummary != null ? reviewSummary.averageRating() : 0.0} (${reviewSummary != null ? reviewSummary.reviewCount() : 0})|">
+                            평점 0.0 (0)
+                        </span>
+                    </div>
+
+                    <form sec:authorize="isAuthenticated()"
+                          th:if="${canWriteReview}"
+                          th:action="@{/user-recipes/{id}/reviews(id=${recipe.id()})}"
+                          method="post"
+                          data-user-recipe-async-form
+                          data-user-recipe-async-target="#recipe-reviews"
+                          class="row g-3">
+                        <div class="col-sm-3">
+                            <label for="reviewRating" class="form-label">평점</label>
+                            <select id="reviewRating" class="form-select form-select-sm" name="rating" aria-label="리뷰 평점">
+                                <option th:each="score : ${#numbers.sequence(5,1)}"
+                                        th:value="${score}"
+                                        th:selected="${myReview != null and myReview.rating() == score}"
+                                        th:text="|${score}점|">5점</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-9">
+                            <label for="reviewContents" class="form-label">리뷰 내용</label>
+                            <input type="text"
+                                   class="form-control form-control-sm"
+                                   id="reviewContents"
+                                   name="contents"
+                                   maxlength="500"
+                                   aria-label="리뷰 내용"
+                                   placeholder="리뷰를 작성해보세요. (최대 500자)"
+                                   th:value="${myReview != null ? myReview.contents() : ''}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">포토리뷰 이미지</label>
+                            <div class="surface-soft p-3 js-user-recipe-image-field">
+                                <input type="hidden" name="imageUrl" class="js-user-recipe-image-url" th:value="${myReview != null ? myReview.imageUrl() : ''}">
+                                <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
+                                    <img class="img-fluid rounded-3 border js-user-recipe-image-preview"
+                                         alt="포토리뷰 이미지 미리보기"
+                                         style="max-width: 220px; display: none;">
+                                    <div class="flex-grow-1">
+                                        <input type="file"
+                                               class="form-control js-user-recipe-image-input"
+                                               accept="image/*"
+                                               aria-label="포토리뷰 이미지 업로드">
+                                        <div class="small text-muted mt-2 js-user-recipe-image-status" aria-live="polite"></div>
+                                        <button type="button"
+                                                class="btn btn-outline-secondary btn-symbol btn-sm mt-3 js-user-recipe-image-clear"
+                                                aria-label="포토리뷰 이미지 초기화"
+                                                title="포토리뷰 이미지 초기화">×</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 d-grid d-sm-flex justify-content-sm-end">
+                            <button type="submit"
+                                    class="btn btn-sm btn-soft-danger btn-action-danger"
+                                    th:if="${myReview != null}"
+                                    formmethod="post"
+                                    th:formaction="@{/user-recipes/{id}/reviews/delete(id=${recipe.id()})}"
+                                    name="_method"
+                                    value="patch"
+                                    data-user-recipe-confirm="리뷰를 삭제할까요?">리뷰 삭제</button>
+                            <button type="submit"
+                                    class="btn btn-sm btn-soft"
+                                    th:text="${myReview != null ? '리뷰 수정' : '리뷰 등록'}">리뷰 저장</button>
+                        </div>
+                    </form>
+
+                    <div sec:authorize="!isAuthenticated()" class="alert alert-light border mt-3 mb-0">
+                        리뷰 작성은 로그인 후 이용할 수 있습니다.
+                    </div>
+
+                    <div sec:authorize="isAuthenticated()"
+                         th:if="${isRecipeOwner}"
+                         class="alert alert-light border mt-3 mb-0">
+                        내 레시피에는 리뷰를 작성할 수 없습니다.
+                    </div>
+
+                    <div sec:authorize="isAuthenticated()"
+                         th:if="${recipeInteractionBlocked != null and recipeInteractionBlocked}"
+                         class="alert alert-light border mt-3 mb-0">
+                        차단 관계인 사용자와는 리뷰를 주고받을 수 없습니다.
+                    </div>
+
+                    <div class="d-flex flex-column gap-3 mt-4" th:if="${reviews != null and !reviews.isEmpty()}">
+                        <article class="surface-soft p-3" th:each="review : ${reviews}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong th:text="${review.accountName()}">사용자</strong>
+                                <span class="small text-muted-soft"
+                                      th:text="${#temporals.format(review.regTime(), 'yyyy.MM.dd HH:mm')}">2026.03.09 13:00</span>
+                            </div>
+                            <div class="small mb-2" th:text="|평점 ${review.rating()}점|">평점 5점</div>
+                            <p class="mb-2"
+                               th:text="${review.contents() != null and !#strings.isEmpty(review.contents()) ? review.contents() : '리뷰 내용 없음'}">
+                                리뷰 내용
+                            </p>
+                            <img th:if="${review.imageUrl() != null and !#strings.isEmpty(review.imageUrl())}"
+                                 th:src="${review.imageUrl()}"
+                                 alt="포토리뷰 이미지"
+                                 class="img-fluid rounded-3 border">
+                        </article>
+                    </div>
+                    <p class="text-muted-soft mb-0 mt-3" th:if="${reviews == null or reviews.isEmpty()}">아직 등록된 리뷰가 없습니다.</p>
+        </section>
+
+        <section id="recipe-comments" class="section-wrap p-4">
+                    <h2 class="h5 mb-3" th:text="|댓글 ${commentsCount}개|">댓글</h2>
+                    <div th:if="${commentsCount == 0}" class="text-muted-soft">첫 댓글을 남겨보세요.</div>
+                    <div class="gap-3" th:each="comment : ${comments}">
+                        <div th:replace="~{fragments/userRecipeCommentFragment :: commentFragment(${comment})}"></div>
+                    </div>
+
+                    <nav th:if="${comments != null and comments.totalPages > 1}" class="mt-4" aria-label="댓글 페이지 이동">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item" th:classappend="${comments.first} ? ' disabled'">
+                                <a class="page-link"
+                                   th:href="@{|/user-recipes/${recipe.id()}?commentPage=${comments.number - 1}&commentSize=${comments.size}#recipe-comments|}">이전</a>
+                            </li>
+                            <li class="page-item"
+                                th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                                th:classappend="${pageNum == comments.number} ? ' active'">
+                                <a class="page-link"
+                                   th:text="${pageNum + 1}"
+                                   th:href="@{|/user-recipes/${recipe.id()}?commentPage=${pageNum}&commentSize=${comments.size}#recipe-comments|}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${comments.last} ? ' disabled'">
+                                <a class="page-link"
+                                   th:href="@{|/user-recipes/${recipe.id()}?commentPage=${comments.number + 1}&commentSize=${comments.size}#recipe-comments|}">다음</a>
+                            </li>
+                        </ul>
+                    </nav>
+
+                    <section class="pt-4" sec:authorize="isAuthenticated()" th:if="${recipeInteractionBlocked == null or !recipeInteractionBlocked}">
+                        <h3 class="h6 mb-3">댓글 작성</h3>
+                        <form th:action="@{/user-recipes/{id}/comments(id=${recipe.id()})}"
+                              method="post"
+                              data-user-recipe-async-form
+                              data-user-recipe-async-target="#recipe-comments">
+                            <input type="hidden" name="commentPage" th:value="${comments != null ? comments.number : 0}">
+                            <input type="hidden" name="commentSize" th:value="${comments != null ? comments.size : 20}">
+                            <label for="commentContents" class="visually-hidden">댓글 내용</label>
+                            <div class="input-group">
+                                <span class="input-group-text">내용</span>
+                                <textarea class="form-control"
+                                          id="commentContents"
+                                          name="contents"
+                                          rows="4"
+                                          aria-label="댓글 내용"
+                                          placeholder="댓글을 입력하세요."></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-brand mt-3">댓글 달기</button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="pt-4 text-muted-soft" sec:authorize="isAuthenticated()" th:if="${recipeInteractionBlocked != null and recipeInteractionBlocked}">
+                        차단 관계인 사용자와는 댓글을 주고받을 수 없습니다.
+                    </section>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: siteFooter}"></footer>
+<script th:src="@{/js/user-recipe-form.js}"></script>
+</body>
+</html>

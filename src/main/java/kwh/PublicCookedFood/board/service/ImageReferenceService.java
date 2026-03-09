@@ -4,11 +4,15 @@ import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardImage;
 import kwh.PublicCookedFood.board.domain.Images;
 import kwh.PublicCookedFood.board.domain.Images.ImageStatus;
+import kwh.PublicCookedFood.board.domain.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardImageRepository;
 import kwh.PublicCookedFood.board.repository.ImagesRepository;
+import kwh.PublicCookedFood.account.repository.AccountRepository;
 import kwh.PublicCookedFood.storage.StorageCategory;
 import kwh.PublicCookedFood.storage.StorageService;
-import kwh.PublicCookedFood.account.repository.AccountRepository;
+import kwh.PublicCookedFood.userrecipe.repository.UserRecipeRepository;
+import kwh.PublicCookedFood.userrecipe.repository.UserRecipeReviewRepository;
+import kwh.PublicCookedFood.userrecipe.repository.UserRecipeStepRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +37,9 @@ public class ImageReferenceService {
     private final ImagesRepository imagesRepository;
     private final BoardImageRepository boardImageRepository;
     private final AccountRepository accountRepository;
+    private final UserRecipeRepository userRecipeRepository;
+    private final UserRecipeStepRepository userRecipeStepRepository;
+    private final UserRecipeReviewRepository userRecipeReviewRepository;
     private final ImageSchemaService imageSchemaService;
     private final StorageService storageService;
     private final ImageUrlSupport imageUrlSupport;
@@ -80,7 +88,8 @@ public class ImageReferenceService {
             }
             int affected = imagesRepository.deleteByIdAndStatus(staleImage.getId(), ImageStatus.TEMP);
             if (affected > 0) {
-                storageService.delete(StorageCategory.IMAGE, staleImage.getSavedFilename());
+                resolveStorageCategory(staleImage).ifPresent(category ->
+                        storageService.delete(category, staleImage.getSavedFilename()));
                 deletedCount++;
             }
         }
@@ -89,16 +98,23 @@ public class ImageReferenceService {
 
     @Transactional
     public void attachProfileImageIfPresent(String imageUrl) {
-        imageUrlSupport.normalizeLocalImageUrl(imageUrl)
-                .flatMap(url -> imagesRepository.findByImgUrlAndStatusIn(url, LINKABLE_IMAGE_STATUSES))
-                .ifPresent(Images::attach);
+        attachImageIfPresent(imageUrl);
+    }
+
+    @Transactional
+    public void attachImagesIfPresent(Set<String> imageUrls) {
+        normalizeLocalImageUrls(imageUrls).forEach(this::attachImageIfPresent);
     }
 
     @Transactional
     public void cleanupImageByUrlIfUnlinked(String imageUrl) {
-        imageUrlSupport.normalizeLocalImageUrl(imageUrl)
-                .flatMap(url -> imagesRepository.findByImgUrlAndStatusIn(url, LINKABLE_IMAGE_STATUSES))
-                .ifPresent(this::cleanupImageIfUnlinked);
+        cleanupNormalizedImageUrlIfUnlinked(normalizeImageUrl(imageUrl));
+    }
+
+    @Transactional
+    public void cleanupImagesByUrlIfUnlinked(Set<String> imageUrls) {
+        normalizeLocalImageUrls(imageUrls).forEach(imageUrl ->
+                cleanupNormalizedImageUrlIfUnlinked(Optional.of(imageUrl)));
     }
 
     private void attachNewBoardImages(Board board,
@@ -137,7 +153,8 @@ public class ImageReferenceService {
             return;
         }
         image.markDeleted();
-        storageService.delete(StorageCategory.IMAGE, image.getSavedFilename());
+        resolveStorageCategory(image).ifPresent(category ->
+                storageService.delete(category, image.getSavedFilename()));
     }
 
     private boolean isImageReferencedByAnyUser(Images image) {
@@ -148,6 +165,42 @@ public class ImageReferenceService {
         if (imageUrl == null || imageUrl.isBlank()) {
             return false;
         }
-        return accountRepository.existsByProfileImageUrl(imageUrl);
+        return accountRepository.existsByProfileImageUrl(imageUrl)
+                || userRecipeRepository.existsByThumbnailUrlAndState(imageUrl, SoftDeleteState.ACTIVE)
+                || userRecipeStepRepository.existsByImageUrlAndRecipeState(imageUrl, SoftDeleteState.ACTIVE)
+                || userRecipeReviewRepository.existsByImageUrlAndRecipeState(imageUrl, SoftDeleteState.ACTIVE);
+    }
+
+    private void attachImageIfPresent(String imageUrl) {
+        normalizeImageUrl(imageUrl)
+                .flatMap(url -> imagesRepository.findByImgUrlAndStatusIn(url, LINKABLE_IMAGE_STATUSES))
+                .ifPresent(Images::attach);
+    }
+
+    private void cleanupNormalizedImageUrlIfUnlinked(Optional<String> imageUrl) {
+        imageUrl.flatMap(url -> imagesRepository.findByImgUrlAndStatusIn(url, LINKABLE_IMAGE_STATUSES))
+                .ifPresent(this::cleanupImageIfUnlinked);
+    }
+
+    private Optional<String> normalizeImageUrl(String imageUrl) {
+        return imageUrlSupport.normalizeLocalImageUrl(imageUrl);
+    }
+
+    private Set<String> normalizeLocalImageUrls(Set<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String imageUrl : imageUrls) {
+            normalizeImageUrl(imageUrl).ifPresent(normalized::add);
+        }
+        return normalized;
+    }
+
+    private Optional<StorageCategory> resolveStorageCategory(Images image) {
+        if (image == null) {
+            return Optional.empty();
+        }
+        return StorageCategory.resolveByUrl(image.getImgUrl());
     }
 }
