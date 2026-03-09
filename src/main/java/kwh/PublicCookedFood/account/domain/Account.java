@@ -21,7 +21,7 @@ import java.util.List;
 @Table(name = "accounts")
 public class Account {
 
-    @Id @GeneratedValue(strategy = GenerationType.AUTO)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)

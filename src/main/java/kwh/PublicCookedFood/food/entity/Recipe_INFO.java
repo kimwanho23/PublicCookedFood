@@ -27,7 +27,7 @@ import java.util.List;
 @ToString(exclude = "bookmarks")
 public class Recipe_INFO {
 
-    @Id @GeneratedValue(strategy = GenerationType.AUTO)
+    @Id
     @Column(name = "row_NUM")
     private Long rowNUM;
 

@@ -9,7 +9,7 @@ import lombok.Getter;
 @Table(name = "Recipe_IRDNT")
 public class Recipe_IRDNT {
 
-    @Id @GeneratedValue(strategy = GenerationType.AUTO)
+    @Id
     @Column(name = "row_NUM")
     private Long rowNUM;           // ID
 

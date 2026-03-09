@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 public class Recipe_CRSE {
 
-    @Id @GeneratedValue(strategy = GenerationType.AUTO)
+    @Id
     @Column(name = "row_NUM")
     private Long rowNUM;
 
