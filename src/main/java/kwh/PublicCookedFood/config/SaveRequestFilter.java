@@ -29,6 +29,7 @@ public class SaveRequestFilter extends OncePerRequestFilter {
     private static final String LOGIN_PAGE_URI = "/u/login";
     private static final String SIGNUP_PAGE_URI = "/u/signup";
     private static final String ACCOUNT_RECOVER_URI_PATTERN = "/u/account/**";
+    private static final String NOTIFICATION_STREAM_URI = "/api/notifications/stream";
 
     private final AccountService accountService;
 
@@ -36,7 +37,7 @@ public class SaveRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (isAuthenticated(authentication)) {
+        if (isAuthenticated(authentication) && shouldResolveCurrentAccount(request)) {
             Account currentAccount = resolveCurrentAccount(authentication);
             if (currentAccount == null && extractAccountId(authentication.getPrincipal()) != null) {
                 clearAuthentication(request);
@@ -61,6 +62,13 @@ public class SaveRequestFilter extends OncePerRequestFilter {
         return authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken);
+    }
+
+    private boolean shouldResolveCurrentAccount(HttpServletRequest request) {
+        if (request == null) {
+            return true;
+        }
+        return !new AntPathRequestMatcher(NOTIFICATION_STREAM_URI).matches(request);
     }
 
     private Account resolveCurrentAccount(Authentication authentication) {

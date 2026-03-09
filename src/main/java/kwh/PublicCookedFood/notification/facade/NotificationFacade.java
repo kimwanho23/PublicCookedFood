@@ -2,6 +2,7 @@ package kwh.PublicCookedFood.notification.facade;
 
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.common.error.CommonErrorCode;
+import kwh.PublicCookedFood.notification.dto.response.NotificationInitialStateResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationListResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationSettingResponse;
@@ -21,11 +22,25 @@ public class NotificationFacade {
     private final NotificationService notificationService;
 
     public SseEmitter subscribe(Account account) {
-        Long accountId = requireAccountId(account);
-        if (!notificationService.isNotificationEnabled(accountId)) {
+        Account currentAccount = requireAccount(account);
+        if (!currentAccount.isNotificationEnabled()) {
             throw new AppException(NotificationErrorCode.NOTIFICATION_DISABLED);
         }
-        return notificationService.subscribe(accountId);
+        return notificationService.subscribe(currentAccount.getId());
+    }
+
+    public NotificationInitialStateResponse getInitialState(Account account,
+                                                            Pageable pageable,
+                                                            boolean unreadOnly) {
+        Account currentAccount = requireAccount(account);
+        Page<NotificationResponse> notifications =
+                notificationService.getNotifications(currentAccount.getId(), pageable, unreadOnly);
+        long unreadCount = notificationService.getUnreadCount(currentAccount.getId());
+        return NotificationInitialStateResponse.from(
+                currentAccount.isNotificationEnabled(),
+                notifications,
+                unreadCount
+        );
     }
 
     public NotificationListResponse getNotifications(Account account,
