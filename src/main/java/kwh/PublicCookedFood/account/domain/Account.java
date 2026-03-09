@@ -153,6 +153,13 @@ public class Account {
         return this;
     }
 
+    public Account updateAuthority(Role authority) {
+        if (authority != null) {
+            this.authority = authority;
+        }
+        return this;
+    }
+
     public String getRoleKey() {
         return this.authority.getKey();
     }

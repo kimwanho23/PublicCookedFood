@@ -2,6 +2,7 @@ package kwh.PublicCookedFood.account.service;
 
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.dto.CustomAccountDetails;
 import kwh.PublicCookedFood.account.error.AccountErrorCode;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
@@ -83,6 +84,24 @@ public class AccountService implements UserDetailsService {
                 normalizePhoneNumber(phoneNumber),
                 birthDate
         );
+    }
+
+    @Transactional
+    public boolean promoteToInitialAdminIfPresent(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+
+        return accountRepository.findByEmail(email.trim())
+                .map(account -> {
+                    if (account.getAuthority() == Role.ADMIN) {
+                        return false;
+                    }
+                    account.updateAuthority(Role.ADMIN);
+                    accountRepository.save(account);
+                    return true;
+                })
+                .orElse(false);
     }
 
     @Override

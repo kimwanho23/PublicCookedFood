@@ -45,8 +45,6 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
     locations: classpath:db/migration
-    placeholders:
-      bootstrap_admin_email: ${BOOTSTRAP_ADMIN_EMAIL:}
   mail:
     host: smtp.gmail.com
     port: ${MAIL_PORT:587}
@@ -105,6 +103,8 @@ springdoc:
 file:
   dir: ${FILE_DIR:C:/cookboardImageFile/}
 app:
+  account:
+    initial-admin-email: ${INITIAL_ADMIN_EMAIL:}
   session:
     cookie:
       name: ${SESSION_COOKIE_NAME:JSESSIONID}
