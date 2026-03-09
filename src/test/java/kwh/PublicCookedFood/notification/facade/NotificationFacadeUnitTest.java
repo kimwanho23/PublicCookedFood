@@ -32,13 +32,11 @@ class NotificationFacadeUnitTest {
     @Test
     void subscribe_throwsWhenNotificationDisabledInStoredAccountState() {
         Account account = loginAccount(7L, false);
-        when(notificationService.isNotificationEnabled(7L)).thenReturn(false);
 
         assertThatThrownBy(() -> notificationFacade.subscribe(account))
                 .isInstanceOfSatisfying(AppException.class, e ->
                         assertThat(e.getErrorCode()).isEqualTo(NotificationErrorCode.NOTIFICATION_DISABLED));
 
-        verify(notificationService).isNotificationEnabled(7L);
         verify(notificationService, never()).subscribe(7L);
     }
 
@@ -53,13 +51,11 @@ class NotificationFacadeUnitTest {
     void subscribe_delegatesWhenNotificationEnabled() {
         Account account = loginAccount(8L, true);
         SseEmitter emitter = new SseEmitter();
-        when(notificationService.isNotificationEnabled(8L)).thenReturn(true);
         when(notificationService.subscribe(8L)).thenReturn(emitter);
 
         SseEmitter result = notificationFacade.subscribe(account);
 
         assertThat(result).isSameAs(emitter);
-        verify(notificationService).isNotificationEnabled(8L);
         verify(notificationService).subscribe(8L);
     }
 
