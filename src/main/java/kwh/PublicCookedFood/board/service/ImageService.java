@@ -1,6 +1,7 @@
 package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.board.domain.Board;
+import kwh.PublicCookedFood.storage.StorageCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -9,6 +10,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +22,10 @@ public class ImageService {
 
     public String uploadTempImage(MultipartFile file) {
         return imageTempUploadService.uploadTempImage(file);
+    }
+
+    public String uploadTempImage(MultipartFile file, StorageCategory storageCategory) {
+        return imageTempUploadService.uploadTempImage(file, storageCategory);
     }
 
     public void syncBoardImages(Board board) {
@@ -53,8 +59,16 @@ public class ImageService {
         imageReferenceService.attachProfileImageIfPresent(imageUrl);
     }
 
+    public void attachImagesIfPresent(Set<String> imageUrls) {
+        imageReferenceService.attachImagesIfPresent(imageUrls);
+    }
+
     public void cleanupImageByUrlIfUnlinked(String imageUrl) {
         imageReferenceService.cleanupImageByUrlIfUnlinked(imageUrl);
+    }
+
+    public void cleanupImagesByUrlIfUnlinked(Set<String> imageUrls) {
+        imageReferenceService.cleanupImagesByUrlIfUnlinked(imageUrls);
     }
 
     public record ImageDownloadResource(Path filePath, String downloadFilename, String contentType, long fileSize) {
