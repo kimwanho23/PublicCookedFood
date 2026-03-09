@@ -49,7 +49,9 @@ public class ImageDownloadQueryService {
 
         Images image = imageOptional.get();
         Path uploadRootPath = StoragePathUtils.resolveUploadPath(storageProperties.dir());
-        Path imageDirectory = uploadRootPath.resolve(StorageCategory.IMAGE.getDirectoryName()).normalize();
+        StorageCategory storageCategory = StorageCategory.resolveByUrl(image.getImgUrl())
+                .orElse(StorageCategory.IMAGE);
+        Path imageDirectory = uploadRootPath.resolve(storageCategory.getDirectoryName()).normalize();
         Path originalPath = findOriginalImagePath(imageDirectory, image.getSavedFilename(), image.getOriginalFilename());
         Path downloadPath = originalPath != null ? originalPath : resolveDisplayImagePath(uploadRootPath, imageDirectory, image.getSavedFilename());
         if (downloadPath == null || !Files.isRegularFile(downloadPath)) {

@@ -1287,6 +1287,38 @@ main.page-shell {
     --bs-btn-border-radius: 0.68rem;
 }
 
+.btn-symbol {
+    --bs-btn-padding-x: 0;
+    --bs-btn-padding-y: 0;
+    width: 2.6rem;
+    min-width: 2.6rem;
+    height: 2.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    line-height: 1;
+    font-weight: 700;
+}
+
+.btn-symbol.btn-sm {
+    width: 2.2rem;
+    min-width: 2.2rem;
+    height: 2.2rem;
+    font-size: 1.08rem;
+}
+
+.btn-symbol-wide {
+    min-height: 3.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.9rem;
+    line-height: 1;
+    font-weight: 700;
+    border-style: dashed;
+}
+
 .pc-pagination {
     --bs-pagination-padding-x: 0.76rem;
     --bs-pagination-padding-y: 0.42rem;
