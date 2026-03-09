@@ -103,13 +103,16 @@ public class SecurityConfig {
                             .requestMatchers("/u/profile", "/u/settings", "/u/logout", "/u/blocks/**").authenticated()
                             .requestMatchers(HttpMethod.GET, "/boards/new", "/boards/*/edit", "/boards/scraps").authenticated()
                             .requestMatchers(HttpMethod.POST, "/recipes/*/reviews").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/user-recipes/new", "/user-recipes/*/edit").authenticated()
+                            .requestMatchers(HttpMethod.POST, "/user-recipes", "/user-recipes/*/comments", "/user-recipes/*/reviews").authenticated()
+                            .requestMatchers(HttpMethod.PATCH, "/user-recipes/*", "/user-recipes/*/delete", "/user-recipes/*/comments/*/delete", "/user-recipes/*/reviews/delete").authenticated()
                             .requestMatchers(HttpMethod.POST, "/boards", "/boards/*/comments", "/boards/*/scraps", "/boards/*/reports").authenticated()
                             .requestMatchers(HttpMethod.PATCH, "/boards/*", "/boards/*/delete", "/boards/*/comments/*/delete", "/boards/*/scraps/delete").authenticated()
                             .requestMatchers(HttpMethod.PUT, "/boards/*/likes").authenticated()
                             .requestMatchers(HttpMethod.GET, "/api/images/original", "/api/images/boards/*/zip").permitAll()
                             .requestMatchers("/bookmarks/**", "/api/images").authenticated()
                             .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
-                            .requestMatchers(HttpMethod.GET, "/", "/main", "/recipes", "/recipes/**", "/boards", "/boards/featured", "/boards/*").permitAll();
+                            .requestMatchers(HttpMethod.GET, "/", "/main", "/recipes", "/recipes/**", "/boards", "/boards/featured", "/boards/*", "/user-recipes", "/user-recipes/*").permitAll();
 
                     if (isSwaggerEnabled()) {
                         authorizeRequests.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();

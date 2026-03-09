@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>사용자 레시피 댓글 프래그먼트</title>
+</head>
+<body>
+<div th:fragment="commentFragment(comment)">
+    <article class="comment-card my-3 ms-0"
+             th:if="${comment.state != null and comment.state.active}"
+             th:attr="id='recipe-comment-' + ${comment.id}">
+        <div class="p-3 border-bottom d-flex align-items-center gap-2">
+            <img th:if="${comment.parentId != null}" th:src="@{/img/arrow-return-right.svg}" alt="답글">
+            <img class="comment-author-avatar"
+                 th:if="${comment.profileImageUrl != null and !#strings.isEmpty(comment.profileImageUrl)}"
+                 th:src="${comment.profileImageUrl}"
+                 onerror="this.onerror=null;this.src='/img/person-black.svg';"
+                 alt="댓글 작성자 프로필">
+            <img class="comment-author-avatar"
+                 th:if="${comment.profileImageUrl == null or #strings.isEmpty(comment.profileImageUrl)}"
+                 th:src="@{/img/person-black.svg}"
+                 alt="댓글 작성자 기본 프로필">
+            <a th:if="${comment.accountId != null}"
+               class="fw-semibold nickname-link"
+               th:href="@{/u/{accountId}(accountId=${comment.accountId})}"
+               th:text="${comment.name != null ? comment.name : '익명'}">작성자</a>
+            <strong th:if="${comment.accountId == null}" th:text="${comment.name != null ? comment.name : '익명'}">작성자</strong>
+            <span class="ms-auto small text-muted-soft"
+                  th:text="${#temporals.format(comment.regTime, 'yyyy-MM-dd HH:mm:ss')}">작성 시간</span>
+
+            <a sec:authorize="isAuthenticated()"
+               th:if="${recipeInteractionBlocked == null or !recipeInteractionBlocked}"
+               class="btn btn-outline-secondary btn-sm"
+               data-bs-toggle="collapse"
+               th:href="'#recipeReplyCollapse' + ${comment.id}"
+               role="button"
+               aria-expanded="false"
+               th:aria-controls="'recipeReplyCollapse' + ${comment.id}">답글</a>
+
+            <form sec:authorize="isAuthenticated()"
+                  th:if="${currentAccountId != null and comment.accountId == currentAccountId}"
+                  th:action="@{/user-recipes/{id}/comments/{commentId}/delete(id=${recipe.id()}, commentId=${comment.id})}"
+                  method="post"
+                  data-user-recipe-async-form
+                  data-user-recipe-async-target="#recipe-comments"
+                  data-user-recipe-confirm="댓글을 삭제할까요?"
+                  class="ms-2">
+                <input type="hidden" name="_method" value="patch">
+                <input type="hidden" name="commentPage" th:value="${comments != null ? comments.number : 0}">
+                <input type="hidden" name="commentSize" th:value="${comments != null ? comments.size : 20}">
+                <button type="submit"
+                        class="btn btn-soft-danger btn-action-danger btn-sm">삭제</button>
+            </form>
+        </div>
+
+        <div class="p-3">
+            <span th:text="${comment.contents}" style="white-space: pre-wrap;"></span>
+        </div>
+    </article>
+
+    <article class="comment-card my-3 ms-0"
+             th:if="${comment.state != null and comment.state.deleted and !comment.areAllRepliesDeleted()}"
+             th:attr="id='recipe-comment-' + ${comment.id}">
+        <div class="p-3 text-muted-soft">삭제된 댓글입니다.</div>
+    </article>
+
+    <div class="collapse my-2"
+         th:id="'recipeReplyCollapse' + ${comment.id}"
+         th:if="${recipeInteractionBlocked == null or !recipeInteractionBlocked}">
+        <div class="ms-3">
+            <form th:action="@{/user-recipes/{id}/comments(id=${recipe.id()})}"
+                  method="post"
+                  data-user-recipe-async-form
+                  data-user-recipe-async-target="#recipe-comments">
+                <input type="hidden" name="parentId" th:value="${comment.id}">
+                <input type="hidden" name="commentPage" th:value="${comments != null ? comments.number : 0}">
+                <input type="hidden" name="commentSize" th:value="${comments != null ? comments.size : 20}">
+                <label th:for="'recipeReplyContents-' + ${comment.id}" class="visually-hidden">답글 내용</label>
+                <div class="input-group">
+                    <span class="input-group-text">답글</span>
+                    <textarea class="form-control"
+                              th:id="'recipeReplyContents-' + ${comment.id}"
+                              name="contents"
+                              rows="3"
+                              aria-label="답글 내용"
+                              placeholder="답글을 입력하세요."></textarea>
+                </div>
+                <button type="submit" class="btn btn-soft btn-sm mt-2">답글 달기</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:each="reply : ${comment.replies}" class="ms-3">
+        <div th:replace="~{this :: commentFragment(${reply})}"></div>
+    </div>
+</div>
+</body>
+</html>
