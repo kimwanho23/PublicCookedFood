@@ -16,7 +16,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +38,7 @@ public class NotificationController {
 
     @Operation(summary = "실시간 알림 구독", description = "SSE 연결을 열어 현재 로그인 사용자의 실시간 알림을 구독합니다.")
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@AuthenticationPrincipal(expression = "account") Account account) {
+    public SseEmitter subscribe(@Parameter(hidden = true) @LoginAccount Account account) {
         return notificationFacade.subscribe(account);
     }
 

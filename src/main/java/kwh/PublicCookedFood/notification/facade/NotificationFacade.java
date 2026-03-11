@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.notification.facade;
 
 import kwh.PublicCookedFood.common.error.AppException;
-import kwh.PublicCookedFood.common.error.CommonErrorCode;
 import kwh.PublicCookedFood.notification.dto.response.NotificationInitialStateResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationListResponse;
 import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
@@ -9,6 +8,7 @@ import kwh.PublicCookedFood.notification.dto.response.NotificationSettingRespons
 import kwh.PublicCookedFood.notification.error.NotificationErrorCode;
 import kwh.PublicCookedFood.notification.service.NotificationService;
 import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.common.error.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,22 +22,22 @@ public class NotificationFacade {
     private final NotificationService notificationService;
 
     public SseEmitter subscribe(Account account) {
-        Account currentAccount = requireAccount(account);
-        if (!currentAccount.isNotificationEnabled()) {
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        if (!currentAccount.notificationEnabled()) {
             throw new AppException(NotificationErrorCode.NOTIFICATION_DISABLED);
         }
-        return notificationService.subscribe(currentAccount.getId());
+        return notificationService.subscribe(currentAccount.accountId());
     }
 
     public NotificationInitialStateResponse getInitialState(Account account,
                                                             Pageable pageable,
                                                             boolean unreadOnly) {
-        Account currentAccount = requireAccount(account);
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
         Page<NotificationResponse> notifications =
-                notificationService.getNotifications(currentAccount.getId(), pageable, unreadOnly);
-        long unreadCount = notificationService.getUnreadCount(currentAccount.getId());
+                notificationService.getNotifications(currentAccount.accountId(), pageable, unreadOnly);
+        long unreadCount = notificationService.getUnreadCount(currentAccount.accountId());
         return NotificationInitialStateResponse.from(
-                currentAccount.isNotificationEnabled(),
+                currentAccount.notificationEnabled(),
                 notifications,
                 unreadCount
         );
@@ -46,47 +46,65 @@ public class NotificationFacade {
     public NotificationListResponse getNotifications(Account account,
                                                      Pageable pageable,
                                                      boolean unreadOnly) {
-        Long accountId = requireAccountId(account);
-        Page<NotificationResponse> notifications = notificationService.getNotifications(accountId, pageable, unreadOnly);
-        long unreadCount = notificationService.getUnreadCount(accountId);
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        Page<NotificationResponse> notifications =
+                notificationService.getNotifications(currentAccount.accountId(), pageable, unreadOnly);
+        long unreadCount = notificationService.getUnreadCount(currentAccount.accountId());
         return NotificationListResponse.from(notifications, unreadCount);
     }
 
     public NotificationSettingResponse getNotificationSetting(Account account) {
-        boolean enabled = notificationService.isNotificationEnabled(requireAccountId(account));
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        boolean enabled = notificationService.isNotificationEnabled(currentAccount.accountId());
         return new NotificationSettingResponse(enabled);
     }
 
     public NotificationSettingResponse updateNotificationSetting(Account account, boolean enabled) {
-        boolean updated = notificationService.updateNotificationEnabled(requireAccountId(account), enabled);
-        account.updateNotificationEnabled(updated);
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        boolean updated = notificationService.updateNotificationEnabled(currentAccount.accountId(), enabled);
+        currentAccount.updateNotificationEnabled(updated);
         return new NotificationSettingResponse(updated);
     }
 
     public void markAsRead(Account account, Long notificationId) {
-        notificationService.markAsRead(requireAccountId(account), notificationId);
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        notificationService.markAsRead(currentAccount.accountId(), notificationId);
     }
 
     public void markAllAsRead(Account account) {
-        notificationService.markAllAsRead(requireAccountId(account));
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        notificationService.markAllAsRead(currentAccount.accountId());
     }
 
     public void deleteNotification(Account account, Long notificationId) {
-        notificationService.deleteNotification(requireAccountId(account), notificationId);
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        notificationService.deleteNotification(currentAccount.accountId(), notificationId);
     }
 
     public void deleteAllNotifications(Account account, boolean unreadOnly) {
-        notificationService.deleteAllNotifications(requireAccountId(account), unreadOnly);
+        NotificationAccountSession currentAccount = NotificationAccountSession.from(account);
+        notificationService.deleteAllNotifications(currentAccount.accountId(), unreadOnly);
     }
 
-    private Long requireAccountId(Account account) {
-        return requireAccount(account).getId();
-    }
+    private record NotificationAccountSession(Account account) {
 
-    private Account requireAccount(Account account) {
-        if (account == null || account.getId() == null) {
-            throw new AppException(CommonErrorCode.AUTHENTICATION_REQUIRED);
+        private static NotificationAccountSession from(Account account) {
+            if (account == null || account.getId() == null) {
+                throw new AppException(CommonErrorCode.AUTHENTICATION_REQUIRED);
+            }
+            return new NotificationAccountSession(account);
         }
-        return account;
+
+        private long accountId() {
+            return account.getId();
+        }
+
+        private boolean notificationEnabled() {
+            return account.isNotificationEnabled();
+        }
+
+        private void updateNotificationEnabled(boolean enabled) {
+            account.updateNotificationEnabled(enabled);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package kwh.PublicCookedFood.notification.dto.response;
 
+import kwh.PublicCookedFood.common.util.ImmutableCollections;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -14,12 +15,12 @@ public record NotificationInitialStateResponse(
         int totalPages
 ) {
     public NotificationInitialStateResponse {
-        notifications = notifications == null ? List.of() : List.copyOf(notifications);
+        notifications = ImmutableCollections.immutableList(notifications);
     }
 
     @Override
     public List<NotificationResponse> notifications() {
-        return List.copyOf(notifications);
+        return notifications;
     }
 
     public static NotificationInitialStateResponse from(boolean enabled,

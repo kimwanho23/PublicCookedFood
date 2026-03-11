@@ -48,6 +48,20 @@ class NotificationFacadeUnitTest {
     }
 
     @Test
+    void getNotificationSetting_throwsWhenAccountIdIsMissing() {
+        Account account = Account.builder()
+                .email("notify@test.com")
+                .name("notify-account")
+                .authority(Role.USER)
+                .loginMethod("Current")
+                .build();
+
+        assertThatThrownBy(() -> notificationFacade.getNotificationSetting(account))
+                .isInstanceOfSatisfying(AppException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(CommonErrorCode.AUTHENTICATION_REQUIRED));
+    }
+
+    @Test
     void subscribe_delegatesWhenNotificationEnabled() {
         Account account = loginAccount(8L, true);
         SseEmitter emitter = new SseEmitter();

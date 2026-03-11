@@ -12,10 +12,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -25,7 +21,7 @@ public class NotificationSseService {
 
     private static final long SSE_TIMEOUT_MS = 60L * 60L * 1000L;
 
-    private final Map<Long, Map<String, SseEmitter>> emitters = new ConcurrentHashMap<>();
+    private final NotificationEmitterRegistry emitterRegistry = new NotificationEmitterRegistry();
     private final AtomicLong sseSendAttempts = new AtomicLong(0);
     private final AtomicLong sseSendSuccess = new AtomicLong(0);
     private final AtomicLong sseSendFailure = new AtomicLong(0);
@@ -36,43 +32,29 @@ public class NotificationSseService {
     private final NotificationSseProperties notificationSseProperties;
 
     public boolean isSseEnabled() {
-        return Boolean.TRUE.equals(notificationSseProperties.enabled());
+        return notificationSseProperties.enabled();
     }
 
     public SseEmitter subscribe(Long receiverId) {
         if (!isSseEnabled()) {
             throw new AppException(NotificationErrorCode.NOTIFICATION_SSE_DISABLED);
         }
-        String emitterId = receiverId + "_" + System.currentTimeMillis();
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        emitters.computeIfAbsent(receiverId, key -> new ConcurrentHashMap<>()).put(emitterId, emitter);
-        emitter.onCompletion(() -> removeEmitter(receiverId, emitterId));
-        emitter.onTimeout(() -> removeEmitter(receiverId, emitterId));
-        emitter.onError(error -> removeEmitter(receiverId, emitterId));
-        sendConnectedEvent(receiverId, emitterId, emitter);
-        return emitter;
+        NotificationEmitterRegistry.EmitterSession session = emitterRegistry.register(receiverId, SSE_TIMEOUT_MS);
+        bindEmitterLifecycle(session);
+        sendConnectedEvent(session);
+        return session.emitter();
     }
 
     public void publishNotificationAfterCommit(Long receiverId, Long notificationId) {
-        Runnable publishTask = () -> sendNotificationEvent(receiverId, notificationId);
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    publishTask.run();
-                }
-            });
-            return;
-        }
-        publishTask.run();
+        runAfterCommitOrNow(() -> sendNotificationEvent(receiverId, notificationId));
+    }
+
+    public void clearEmittersAfterCommit(Long receiverId) {
+        runAfterCommitOrNow(() -> clearEmitters(receiverId));
     }
 
     public void clearEmitters(Long receiverId) {
-        Map<String, SseEmitter> accountEmitters = emitters.remove(receiverId);
-        if (accountEmitters == null) {
-            return;
-        }
-        accountEmitters.values().forEach(emitter -> {
+        emitterRegistry.clear(receiverId).forEach(emitter -> {
             try {
                 emitter.complete();
             } catch (IllegalStateException ignored) {
@@ -82,16 +64,13 @@ public class NotificationSseService {
 
     @Scheduled(fixedDelayString = "${app.notification.sse.heartbeat-interval-ms}")
     public void sendHeartbeat() {
-        if (!isSseEnabled() || emitters.isEmpty()) {
+        if (!isSseEnabled() || emitterRegistry.isEmpty()) {
             return;
         }
         sseHeartbeatEvents.incrementAndGet();
-        Map<String, Object> payload = Map.of("timestamp", System.currentTimeMillis());
-        for (Map.Entry<Long, Map<String, SseEmitter>> accountEntry : emitters.entrySet()) {
-            Long receiverId = accountEntry.getKey();
-            for (Map.Entry<String, SseEmitter> emitterEntry : accountEntry.getValue().entrySet()) {
-                sendToEmitter(receiverId, emitterEntry.getKey(), emitterEntry.getValue(), "heartbeat", payload);
-            }
+        NotificationHeartbeatEvent payload = NotificationHeartbeatEvent.now();
+        for (NotificationEmitterRegistry.EmitterSession session : emitterRegistry.allSessions()) {
+            sendToEmitter(session, "heartbeat", payload);
         }
     }
 
@@ -110,7 +89,7 @@ public class NotificationSseService {
         log.info("action=notification.sse_metrics result=snapshot activeConnections={} receivers={} attempts={} failures={} failureRate={}%, " +
                         "intervalAttempts={} intervalFailures={} intervalFailureRate={}% notificationEvents={} heartbeatEvents={}",
                 getActiveEmitterCount(),
-                emitters.size(),
+                emitterRegistry.receiverCount(),
                 attempts,
                 failures,
                 formatRate(totalFailureRate),
@@ -121,63 +100,61 @@ public class NotificationSseService {
                 sseHeartbeatEvents.get());
     }
 
-    private void sendConnectedEvent(Long receiverId, String emitterId, SseEmitter emitter) {
-        sendToEmitter(receiverId, emitterId, emitter, "connected",
-                Map.of(
-                        "timestamp", System.currentTimeMillis()
-                ));
+    private void bindEmitterLifecycle(NotificationEmitterRegistry.EmitterSession session) {
+        session.emitter().onCompletion(() -> emitterRegistry.remove(session.receiverId(), session.emitterId()));
+        session.emitter().onTimeout(() -> emitterRegistry.remove(session.receiverId(), session.emitterId()));
+        session.emitter().onError(error -> emitterRegistry.remove(session.receiverId(), session.emitterId()));
+    }
+
+    private void sendConnectedEvent(NotificationEmitterRegistry.EmitterSession session) {
+        sendToEmitter(session, "connected", NotificationConnectedEvent.now());
     }
 
     private void sendNotificationEvent(Long receiverId, Long notificationId) {
-        Map<String, SseEmitter> accountEmitters = emitters.get(receiverId);
-        if (accountEmitters == null || accountEmitters.isEmpty()) {
+        var sessions = emitterRegistry.sessionsForReceiver(receiverId);
+        if (sessions.isEmpty()) {
             return;
         }
         sseNotificationEvents.incrementAndGet();
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("notificationId", notificationId);
-        payload.put("timestamp", System.currentTimeMillis());
-
-        for (Map.Entry<String, SseEmitter> entry : accountEmitters.entrySet()) {
-            sendToEmitter(receiverId, entry.getKey(), entry.getValue(), "notification", payload);
+        NotificationPublishedEvent payload = NotificationPublishedEvent.of(notificationId);
+        for (NotificationEmitterRegistry.EmitterSession session : sessions) {
+            sendToEmitter(session, "notification", payload);
         }
     }
 
-    private void sendToEmitter(Long receiverId,
-                               String emitterId,
-                               SseEmitter emitter,
+    private void sendToEmitter(NotificationEmitterRegistry.EmitterSession session,
                                String eventName,
                                Object data) {
         sseSendAttempts.incrementAndGet();
         try {
-            emitter.send(SseEmitter.event()
-                    .id(emitterId + ":" + System.currentTimeMillis())
+            session.emitter().send(SseEmitter.event()
+                    .id(session.emitterId() + ":" + System.currentTimeMillis())
                     .name(eventName)
                     .data(data));
             sseSendSuccess.incrementAndGet();
         } catch (IOException | IllegalStateException e) {
             sseSendFailure.incrementAndGet();
-            removeEmitter(receiverId, emitterId);
-            log.debug("Failed to send SSE event. receiverId={}, emitterId={}, eventName={}", receiverId, emitterId, eventName, e);
-        }
-    }
-
-    private void removeEmitter(Long receiverId, String emitterId) {
-        Map<String, SseEmitter> accountEmitters = emitters.get(receiverId);
-        if (accountEmitters == null) {
-            return;
-        }
-        accountEmitters.remove(emitterId);
-        if (accountEmitters.isEmpty()) {
-            emitters.remove(receiverId);
+            emitterRegistry.remove(session.receiverId(), session.emitterId());
+            log.debug("Failed to send SSE event. receiverId={}, emitterId={}, eventName={}",
+                    session.receiverId(), session.emitterId(), eventName, e);
         }
     }
 
     private int getActiveEmitterCount() {
-        return emitters.values().stream()
-                .filter(Objects::nonNull)
-                .mapToInt(Map::size)
-                .sum();
+        return emitterRegistry.activeEmitterCount();
+    }
+
+    private void runAfterCommitOrNow(Runnable task) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+            return;
+        }
+        task.run();
     }
 
     private double calculateFailureRate(long failures, long attempts) {
@@ -189,5 +166,26 @@ public class NotificationSseService {
 
     private String formatRate(double rate) {
         return String.format("%.2f", rate);
+    }
+
+    private record NotificationConnectedEvent(long timestamp) {
+
+        private static NotificationConnectedEvent now() {
+            return new NotificationConnectedEvent(System.currentTimeMillis());
+        }
+    }
+
+    private record NotificationHeartbeatEvent(long timestamp) {
+
+        private static NotificationHeartbeatEvent now() {
+            return new NotificationHeartbeatEvent(System.currentTimeMillis());
+        }
+    }
+
+    private record NotificationPublishedEvent(Long notificationId, long timestamp) {
+
+        private static NotificationPublishedEvent of(Long notificationId) {
+            return new NotificationPublishedEvent(notificationId, System.currentTimeMillis());
+        }
     }
 }

@@ -1,60 +1,45 @@
 package kwh.PublicCookedFood.notification.service.dispatch;
 
-import kwh.PublicCookedFood.board.domain.BoardReport;
+import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.notification.domain.Notification;
-import kwh.PublicCookedFood.notification.domain.NotificationType;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ReportProcessedNotificationDispatchStrategy implements NotificationDispatchStrategy {
+public class ReportProcessedNotificationDispatchStrategy {
 
-    private final NotificationDispatchSupport support;
+    private final NotificationPublisher notificationPublisher;
+    private final NotificationPreviewFactory previewFactory;
+    private final NotificationReceiverPolicy receiverPolicy;
 
-    public ReportProcessedNotificationDispatchStrategy(NotificationDispatchSupport support) {
-        this.support = support;
+    public ReportProcessedNotificationDispatchStrategy(NotificationPublisher notificationPublisher,
+                                                       NotificationPreviewFactory previewFactory,
+                                                       NotificationReceiverPolicy receiverPolicy) {
+        this.notificationPublisher = notificationPublisher;
+        this.previewFactory = previewFactory;
+        this.receiverPolicy = receiverPolicy;
     }
 
-    @Override
-    public NotificationDispatchType type() {
-        return NotificationDispatchType.REPORT_PROCESSED;
+    public void dispatch(ReportProcessedDispatchCommand command) {
+        Account reporter = command.reporter();
+        Account processor = command.processor();
+        if (NotificationReceiverPolicy.isSameAccount(reporter, processor)) {
+            return;
+        }
+
+        if (!receiverPolicy.canReceiveFromActor(reporter, processor)) {
+            return;
+        }
+
+        notificationPublisher.saveAndPublish(createNotification(command));
     }
 
-    @Override
-    public void dispatch(NotificationDispatchContext context) {
-        BoardReport report = context.report();
-        if (report == null
-                || report.getReporter() == null
-                || report.getProcessor() == null
-                || report.getBoard() == null
-                || report.getReporter().getId() == null
-                || report.getProcessor().getId() == null) {
-            return;
-        }
-        if (report.getReporter().getId().equals(report.getProcessor().getId())) {
-            return;
-        }
-
-        NotificationType notificationType = support.resolveReportNotificationType(report.getStatus());
-        if (notificationType == null) {
-            return;
-        }
-        if (!support.canReceiveNotification(report.getReporter(), report.getProcessor())) {
-            return;
-        }
-
-        String previewSeed = report.getProcessedNote();
-        if (previewSeed == null || previewSeed.isBlank()) {
-            previewSeed = report.getReason() == null ? "신고 처리 결과가 등록되었습니다." : report.getReason().getLabel();
-        }
-        String preview = support.buildPreview(previewSeed);
-
-        support.saveAndPublish(Notification.reportResult(
-                report.getReporter(),
-                report.getProcessor(),
-                report.getBoard(),
-                notificationType,
-                preview
-        ));
+    private Notification createNotification(ReportProcessedDispatchCommand command) {
+        return Notification.reportResult(
+                command.reporter(),
+                command.processor(),
+                command.board(),
+                command.notificationType(),
+                previewFactory.buildPreview(command.previewSeed())
+        );
     }
 }
-
