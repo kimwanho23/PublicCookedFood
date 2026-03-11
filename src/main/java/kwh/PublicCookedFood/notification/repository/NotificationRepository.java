@@ -13,17 +13,9 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
-
-    Page<Notification> findByReceiverIdOrderByRegTimeDesc(Long receiverId, Pageable pageable);
-
-    Page<Notification> findByReceiverIdAndIsReadFalseOrderByRegTimeDesc(Long receiverId, Pageable pageable);
-
-    long countByReceiverIdAndIsReadFalse(Long receiverId);
 
     @Query(
             value = "SELECT n FROM Notification n " +
@@ -47,58 +39,32 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                     "AND (b.hiddenByReport = false OR n.type IN :reportResultTypes) " +
                     "AND (:excludeRestricted = false OR (n.actor.id NOT IN :restrictedAccountIds AND owner.id NOT IN :restrictedAccountIds))"
     )
-    Page<Notification> findVisibleNotificationsByReceiverId(@Param("receiverId") Long receiverId,
-                                                            @Param("unreadOnly") boolean unreadOnly,
-                                                            @Param("activeState") SoftDeleteState activeState,
-                                                            @Param("reportResultTypes") Collection<NotificationType> reportResultTypes,
-                                                            @Param("excludeRestricted") boolean excludeRestricted,
-                                                            @Param("restrictedAccountIds") Collection<Long> restrictedAccountIds,
-                                                            Pageable pageable);
+    Page<Notification> findVisibleNotificationsByCriteria(@Param("receiverId") Long receiverId,
+                                                          @Param("unreadOnly") boolean unreadOnly,
+                                                          @Param("activeState") SoftDeleteState activeState,
+                                                          @Param("reportResultTypes") Collection<NotificationType> reportResultTypes,
+                                                          @Param("excludeRestricted") boolean excludeRestricted,
+                                                          @Param("restrictedAccountIds") Collection<Long> restrictedAccountIds,
+                                                          Pageable pageable);
 
     @Query("SELECT COUNT(n) FROM Notification n " +
             "JOIN n.board b " +
             "JOIN b.account owner " +
             "WHERE n.receiver.id = :receiverId " +
-            "AND n.isRead = false " +
+            "AND (:unreadOnly = false OR n.isRead = false) " +
             "AND b.state = :activeState " +
             "AND (b.hiddenByReport = false OR n.type IN :reportResultTypes) " +
             "AND (:excludeRestricted = false OR (n.actor.id NOT IN :restrictedAccountIds AND owner.id NOT IN :restrictedAccountIds))")
-    long countVisibleUnreadNotificationsByReceiverId(@Param("receiverId") Long receiverId,
-                                                     @Param("activeState") SoftDeleteState activeState,
-                                                     @Param("reportResultTypes") Collection<NotificationType> reportResultTypes,
-                                                     @Param("excludeRestricted") boolean excludeRestricted,
-                                                     @Param("restrictedAccountIds") Collection<Long> restrictedAccountIds);
-
-    @Query("SELECT n FROM Notification n " +
-            "JOIN FETCH n.receiver " +
-            "JOIN FETCH n.actor " +
-            "JOIN FETCH n.board b " +
-            "JOIN FETCH b.account " +
-            "LEFT JOIN FETCH n.comment " +
-            "WHERE n.receiver.id = :receiverId " +
-            "ORDER BY n.regTime DESC")
-    List<Notification> findAllWithActorBoardAndCommentByReceiverIdOrderByRegTimeDesc(@Param("receiverId") Long receiverId);
-
-    @Query("SELECT n FROM Notification n " +
-            "JOIN FETCH n.receiver " +
-            "JOIN FETCH n.actor " +
-            "JOIN FETCH n.board b " +
-            "JOIN FETCH b.account " +
-            "LEFT JOIN FETCH n.comment " +
-            "WHERE n.receiver.id = :receiverId AND n.isRead = false " +
-            "ORDER BY n.regTime DESC")
-    List<Notification> findUnreadWithActorBoardAndCommentByReceiverIdOrderByRegTimeDesc(@Param("receiverId") Long receiverId);
-
-    @Query("SELECT n FROM Notification n " +
-            "JOIN FETCH n.receiver " +
-            "JOIN FETCH n.actor " +
-            "JOIN FETCH n.board b " +
-            "JOIN FETCH b.account " +
-            "LEFT JOIN FETCH n.comment " +
-            "WHERE n.id = :notificationId")
-    Optional<Notification> findWithActorBoardAndCommentById(@Param("notificationId") Long notificationId);
+    long countVisibleNotificationsByCriteria(@Param("receiverId") Long receiverId,
+                                             @Param("unreadOnly") boolean unreadOnly,
+                                             @Param("activeState") SoftDeleteState activeState,
+                                             @Param("reportResultTypes") Collection<NotificationType> reportResultTypes,
+                                             @Param("excludeRestricted") boolean excludeRestricted,
+                                             @Param("restrictedAccountIds") Collection<Long> restrictedAccountIds);
 
     long deleteByIdAndReceiverId(Long id, Long receiverId);
+
+    boolean existsByIdAndReceiverId(Long id, Long receiverId);
 
     long deleteByReceiverId(Long receiverId);
 

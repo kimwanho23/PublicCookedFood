@@ -80,6 +80,7 @@ public class Notification extends BaseTimeEntity {
         this.contentPreview = contentPreview;
         this.isRead = isRead;
         this.readTime = readTime;
+        validateCommentTarget(type, comment);
     }
 
     public static Notification boardComment(Account receiver,
@@ -150,8 +151,8 @@ public class Notification extends BaseTimeEntity {
                                             Board board,
                                             NotificationType type,
                                             String contentPreview) {
-        if (type != NotificationType.REPORT_RESOLVED && type != NotificationType.REPORT_REJECTED) {
-            throw new IllegalArgumentException("신고 처리 알림 타입이 올바르지 않습니다.");
+        if (!type.isReportResult()) {
+            throw new IllegalStateException("신고 처리 알림 타입이 올바르지 않습니다.");
         }
         return Notification.builder()
                 .receiver(receiver)
@@ -164,11 +165,31 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public void markAsRead(LocalDateTime readAt) {
-        if (this.isRead) {
-            return;
+    public long boardId() {
+        return board.getId();
+    }
+
+    public NotificationTarget target() {
+        if (comment == null) {
+            return new BoardNotificationTarget(board.getId());
         }
-        this.isRead = true;
-        this.readTime = readAt == null ? LocalDateTime.now() : readAt;
+        return new CommentNotificationTarget(board.getId(), comment.getId());
+    }
+
+    public boolean isReportResult() {
+        return type.isReportResult();
+    }
+
+    private static void validateCommentTarget(NotificationType type, Comments comment) {
+        boolean hasComment = comment != null;
+        boolean commentRequired = type == NotificationType.BOARD_COMMENT
+                || type == NotificationType.COMMENT_REPLY
+                || type == NotificationType.COMMENT_MENTION;
+        if (commentRequired && !hasComment) {
+            throw new IllegalStateException("댓글 대상 알림에는 comment가 필요합니다.");
+        }
+        if (!commentRequired && hasComment) {
+            throw new IllegalStateException("댓글 대상이 아닌 알림에는 comment를 둘 수 없습니다.");
+        }
     }
 }

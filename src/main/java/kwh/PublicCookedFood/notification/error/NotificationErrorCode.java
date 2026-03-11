@@ -4,6 +4,7 @@ import kwh.PublicCookedFood.common.error.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public enum NotificationErrorCode implements ErrorCode {
+    NOTIFICATION_NOT_FOUND("NOTIFICATION_NOT_FOUND", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     NOTIFICATION_DISABLED("NOTIFICATION_DISABLED", HttpStatus.CONFLICT, "알림 수신이 비활성화되어 있습니다."),
     NOTIFICATION_SSE_DISABLED("NOTIFICATION_SSE_DISABLED", HttpStatus.SERVICE_UNAVAILABLE, "알림 SSE가 비활성화되어 있습니다.");
 
