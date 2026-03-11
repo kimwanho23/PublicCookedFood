@@ -1,7 +1,5 @@
 package kwh.PublicCookedFood.notification.service.dispatch;
 
-import kwh.PublicCookedFood.account.domain.Account;
-import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
 
 public record NewCommentDispatchCommand(
@@ -26,21 +24,9 @@ public record NewCommentDispatchCommand(
         }
         if (parent != null) {
             CommentReplyTarget.Reply reply = (CommentReplyTarget.Reply) replyTarget;
-            if (parent.getAccount() != reply.owner()) {
+            if (!NotificationReceiverPolicy.isSameAccount(parent.getAccount(), reply.owner())) {
                 throw new IllegalStateException("답글 알림 대상이 부모 댓글 작성자와 일치해야 합니다.");
             }
         }
-    }
-
-    public Board board() {
-        return comment.getBoard();
-    }
-
-    public Account actor() {
-        return comment.getAccount();
-    }
-
-    public Account boardOwner() {
-        return board().getAccount();
     }
 }

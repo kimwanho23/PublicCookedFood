@@ -16,7 +16,7 @@ public class NewCommentNotificationDispatchStrategy {
 
     public void dispatch(NewCommentDispatchCommand command) {
         CommentNotificationContext context = contextFactory.create(command);
-        CommentNotificationPlan plan = planner.plan(context);
+        CommentNotificationPlanner.Plan plan = planner.plan(context);
         List<Notification> notifications = plan.toNotifications(context);
         notificationPublisher.publishAll(notifications);
     }

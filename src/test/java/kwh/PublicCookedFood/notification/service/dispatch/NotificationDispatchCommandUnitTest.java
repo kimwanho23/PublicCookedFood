@@ -44,6 +44,23 @@ class NotificationDispatchCommandUnitTest {
     }
 
     @Test
+    void newCommentDispatchCommand_acceptsReplyTargetWhenParentOwnerHasSameIdButDifferentInstance() {
+        Account actor = account(1L, "actor");
+        Account parentOwner = account(2L, "parent");
+        Account reloadedParentOwner = account(2L, "parent-reloaded");
+        Board board = board(actor);
+        Comments parent = comment(20L, parentOwner, board, null);
+        Comments reply = comment(21L, actor, board, parent);
+
+        NewCommentDispatchCommand command = new NewCommentDispatchCommand(
+                reply,
+                CommentReplyTarget.reply(reloadedParentOwner)
+        );
+
+        assertThat(command.replyTarget()).isEqualTo(CommentReplyTarget.reply(reloadedParentOwner));
+    }
+
+    @Test
     void reportProcessedDispatchCommand_fromDerivesNotificationTypeAndPreviewSeed() {
         Account reporter = account(1L, "reporter");
         Account processor = account(2L, "processor");

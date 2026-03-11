@@ -21,14 +21,7 @@ public class NotificationReceiverPolicy {
         return !accountBlockService.isEitherBlocked(receiver.getId(), actor.getId());
     }
 
-    boolean canReceiveWithRestrictions(Account receiver, RestrictedReceivers restrictedReceivers) {
-        if (!receiver.isNotificationEnabled()) {
-            return false;
-        }
-        return restrictedReceivers.allows(receiver);
-    }
-
-    RestrictedReceivers resolveRestrictedReceivers(Account actor, Set<Account> candidateReceivers) {
+    NotificationReceiverPolicy.RestrictedReceivers resolveRestrictedReceivers(Account actor, Set<Account> candidateReceivers) {
         Long actorId = actor.getId();
         Set<Long> candidateIds = candidateReceivers.stream()
                 .map(Account::getId)
@@ -39,7 +32,37 @@ public class NotificationReceiverPolicy {
         return RestrictedReceivers.of(accountBlockService.getRestrictedCounterpartyIds(actorId, candidateIds));
     }
 
-    boolean isSameAccount(Account left, Account right) {
-        return left.getId().equals(right.getId());
+    static boolean isSameAccount(Account left, Account right) {
+        return left != null
+                && right != null
+                && left.getId() != null
+                && right.getId() != null
+                && left.getId().equals(right.getId());
+    }
+
+    static final class RestrictedReceivers {
+
+        private static final RestrictedReceivers EMPTY = new RestrictedReceivers(Set.of());
+
+        private final Set<Long> receiverIds;
+
+        private RestrictedReceivers(Set<Long> receiverIds) {
+            this.receiverIds = receiverIds;
+        }
+
+        static RestrictedReceivers empty() {
+            return EMPTY;
+        }
+
+        static RestrictedReceivers of(Set<Long> receiverIds) {
+            if (receiverIds.isEmpty()) {
+                return EMPTY;
+            }
+            return new RestrictedReceivers(receiverIds);
+        }
+
+        boolean allows(Account receiver) {
+            return !receiverIds.contains(receiver.getId());
+        }
     }
 }

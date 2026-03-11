@@ -5,6 +5,7 @@ import kwh.PublicCookedFood.account.error.AccountErrorCode;
 import kwh.PublicCookedFood.notification.repository.NotificationRepository;
 import kwh.PublicCookedFood.notification.error.NotificationErrorCode;
 import kwh.PublicCookedFood.notification.service.dispatch.BoardCreatedNotificationDispatchStrategy;
+import kwh.PublicCookedFood.notification.service.dispatch.CommentReplyTarget;
 import kwh.PublicCookedFood.notification.service.dispatch.NewCommentNotificationDispatchStrategy;
 import kwh.PublicCookedFood.notification.service.dispatch.ReportProcessedNotificationDispatchStrategy;
 import kwh.PublicCookedFood.account.audit.NotificationAuditPublisher;
@@ -163,10 +164,9 @@ class NotificationServiceUnitTest {
     @Test
     void notifyOnNewComment_buildsValidatedCommandAndDelegates() {
         Account actor = account(1L, "actor");
-        Account boardOwner = account(2L, "board-owner");
         Board board = Board.builder()
                 .id(10L)
-                .account(boardOwner)
+                .account(account(2L, "board-owner"))
                 .build();
         Comments comment = Comments.builder()
                 .id(20L)
@@ -179,8 +179,7 @@ class NotificationServiceUnitTest {
 
         verify(newCommentStrategy).dispatch(argThat(command ->
                 command.comment() == comment
-                        && command.actor() == actor
-                        && command.boardOwner() == boardOwner
+                        && command.replyTarget() instanceof CommentReplyTarget.Root
         ));
     }
 

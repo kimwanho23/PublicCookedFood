@@ -6,7 +6,6 @@ import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.common.BaseTimeEntity;
 import kwh.PublicCookedFood.account.domain.Account;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
@@ -61,16 +60,15 @@ public class Notification extends BaseTimeEntity {
     @Column(name = "read_time")
     private LocalDateTime readTime;
 
-    @Builder
-    public Notification(Long id,
-                        Account receiver,
-                        Account actor,
-                        Board board,
-                        Comments comment,
-                        NotificationType type,
-                        String contentPreview,
-                        boolean isRead,
-                        LocalDateTime readTime) {
+    private Notification(Long id,
+                         Account receiver,
+                         Account actor,
+                         Board board,
+                         Comments comment,
+                         NotificationType type,
+                         String contentPreview,
+                         boolean isRead,
+                         LocalDateTime readTime) {
         this.id = id;
         this.receiver = receiver;
         this.actor = actor;
@@ -80,7 +78,6 @@ public class Notification extends BaseTimeEntity {
         this.contentPreview = contentPreview;
         this.isRead = isRead;
         this.readTime = readTime;
-        validateCommentTarget(type, comment);
     }
 
     public static Notification boardComment(Account receiver,
@@ -88,15 +85,7 @@ public class Notification extends BaseTimeEntity {
                                             Board board,
                                             Comments comment,
                                             String contentPreview) {
-        return Notification.builder()
-                .receiver(receiver)
-                .actor(actor)
-                .board(board)
-                .comment(comment)
-                .type(NotificationType.BOARD_COMMENT)
-                .contentPreview(contentPreview)
-                .isRead(false)
-                .build();
+        return create(receiver, actor, board, comment, NotificationType.BOARD_COMMENT, contentPreview);
     }
 
     public static Notification commentReply(Account receiver,
@@ -104,30 +93,14 @@ public class Notification extends BaseTimeEntity {
                                             Board board,
                                             Comments comment,
                                             String contentPreview) {
-        return Notification.builder()
-                .receiver(receiver)
-                .actor(actor)
-                .board(board)
-                .comment(comment)
-                .type(NotificationType.COMMENT_REPLY)
-                .contentPreview(contentPreview)
-                .isRead(false)
-                .build();
+        return create(receiver, actor, board, comment, NotificationType.COMMENT_REPLY, contentPreview);
     }
 
     public static Notification boardMention(Account receiver,
                                             Account actor,
                                             Board board,
                                             String contentPreview) {
-        return Notification.builder()
-                .receiver(receiver)
-                .actor(actor)
-                .board(board)
-                .comment(null)
-                .type(NotificationType.BOARD_MENTION)
-                .contentPreview(contentPreview)
-                .isRead(false)
-                .build();
+        return create(receiver, actor, board, null, NotificationType.BOARD_MENTION, contentPreview);
     }
 
     public static Notification commentMention(Account receiver,
@@ -135,15 +108,7 @@ public class Notification extends BaseTimeEntity {
                                               Board board,
                                               Comments comment,
                                               String contentPreview) {
-        return Notification.builder()
-                .receiver(receiver)
-                .actor(actor)
-                .board(board)
-                .comment(comment)
-                .type(NotificationType.COMMENT_MENTION)
-                .contentPreview(contentPreview)
-                .isRead(false)
-                .build();
+        return create(receiver, actor, board, comment, NotificationType.COMMENT_MENTION, contentPreview);
     }
 
     public static Notification reportResult(Account receiver,
@@ -154,15 +119,7 @@ public class Notification extends BaseTimeEntity {
         if (!type.isReportResult()) {
             throw new IllegalStateException("신고 처리 알림 타입이 올바르지 않습니다.");
         }
-        return Notification.builder()
-                .receiver(receiver)
-                .actor(actor)
-                .board(board)
-                .comment(null)
-                .type(type)
-                .contentPreview(contentPreview)
-                .isRead(false)
-                .build();
+        return create(receiver, actor, board, null, type, contentPreview);
     }
 
     public long boardId() {
@@ -178,6 +135,16 @@ public class Notification extends BaseTimeEntity {
 
     public boolean isReportResult() {
         return type.isReportResult();
+    }
+
+    private static Notification create(Account receiver,
+                                       Account actor,
+                                       Board board,
+                                       Comments comment,
+                                       NotificationType type,
+                                       String contentPreview) {
+        validateCommentTarget(type, comment);
+        return new Notification(null, receiver, actor, board, comment, type, contentPreview, false, null);
     }
 
     private static void validateCommentTarget(NotificationType type, Comments comment) {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
@@ -57,13 +58,8 @@ class NotificationPublisherUnitTest {
         Account receiver = account();
         Account actor = actor();
         Board board = board(actor);
-        Notification saved = Notification.builder()
-                .id(99L)
-                .receiver(receiver)
-                .actor(actor)
-                .board(board)
-                .contentPreview("preview")
-                .build();
+        Notification saved = Notification.boardMention(receiver, actor, board, "preview");
+        ReflectionTestUtils.setField(saved, "id", 99L);
         when(notificationRepository.save(any(Notification.class))).thenReturn(saved);
 
         notificationPublisher.saveAndPublish(saved);

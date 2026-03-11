@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -75,12 +74,9 @@ class NewCommentNotificationDispatchStrategyUnitTest {
                 .build();
         when(mentionResolver.resolveMentionedUsers(comment.getContents(), actor.getId()))
                 .thenReturn(List.of(parentOwner, boardOwner, mentionedUser));
-        when(receiverPolicy.resolveRestrictedReceivers(eq(actor), anySet())).thenReturn(RestrictedReceivers.empty());
+        when(receiverPolicy.resolveRestrictedReceivers(eq(actor), anySet()))
+                .thenReturn(NotificationReceiverPolicy.RestrictedReceivers.empty());
         when(previewFactory.buildPreview(comment.getContents())).thenReturn("preview");
-        when(receiverPolicy.isSameAccount(any(), any())).thenAnswer(invocation -> sameAccount(
-                invocation.getArgument(0, Account.class),
-                invocation.getArgument(1, Account.class)
-        ));
 
         strategy.dispatch(new NewCommentDispatchCommand(
                 comment,
@@ -128,12 +124,9 @@ class NewCommentNotificationDispatchStrategyUnitTest {
                 .build();
         when(mentionResolver.resolveMentionedUsers(comment.getContents(), actor.getId()))
                 .thenReturn(List.of(owner));
-        when(receiverPolicy.resolveRestrictedReceivers(eq(actor), anySet())).thenReturn(RestrictedReceivers.empty());
+        when(receiverPolicy.resolveRestrictedReceivers(eq(actor), anySet()))
+                .thenReturn(NotificationReceiverPolicy.RestrictedReceivers.empty());
         when(previewFactory.buildPreview(comment.getContents())).thenReturn("preview");
-        when(receiverPolicy.isSameAccount(any(), any())).thenAnswer(invocation -> sameAccount(
-                invocation.getArgument(0, Account.class),
-                invocation.getArgument(1, Account.class)
-        ));
 
         strategy.dispatch(new NewCommentDispatchCommand(
                 comment,
@@ -151,13 +144,6 @@ class NewCommentNotificationDispatchStrategyUnitTest {
                     assertThat(notification.getType()).isEqualTo(NotificationType.COMMENT_REPLY);
                     assertThat(notification.getReceiver().getId()).isEqualTo(2L);
                 });
-    }
-
-    private boolean sameAccount(Account left, Account right) {
-        return left != null
-                && right != null
-                && left.getId() != null
-                && left.getId().equals(right.getId());
     }
 
     private Account account(Long id, String name) {

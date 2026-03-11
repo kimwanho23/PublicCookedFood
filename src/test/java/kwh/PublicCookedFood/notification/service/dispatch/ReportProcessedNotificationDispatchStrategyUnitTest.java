@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,6 +65,29 @@ class ReportProcessedNotificationDispatchStrategyUnitTest {
         assertThat(notification.getActor()).isSameAs(processor);
         assertThat(notification.getBoard()).isSameAs(board);
         assertThat(notification.getContentPreview()).isEqualTo("preview");
+    }
+
+    @Test
+    void dispatch_skipsNotificationWhenReporterAndProcessorHaveSameIdButDifferentInstance() {
+        Account reporter = account(1L, "reporter");
+        Account processor = account(1L, "processor");
+        Board board = Board.builder()
+                .id(10L)
+                .account(processor)
+                .build();
+        BoardReport report = BoardReport.builder()
+                .id(20L)
+                .board(board)
+                .reporter(reporter)
+                .processor(processor)
+                .reason(BoardReportReason.SPAM)
+                .status(BoardReportStatus.REJECTED)
+                .processedNote("처리")
+                .build();
+
+        strategy.dispatch(ReportProcessedDispatchCommand.from(report));
+
+        verifyNoInteractions(notificationPublisher, previewFactory, receiverPolicy);
     }
 
     private Account account(Long id, String name) {

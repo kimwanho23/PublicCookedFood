@@ -10,7 +10,7 @@ import java.util.List;
 record CommentNotificationContext(Comments comment,
                                   CommentReplyTarget replyTarget,
                                   List<Account> mentionedUsers,
-                                  RestrictedReceivers restrictedReceivers,
+                                  NotificationReceiverPolicy.RestrictedReceivers restrictedReceivers,
                                   String preview) {
 
     CommentNotificationContext {
@@ -38,21 +38,14 @@ record CommentNotificationContext(Comments comment,
     }
 
     boolean isActor(Account candidate) {
-        return isSameAccount(candidate, actor());
+        return NotificationReceiverPolicy.isSameAccount(candidate, actor());
     }
 
     boolean isBoardOwnerAlsoReplyOwner() {
-        return hasReplyOwner() && isSameAccount(boardOwner(), replyOwner());
+        return hasReplyOwner() && NotificationReceiverPolicy.isSameAccount(boardOwner(), replyOwner());
     }
 
     boolean canNotify(Account receiver) {
         return receiver.isNotificationEnabled() && restrictedReceivers.allows(receiver);
-    }
-
-    private boolean isSameAccount(Account left, Account right) {
-        return left != null
-                && right != null
-                && left.getId() != null
-                && left.getId().equals(right.getId());
     }
 }

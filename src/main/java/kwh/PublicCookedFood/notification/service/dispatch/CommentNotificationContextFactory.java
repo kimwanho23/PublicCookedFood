@@ -19,13 +19,14 @@ class CommentNotificationContextFactory {
 
     CommentNotificationContext create(NewCommentDispatchCommand command) {
         Comments comment = command.comment();
+        Account actor = comment.getAccount();
         List<Account> mentionedUsers = mentionResolver.resolveMentionedUsers(
                 comment.getContents(),
-                command.actor().getId()
+                actor.getId()
         );
-        RestrictedReceivers restrictedReceivers = receiverPolicy.resolveRestrictedReceivers(
-                command.actor(),
-                collectCandidateReceivers(command, mentionedUsers)
+        NotificationReceiverPolicy.RestrictedReceivers restrictedReceivers = receiverPolicy.resolveRestrictedReceivers(
+                actor,
+                collectCandidateReceivers(command, actor, mentionedUsers)
         );
         return new CommentNotificationContext(
                 comment,
@@ -37,17 +38,19 @@ class CommentNotificationContextFactory {
     }
 
     private Set<Account> collectCandidateReceivers(NewCommentDispatchCommand command,
+                                                   Account actor,
                                                    List<Account> mentionedUsers) {
+        Account boardOwner = command.comment().getBoard().getAccount();
         Set<Account> candidateReceivers = new LinkedHashSet<>(mentionedUsers);
         if (command.replyTarget() instanceof CommentReplyTarget.Reply reply
-                && !receiverPolicy.isSameAccount(reply.owner(), command.actor())) {
+                && !NotificationReceiverPolicy.isSameAccount(reply.owner(), actor)) {
             candidateReceivers.add(reply.owner());
         }
 
         boolean boardOwnerIsReplyOwner = command.replyTarget() instanceof CommentReplyTarget.Reply reply
-                && receiverPolicy.isSameAccount(command.boardOwner(), reply.owner());
-        if (!receiverPolicy.isSameAccount(command.boardOwner(), command.actor()) && !boardOwnerIsReplyOwner) {
-            candidateReceivers.add(command.boardOwner());
+                && NotificationReceiverPolicy.isSameAccount(boardOwner, reply.owner());
+        if (!NotificationReceiverPolicy.isSameAccount(boardOwner, actor) && !boardOwnerIsReplyOwner) {
+            candidateReceivers.add(boardOwner);
         }
         return candidateReceivers;
     }

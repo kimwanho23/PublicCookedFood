@@ -37,18 +37,12 @@ class NotificationUnitTest {
     }
 
     @Test
-    void builder_rejectsMissingCommentForCommentNotification() {
+    void commentReply_rejectsMissingComment() {
         Account receiver = account(1L, "receiver");
         Account actor = account(2L, "actor");
         Board board = board(actor);
 
-        assertThatThrownBy(() -> Notification.builder()
-                .receiver(receiver)
-                .actor(actor)
-                .board(board)
-                .type(NotificationType.COMMENT_REPLY)
-                .contentPreview("preview")
-                .build())
+        assertThatThrownBy(() -> Notification.commentReply(receiver, actor, board, null, "preview"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("comment");
     }

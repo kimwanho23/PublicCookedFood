@@ -10,7 +10,8 @@ class NotificationVisibilityCriteriaUnitTest {
 
     @Test
     void of_usesSentinelWhenRestrictedAccountsAreAbsent() {
-        NotificationVisibilityCriteria criteria = NotificationVisibilityCriteria.of(1L, Set.of(), false);
+        NotificationViewSupport.NotificationVisibilityCriteria criteria =
+                NotificationViewSupport.NotificationVisibilityCriteria.of(1L, Set.of(), false);
 
         assertThat(criteria.excludeRestricted()).isFalse();
         assertThat(criteria.restrictedAccountIdsOrSentinel()).containsExactly(-1L);
@@ -18,7 +19,8 @@ class NotificationVisibilityCriteriaUnitTest {
 
     @Test
     void of_preservesRestrictedAccountsWhenPresent() {
-        NotificationVisibilityCriteria criteria = NotificationVisibilityCriteria.of(1L, Set.of(3L, 2L), true);
+        NotificationViewSupport.NotificationVisibilityCriteria criteria =
+                NotificationViewSupport.NotificationVisibilityCriteria.of(1L, Set.of(3L, 2L), true);
 
         assertThat(criteria.excludeRestricted()).isTrue();
         assertThat(criteria.unreadOnly()).isTrue();

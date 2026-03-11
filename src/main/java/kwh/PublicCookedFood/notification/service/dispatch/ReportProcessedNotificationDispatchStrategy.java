@@ -22,7 +22,7 @@ public class ReportProcessedNotificationDispatchStrategy {
     public void dispatch(ReportProcessedDispatchCommand command) {
         Account reporter = command.reporter();
         Account processor = command.processor();
-        if (receiverPolicy.isSameAccount(reporter, processor)) {
+        if (NotificationReceiverPolicy.isSameAccount(reporter, processor)) {
             return;
         }
 
