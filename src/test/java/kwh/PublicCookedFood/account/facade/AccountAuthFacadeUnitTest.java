@@ -7,8 +7,9 @@ import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.dto.request.AccountSaveDto;
 import kwh.PublicCookedFood.account.error.AccountErrorCode;
 import kwh.PublicCookedFood.account.service.AccountService;
-import kwh.PublicCookedFood.board.service.ImageService;
 import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.storage.ImageLifecycleService;
+import kwh.PublicCookedFood.storage.ImageUrls;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,7 +37,7 @@ class AccountAuthFacadeUnitTest {
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
-    private ImageService imageService;
+    private ImageLifecycleService imageLifecycleService;
 
     @InjectMocks
     private AccountAuthFacade accountAuthFacade;
@@ -59,7 +60,7 @@ class AccountAuthFacadeUnitTest {
         AccountAuthFacade.SignupResult result = accountAuthFacade.signup(accountSaveDto);
 
         assertThat(result.success()).isTrue();
-        verify(imageService).attachProfileImageIfPresent("/images/signup-profile.jpg");
+        verify(imageLifecycleService).attachImagesIfPresent(ImageUrls.single("/images/signup-profile.jpg"));
         verify(accountAuditPublisher).accountSignup(11L, "signup@test.com");
     }
 
@@ -74,7 +75,7 @@ class AccountAuthFacadeUnitTest {
 
         assertThat(result.success()).isFalse();
         assertThat(result.errorMessage()).isEqualTo(AccountErrorCode.ACCOUNT_EMAIL_DUPLICATED.message());
-        verify(imageService, never()).attachProfileImageIfPresent("/images/signup-profile.jpg");
+        verify(imageLifecycleService, never()).attachImagesIfPresent(ImageUrls.single("/images/signup-profile.jpg"));
         verify(accountAuditPublisher, never()).accountSignup(anyLong(), anyString());
     }
 
@@ -89,7 +90,7 @@ class AccountAuthFacadeUnitTest {
 
         assertThat(result.success()).isFalse();
         assertThat(result.errorMessage()).isEqualTo(AccountErrorCode.ACCOUNT_NAME_DUPLICATED.message());
-        verify(imageService, never()).attachProfileImageIfPresent("/images/signup-profile.jpg");
+        verify(imageLifecycleService, never()).attachImagesIfPresent(ImageUrls.single("/images/signup-profile.jpg"));
         verify(accountAuditPublisher, never()).accountSignup(anyLong(), anyString());
     }
 

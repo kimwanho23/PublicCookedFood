@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.food.controller;
 
-import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.application.query.view.BoardCardView;
 import kwh.PublicCookedFood.food.dto.response.RecipeRankingResponse;
 import kwh.PublicCookedFood.food.facade.RecipeMainFacade;
 import kwh.PublicCookedFood.metrics.reco.RecipeRecoSnapshotService;
@@ -30,12 +29,7 @@ class MainControllerUnitTest {
 
     @Test
     void home_setsPopularAndRecommendationModelAttributes() {
-        Board popularBoard = Board.builder()
-                .id(1L)
-                .title("popular")
-                .state(SoftDeleteState.ACTIVE)
-                .hiddenByReport(false)
-                .build();
+        BoardCardView popularBoard = new BoardCardView(1L, "popular", null, null, null, 0L, 4L, 2L, null, false, false);
         RecipeRankingResponse ranking = new RecipeRankingResponse(10L, "ranking", 4L, 4.8);
         RecipeRecoSnapshotService.RecipeRecommendationItem lunchItem =
                 new RecipeRecoSnapshotService.RecipeRecommendationItem(20L, "lunch", "/lunch.png", BigDecimal.valueOf(8.5));

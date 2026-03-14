@@ -1,4 +1,4 @@
-package kwh.PublicCookedFood.board.service;
+package kwh.PublicCookedFood.board.service.command;
 
 import kwh.PublicCookedFood.board.domain.BoardSection;
 import kwh.PublicCookedFood.board.error.BoardSectionErrorCode;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class BoardSectionServiceUnitTest {
+class BoardSectionCommandServiceUnitTest {
 
     @Mock
     private BoardSectionRepository boardSectionRepository;
@@ -31,13 +31,13 @@ class BoardSectionServiceUnitTest {
     private BoardRepository boardRepository;
 
     @InjectMocks
-    private BoardSectionService boardSectionService;
+    private BoardSectionCommandService boardSectionCommandService;
 
     @Test
     void createSection_throwsAppExceptionWhenSectionKeyIsDuplicated() {
         when(boardSectionRepository.existsBySectionKey("tips")).thenReturn(true);
 
-        assertThatThrownBy(() -> boardSectionService.createSection("tips", "Tips", 1))
+        assertThatThrownBy(() -> boardSectionCommandService.createSection(BoardSectionCreateCommand.of("tips", "Tips", 1)))
                 .isInstanceOfSatisfying(AppException.class, e ->
                         assertThat(e.getErrorCode()).isEqualTo(BoardSectionErrorCode.BOARD_SECTION_KEY_DUPLICATED));
     }
@@ -62,11 +62,48 @@ class BoardSectionServiceUnitTest {
                         .build()));
         when(boardSectionRepository.save(any(BoardSection.class))).thenReturn(savedSection);
 
-        BoardSection result = boardSectionService.createSection(null, "###", null);
+        BoardSection result = boardSectionCommandService.createSection(BoardSectionCreateCommand.of(null, "###", null));
 
         assertThat(result.getSectionKey()).isEqualTo("section");
         assertThat(result.getDisplayOrder()).isEqualTo(3);
         verify(boardSectionRepository).save(any(BoardSection.class));
+    }
+
+    @Test
+    void createSection_normalizesProvidedSectionKey() {
+        BoardSection savedSection = BoardSection.builder()
+                .id(3L)
+                .sectionKey("tips")
+                .sectionName("Tips")
+                .displayOrder(1)
+                .active(true)
+                .build();
+        when(boardSectionRepository.existsBySectionKey("tips")).thenReturn(false);
+        when(boardSectionRepository.save(any(BoardSection.class))).thenReturn(savedSection);
+
+        BoardSection result = boardSectionCommandService.createSection(BoardSectionCreateCommand.of(" Tips ", "Tips", 1));
+
+        assertThat(result.getSectionKey()).isEqualTo("tips");
+    }
+
+    @Test
+    void updateSection_appliesExplicitChangesWithoutPatchMethod() {
+        BoardSection section = BoardSection.builder()
+                .id(10L)
+                .sectionKey("tips")
+                .sectionName("Tips")
+                .displayOrder(5)
+                .active(true)
+                .build();
+        when(boardSectionRepository.findById(10L)).thenReturn(Optional.of(section));
+
+        BoardSection updated = boardSectionCommandService.updateSection(
+                BoardSectionUpdateCommand.of(10L, "공지", 1, false)
+        );
+
+        assertThat(updated.getSectionName()).isEqualTo("공지");
+        assertThat(updated.getDisplayOrder()).isEqualTo(1);
+        assertThat(updated.getActive()).isFalse();
     }
 
     @Test
@@ -87,7 +124,8 @@ class BoardSectionServiceUnitTest {
                 .build();
         when(boardSectionRepository.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of(first, second));
 
-        List<BoardSection> reordered = boardSectionService.reorderSections(List.of(20L, 10L));
+        List<BoardSection> reordered =
+                boardSectionCommandService.reorderSections(new BoardSectionReorderCommand(List.of(20L, 10L)));
 
         assertThat(reordered).extracting(BoardSection::getId).containsExactly(20L, 10L);
         assertThat(reordered).extracting(BoardSection::getDisplayOrder).containsExactly(0, 1);
@@ -112,7 +150,7 @@ class BoardSectionServiceUnitTest {
         when(boardSectionRepository.findById(1L)).thenReturn(Optional.of(section));
         when(boardSectionRepository.findBySectionKey("general")).thenReturn(Optional.of(defaultSection));
 
-        boardSectionService.deleteSection(1L);
+        boardSectionCommandService.deleteSection(1L);
 
         verify(boardRepository).reassignSection(section, defaultSection);
         verify(boardSectionRepository).delete(section);
@@ -129,11 +167,20 @@ class BoardSectionServiceUnitTest {
                 .build();
         when(boardSectionRepository.findById(1L)).thenReturn(Optional.of(defaultSection));
 
-        assertThatThrownBy(() -> boardSectionService.deleteSection(1L))
+        assertThatThrownBy(() -> boardSectionCommandService.deleteSection(1L))
                 .isInstanceOfSatisfying(AppException.class, e ->
                         assertThat(e.getErrorCode()).isEqualTo(BoardSectionErrorCode.BOARD_SECTION_DEFAULT_DELETE_FORBIDDEN));
 
         verify(boardRepository, never()).reassignSection(any(), any());
         verify(boardSectionRepository, never()).delete(any());
+    }
+
+    @Test
+    void resolveSectionForWrite_throwsAppExceptionWhenSectionIsMissing() {
+        when(boardSectionRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> boardSectionCommandService.resolveSectionForWrite(99L))
+                .isInstanceOfSatisfying(AppException.class, e ->
+                        assertThat(e.getErrorCode()).isEqualTo(BoardSectionErrorCode.BOARD_SECTION_NOT_FOUND));
     }
 }

@@ -1,9 +1,14 @@
-package kwh.PublicCookedFood.board.contoller;
+package kwh.PublicCookedFood.board.controller;
 
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.domain.Role;
+import kwh.PublicCookedFood.board.application.query.view.BoardCardView;
 import kwh.PublicCookedFood.board.domain.BoardReportStatus;
-import kwh.PublicCookedFood.board.facade.BoardAdminFacade;
+import kwh.PublicCookedFood.board.facade.BoardAdminDashboardFacade;
+import kwh.PublicCookedFood.board.facade.BoardAdminPolicyFacade;
+import kwh.PublicCookedFood.board.facade.BoardAdminReportFacade;
+import kwh.PublicCookedFood.board.service.command.BoardReportStatusUpdateCommand;
+import kwh.PublicCookedFood.board.service.query.BoardReportFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,7 +25,13 @@ import static org.mockito.Mockito.when;
 class AdminBoardPageControllerUnitTest {
 
     @Mock
-    private BoardAdminFacade boardAdminFacade;
+    private BoardAdminDashboardFacade boardAdminDashboardFacade;
+
+    @Mock
+    private BoardAdminPolicyFacade boardAdminPolicyFacade;
+
+    @Mock
+    private BoardAdminReportFacade boardAdminReportFacade;
 
     @InjectMocks
     private AdminBoardPageController adminBoardPageController;
@@ -33,9 +44,29 @@ class AdminBoardPageControllerUnitTest {
     }
 
     @Test
+    void boardDashboardPage_addsPopularBoardsToModel() {
+        org.springframework.ui.Model model = new org.springframework.ui.ExtendedModelMap();
+        BoardAdminDashboardFacade.DashboardViewData data = new BoardAdminDashboardFacade.DashboardViewData(
+                1L,
+                2L,
+                3L,
+                6L,
+                4L,
+                java.util.List.of(new BoardCardView(10L, "popular", null, null, null, 1L, 2L, 3L, null, false, false)),
+                java.util.List.of(),
+                java.util.List.of()
+        );
+        when(boardAdminDashboardFacade.loadDashboardData()).thenReturn(data);
+
+        String viewName = adminBoardPageController.boardDashboardPage(model);
+
+        assertThat(viewName).isEqualTo("admin/boards/dashboard");
+        assertThat(model.getAttribute("popularBoards")).isEqualTo(data.popularBoards());
+    }
+
+    @Test
     void updateReportStatus_keepsOneIndexedPageOnRedirect() {
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
-        when(boardAdminFacade.normalizeReportFilter("resolved")).thenReturn("RESOLVED");
 
         String viewName = adminBoardPageController.updateReportStatus(
                 10L,
@@ -47,8 +78,9 @@ class AdminBoardPageControllerUnitTest {
                 redirectAttributes
         );
 
-        verify(boardAdminFacade).normalizeReportFilter("resolved");
-        verify(boardAdminFacade).updateReportStatus(10L, BoardReportStatus.RESOLVED, "done", 99L);
+        verify(boardAdminReportFacade).updateReportStatus(
+                new BoardReportStatusUpdateCommand(10L, BoardReportStatus.RESOLVED, 99L, "done")
+        );
         assertThat(viewName).isEqualTo("redirect:/admin/boards/reports?status=RESOLVED&page=2");
         assertThat(redirectAttributes.getFlashAttributes()).containsKey("reportMessage");
     }
@@ -56,20 +88,17 @@ class AdminBoardPageControllerUnitTest {
     @Test
     void updateReportStatus_clampsPageToFirstPageWhenUnauthenticated() {
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
-        when(boardAdminFacade.normalizeReportFilter(BoardAdminFacade.REPORT_FILTER_OPEN))
-                .thenReturn(BoardAdminFacade.REPORT_FILTER_OPEN);
 
         String viewName = adminBoardPageController.updateReportStatus(
                 10L,
                 BoardReportStatus.OPEN,
                 null,
-                BoardAdminFacade.REPORT_FILTER_OPEN,
+                BoardReportFilter.PARAM_OPEN,
                 0,
                 null,
                 redirectAttributes
         );
 
-        verify(boardAdminFacade).normalizeReportFilter(BoardAdminFacade.REPORT_FILTER_OPEN);
         assertThat(viewName).isEqualTo("redirect:/admin/boards/reports?status=OPEN&page=1");
         assertThat(redirectAttributes.getFlashAttributes()).containsKey("reportErrorMessage");
     }

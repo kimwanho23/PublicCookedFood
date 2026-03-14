@@ -1,7 +1,11 @@
 package kwh.PublicCookedFood.metrics.view;
 
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.domain.Board;
+import kwh.PublicCookedFood.board.domain.BoardStats;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
+import kwh.PublicCookedFood.board.repository.BoardStatsRepository;
+import kwh.PublicCookedFood.board.service.BoardViewDeltaFlushScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,9 +17,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Optional;
-
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,15 +66,12 @@ class BoardViewDeltaFlushSchedulerUnitTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(setOperations.pop(ViewCounterRedisKeys.BOARD_DIRTY_SET_KEY)).thenReturn("7").thenReturn(null);
         when(valueOperations.getAndSet(ViewCounterRedisKeys.boardDeltaKey(7L), "0")).thenReturn("5");
-        when(boardRepository.addViews(7L, 5L, SoftDeleteState.ACTIVE)).thenReturn(1);
-        when(boardRepository.findViewsByIdAndState(7L, SoftDeleteState.ACTIVE)).thenReturn(Optional.of(15L));
         when(boardRepository.existsByIdAndStateAndHiddenByReportFalse(7L, SoftDeleteState.ACTIVE)).thenReturn(true);
-        when(boardStatsRepository.updateTotalViews(7L, 15L)).thenReturn(1);
+        when(boardStatsRepository.addViews(7L, 5L)).thenReturn(1);
 
         scheduler.flushBoardViewDeltas();
 
-        verify(boardRepository).addViews(7L, 5L, SoftDeleteState.ACTIVE);
-        verify(boardStatsRepository).updateTotalViews(7L, 15L);
+        verify(boardStatsRepository).addViews(7L, 5L);
     }
 
     @Test
@@ -84,11 +84,38 @@ class BoardViewDeltaFlushSchedulerUnitTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(setOperations.pop(ViewCounterRedisKeys.BOARD_DIRTY_SET_KEY)).thenReturn("8").thenReturn(null);
         when(valueOperations.getAndSet(ViewCounterRedisKeys.boardDeltaKey(8L), "0")).thenReturn("3");
-        when(boardRepository.addViews(8L, 3L, SoftDeleteState.ACTIVE)).thenThrow(new RuntimeException("db fail"));
+        when(boardRepository.existsByIdAndStateAndHiddenByReportFalse(8L, SoftDeleteState.ACTIVE)).thenReturn(true);
+        when(boardStatsRepository.addViews(8L, 3L)).thenThrow(new RuntimeException("db fail"));
 
         scheduler.flushBoardViewDeltas();
 
         verify(valueOperations).increment(ViewCounterRedisKeys.boardDeltaKey(8L), 3L);
         verify(setOperations).add(ViewCounterRedisKeys.BOARD_DIRTY_SET_KEY, "8");
+    }
+
+    @Test
+    void flushBoardViewDeltas_initializesStatsFromLockedBoardWhenMissing() {
+        ReflectionTestUtils.setField(scheduler, "redisEnabled", true);
+        ReflectionTestUtils.setField(scheduler, "flushEnabled", true);
+        ReflectionTestUtils.setField(scheduler, "flushBatchSize", 10);
+        Board board = Board.builder()
+                .id(9L)
+                .state(SoftDeleteState.ACTIVE)
+                .hiddenByReport(false)
+                .build();
+        when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(setOperations.pop(ViewCounterRedisKeys.BOARD_DIRTY_SET_KEY)).thenReturn("9").thenReturn(null);
+        when(valueOperations.getAndSet(ViewCounterRedisKeys.boardDeltaKey(9L), "0")).thenReturn("4");
+        when(boardRepository.existsByIdAndStateAndHiddenByReportFalse(9L, SoftDeleteState.ACTIVE)).thenReturn(true);
+        when(boardStatsRepository.addViews(9L, 4L)).thenReturn(0, 0, 1);
+        when(boardRepository.findByIdAndStateAndHiddenByReportFalseForUpdate(9L, SoftDeleteState.ACTIVE))
+                .thenReturn(java.util.Optional.of(board));
+
+        scheduler.flushBoardViewDeltas();
+
+        verify(boardStatsRepository).save(org.mockito.ArgumentMatchers.any(BoardStats.class));
+        verify(boardStatsRepository, times(3)).addViews(9L, 4L);
     }
 }

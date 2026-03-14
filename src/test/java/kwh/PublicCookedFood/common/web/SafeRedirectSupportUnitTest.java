@@ -10,13 +10,13 @@ class SafeRedirectSupportUnitTest {
     @Test
     void normalizeRelativePath_keepsSafeRelativePathAndQuery() {
         assertThat(SafeRedirectSupport.normalizeRelativePath("/boards/10?page=2"))
-                .isEqualTo("/boards/10?page=2");
+                .contains("/boards/10?page=2");
     }
 
     @Test
     void normalizeRelativePath_rejectsAbsoluteUrl() {
         assertThat(SafeRedirectSupport.normalizeRelativePath("https://evil.example/boards/10"))
-                .isNull();
+                .isEmpty();
     }
 
     @Test

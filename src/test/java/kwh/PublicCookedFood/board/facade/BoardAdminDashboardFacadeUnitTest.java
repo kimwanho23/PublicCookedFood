@@ -1,13 +1,15 @@
 package kwh.PublicCookedFood.board.facade;
 
+import kwh.PublicCookedFood.board.application.query.BoardCardViewAssembler;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardReportStatus;
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.repository.BoardReportRepository;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.CommentsRepository;
-import kwh.PublicCookedFood.board.service.BoardReportService;
-import kwh.PublicCookedFood.board.service.BoardService;
+import kwh.PublicCookedFood.board.service.query.BoardPopularityQueryService;
+import kwh.PublicCookedFood.board.service.query.BoardReportQueryService;
+import kwh.PublicCookedFood.board.service.support.BoardStatsSummaryResolver;
 import kwh.PublicCookedFood.food.repository.Recipe_INFO_Repository;
 import kwh.PublicCookedFood.food.service.RecipeReviewService;
 import kwh.PublicCookedFood.account.domain.AccountActivityLog;
@@ -31,10 +33,10 @@ import static org.mockito.Mockito.when;
 class BoardAdminDashboardFacadeUnitTest {
 
     @Mock
-    private BoardReportService boardReportService;
+    private BoardReportQueryService boardReportQueryService;
 
     @Mock
-    private BoardService boardService;
+    private BoardPopularityQueryService boardPopularityQueryService;
 
     @Mock
     private RecipeReviewService recipeReviewService;
@@ -56,21 +58,26 @@ class BoardAdminDashboardFacadeUnitTest {
 
     @Mock
     private AccountRepository accountRepository;
+    @Mock
+    private BoardStatsSummaryResolver boardStatsSummaryResolver;
 
     private BoardAdminDashboardFacade boardAdminDashboardFacade;
 
     @BeforeEach
     void setUp() {
         boardAdminDashboardFacade = new BoardAdminDashboardFacade(
-                boardReportService,
-                boardService,
+                boardReportQueryService,
+                boardPopularityQueryService,
                 recipeReviewService,
                 accountActivityLogService,
                 boardRepository,
                 commentsRepository,
                 boardReportRepository,
                 recipeInfoRepository,
-                accountRepository
+                accountRepository,
+                new BoardAdminActivityLogParser(),
+                boardStatsSummaryResolver,
+                new BoardCardViewAssembler()
         );
     }
 
@@ -81,6 +88,12 @@ class BoardAdminDashboardFacadeUnitTest {
         Board board = Board.builder()
                 .id(10L)
                 .title("board title")
+                .account(actor)
+                .hiddenByReport(false)
+                .build();
+        Board popularBoard = Board.builder()
+                .id(11L)
+                .title("popular board")
                 .account(actor)
                 .hiddenByReport(false)
                 .build();
@@ -107,12 +120,14 @@ class BoardAdminDashboardFacadeUnitTest {
                 .detail("enabled=false")
                 .build();
 
-        when(boardReportService.getReportCountByStatus(BoardReportStatus.OPEN)).thenReturn(1L);
-        when(boardReportService.getReportCountByStatus(BoardReportStatus.RESOLVED)).thenReturn(2L);
-        when(boardReportService.getReportCountByStatus(BoardReportStatus.REJECTED)).thenReturn(3L);
-        when(boardReportService.getReportCountByStatus(null)).thenReturn(6L);
-        when(boardService.getHiddenByReportCount()).thenReturn(4L);
-        when(boardService.getPopularBoardsSince(any(), eq(8))).thenReturn(List.of());
+        when(boardReportQueryService.getReportCountByStatus(BoardReportStatus.OPEN)).thenReturn(1L);
+        when(boardReportQueryService.getReportCountByStatus(BoardReportStatus.RESOLVED)).thenReturn(2L);
+        when(boardReportQueryService.getReportCountByStatus(BoardReportStatus.REJECTED)).thenReturn(3L);
+        when(boardReportQueryService.getReportCountByStatus(null)).thenReturn(6L);
+        when(boardRepository.countByHiddenByReportTrue()).thenReturn(4L);
+        when(boardPopularityQueryService.getPopularBoardsSince(any(), eq(8))).thenReturn(List.of(popularBoard));
+        when(boardStatsSummaryResolver.resolve(List.of(popularBoard)))
+                .thenReturn(java.util.Map.of(11L, new kwh.PublicCookedFood.board.service.support.BoardStatsSummary(8L, 6L, 4L)));
         when(recipeReviewService.getTopReviewRankings(any(), eq(8))).thenReturn(List.of());
         when(accountActivityLogService.getRecentActivities(15))
                 .thenReturn(List.of(commentActivity, blockActivity, notificationActivity));
@@ -120,14 +135,21 @@ class BoardAdminDashboardFacadeUnitTest {
         when(commentsRepository.findAllById(List.of(30L))).thenReturn(List.of(comment));
         when(accountRepository.findAllById(List.of(2L))).thenReturn(List.of(blockedAccount));
 
-        BoardAdminFacade.DashboardViewData result = boardAdminDashboardFacade.loadDashboardData();
+        BoardAdminDashboardFacade.DashboardViewData result = boardAdminDashboardFacade.loadDashboardData();
 
+        assertThat(result.popularBoards()).hasSize(1);
+        assertThat(result.popularBoards().get(0).boardId()).isEqualTo(11L);
+        assertThat(result.popularBoards().get(0).likes()).isEqualTo(6L);
         assertThat(result.recentActivities()).hasSize(3);
+        assertThat(result.recentActivities().get(0).actor().accountId()).isEqualTo(1L);
+        assertThat(result.recentActivities().get(0).actor().accountName()).isEqualTo("actor");
         assertThat(result.recentActivities().get(0).accountId()).isEqualTo(1L);
         assertThat(result.recentActivities().get(0).accountName()).isEqualTo("actor");
         assertThat(result.recentActivities().get(0).action()).isEqualTo("BOARD_COMMENT_CREATE");
+        assertThat(result.recentActivities().get(0).detailView().text()).isEqualTo("board title / comment body");
         assertThat(result.recentActivities().get(0).detail()).isEqualTo("board title / comment body");
         assertThat(result.recentActivities().get(1).detail()).isEqualTo("blocked-account");
+        assertThat(result.recentActivities().get(2).detailView().text()).isNull();
         assertThat(result.recentActivities().get(2).detail()).isNull();
     }
 

@@ -5,9 +5,8 @@ import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.service.AccountBlockService;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
-import kwh.PublicCookedFood.board.service.CommentNavigationService;
-import kwh.PublicCookedFood.notification.service.NotificationTargetPathResolver;
+import kwh.PublicCookedFood.board.service.comment.CommentTargetPath;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.notification.domain.Notification;
 import kwh.PublicCookedFood.notification.dto.response.NotificationResponse;
 import kwh.PublicCookedFood.notification.repository.NotificationRepository;
@@ -41,14 +40,14 @@ class NotificationViewSupportUnitTest {
     private AccountBlockService accountBlockService;
 
     @Mock
-    private CommentNavigationService commentNavigationService;
+    private NotificationCommentTargetPathService notificationCommentTargetPathService;
 
     private NotificationTargetPathResolver notificationTargetPathResolver;
     private NotificationViewSupport notificationViewSupport;
 
     @BeforeEach
     void setUp() {
-        notificationTargetPathResolver = new NotificationTargetPathResolver(commentNavigationService);
+        notificationTargetPathResolver = new NotificationTargetPathResolver(notificationCommentTargetPathService);
         notificationViewSupport = new NotificationViewSupport(
                 notificationRepository,
                 accountBlockService,
@@ -97,8 +96,8 @@ class NotificationViewSupportUnitTest {
                 anyList(),
                 eq(pageable)
         )).thenReturn(new PageImpl<>(List.of(notification), pageable, 1));
-        when(commentNavigationService.buildCommentTargetPaths(10L, List.of(30L), 1L))
-                .thenReturn(Map.of(30L, targetPath));
+        when(notificationCommentTargetPathService.buildCommentTargetPaths(10L, List.of(30L), 1L))
+                .thenReturn(Map.of(30L, CommentTargetPath.of(targetPath)));
 
         Page<NotificationResponse> result = notificationViewSupport.loadVisibleNotificationPage(1L, pageable, false);
 

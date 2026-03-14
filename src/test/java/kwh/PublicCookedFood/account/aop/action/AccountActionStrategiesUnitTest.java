@@ -1,6 +1,7 @@
 package kwh.PublicCookedFood.account.aop.action;
 
 import kwh.PublicCookedFood.account.aop.AccountActionAuditType;
+import kwh.PublicCookedFood.account.audit.BoardCommentAuditPayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -104,7 +105,7 @@ class AccountActionStrategiesUnitTest {
     @Test
     void boardCommentStrategy_commentCreateSuccess_recordsActivityWithParentIdFallback() {
         boardCommentAuditStrategy.handle(AccountActionAuditType.BOARD_COMMENT_CREATE,
-                new AccountActionAuditArgs(new Object[]{11L, 22L, 33L, null}));
+                new AccountActionAuditArgs(new Object[]{11L, BoardCommentAuditPayload.root(22L, 33L)}));
 
         verify(recorder).record(11L, "BOARD_COMMENT_CREATE", "boardId=22,commentId=33,parentId=-");
     }

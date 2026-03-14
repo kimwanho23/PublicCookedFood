@@ -1,7 +1,7 @@
 package kwh.PublicCookedFood.metrics.popular;
 
 import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

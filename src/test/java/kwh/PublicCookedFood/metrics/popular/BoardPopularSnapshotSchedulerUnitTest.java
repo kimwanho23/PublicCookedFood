@@ -1,10 +1,12 @@
 package kwh.PublicCookedFood.metrics.popular;
 
 import kwh.PublicCookedFood.board.domain.BoardSection;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
+import kwh.PublicCookedFood.board.repository.BoardPageQuery;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
-import kwh.PublicCookedFood.board.service.BoardPolicyService;
-import kwh.PublicCookedFood.board.service.BoardSectionService;
+import kwh.PublicCookedFood.board.repository.BoardSnapshotQuery;
+import kwh.PublicCookedFood.board.service.query.BoardPolicyQueryService;
+import kwh.PublicCookedFood.board.service.query.BoardSectionQueryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -19,6 +21,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,10 +34,10 @@ class BoardPopularSnapshotSchedulerUnitTest {
     private BoardRepository boardRepository;
 
     @Mock
-    private BoardPolicyService boardPolicyService;
+    private BoardPolicyQueryService boardPolicyQueryService;
 
     @Mock
-    private BoardSectionService boardSectionService;
+    private BoardSectionQueryService boardSectionQueryService;
 
     @Mock
     private BoardPopularSnapshotService boardPopularSnapshotService;
@@ -48,7 +51,7 @@ class BoardPopularSnapshotSchedulerUnitTest {
 
         scheduler.generateFeaturedSnapshots();
 
-        verify(boardPolicyService, never()).getFeaturedLikeThreshold();
+        verify(boardPolicyQueryService, never()).getFeaturedLikeThreshold();
     }
 
     @Test
@@ -57,7 +60,7 @@ class BoardPopularSnapshotSchedulerUnitTest {
         ReflectionTestUtils.setField(scheduler, "topN", 50);
         ReflectionTestUtils.setField(scheduler, "ttlMinutes", 15);
 
-        when(boardPolicyService.getFeaturedLikeThreshold()).thenReturn(5);
+        when(boardPolicyQueryService.getFeaturedLikeThreshold()).thenReturn(5);
         BoardSection section = BoardSection.builder()
                 .id(2L)
                 .sectionKey("general")
@@ -65,11 +68,23 @@ class BoardPopularSnapshotSchedulerUnitTest {
                 .displayOrder(1)
                 .active(true)
                 .build();
-        when(boardSectionService.getActiveSections()).thenReturn(List.of(section));
+        when(boardSectionQueryService.getActiveSections()).thenReturn(List.of(section));
 
-        when(boardRepository.findTopBoardIdsForSnapshot(SoftDeleteState.ACTIVE, 5L, "", PageRequest.of(0, 50)))
+        when(boardRepository.findTopBoardIdsForSnapshot(argThat(query ->
+                query != null
+                        && query.state() == SoftDeleteState.ACTIVE
+                        && query.featuredThreshold().minimumLikes().map(value -> value == 5L).orElse(false)
+                        && query.section().sectionKey().isEmpty()
+                        && query.pageable().equals(PageRequest.of(0, 50))
+        )))
                 .thenReturn(List.of(10L));
-        when(boardRepository.findTopBoardIdsForSnapshot(SoftDeleteState.ACTIVE, 5L, "general", PageRequest.of(0, 50)))
+        when(boardRepository.findTopBoardIdsForSnapshot(argThat(query ->
+                query != null
+                        && query.state() == SoftDeleteState.ACTIVE
+                        && query.featuredThreshold().minimumLikes().map(value -> value == 5L).orElse(false)
+                        && query.section().sectionKey().map("general"::equals).orElse(false)
+                        && query.pageable().equals(PageRequest.of(0, 50))
+        )))
                 .thenReturn(List.of(20L, 30L));
 
         scheduler.generateFeaturedSnapshots();
