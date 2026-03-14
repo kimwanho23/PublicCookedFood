@@ -298,15 +298,6 @@ public class UserRecipeCommentService {
         return new BlockedAccountFilter(true, normalized);
     }
 
-    private UserRecipeCommentResponse convertToDto(UserRecipeComment comment) {
-        return convertToDto(comment, Map.of());
-    }
-
-    private UserRecipeCommentResponse convertToDto(UserRecipeComment comment,
-                                                   Map<Long, List<UserRecipeComment>> repliesByParentId) {
-        return convertToDto(comment, repliesByParentId, comment.getRecipe().getId());
-    }
-
     private UserRecipeCommentResponse convertToDto(UserRecipeComment comment,
                                                    Map<Long, List<UserRecipeComment>> repliesByParentId,
                                                    Long recipeId) {

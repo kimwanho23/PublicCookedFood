@@ -21,10 +21,10 @@ public class NotificationAuditStrategy extends AbstractAccountActionAuditStrateg
 
         handlers.put(AccountActionAuditType.NOTIFICATION_SETTING_UPDATE, args -> {
             Long accountId = args.asLong(0);
-            Boolean enabled = args.asBoolean(1);
+            String enabledDisplay = args.displayBooleanAt(1);
             log.info("action=notification.setting_update result=success accountId={} enabled={}",
-                    args.displayId(accountId), args.displayBoolean(enabled));
-            recorder.record(accountId, "NOTIFICATION_SETTING_UPDATE", "enabled=" + args.displayBoolean(enabled));
+                    args.displayId(accountId), enabledDisplay);
+            recorder.record(accountId, "NOTIFICATION_SETTING_UPDATE", "enabled=" + enabledDisplay);
         });
 
         return handlers;

@@ -1,6 +1,7 @@
 package kwh.PublicCookedFood.account.audit;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public final class AuditArgumentSupport {
 
@@ -35,11 +36,11 @@ public final class AuditArgumentSupport {
         return null;
     }
 
-    public static Boolean asBoolean(Object value) {
+    public static Optional<Boolean> asBoolean(Object value) {
         if (value instanceof Boolean booleanValue) {
-            return booleanValue;
+            return Optional.of(booleanValue);
         }
-        return null;
+        return Optional.empty();
     }
 
     public static String asString(Object value) {

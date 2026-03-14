@@ -4,6 +4,7 @@ import kwh.PublicCookedFood.account.audit.AccountActionAuditPayload;
 import kwh.PublicCookedFood.account.audit.AuditArgumentSupport;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public class AccountActionAuditArgs {
 
@@ -29,7 +30,7 @@ public class AccountActionAuditArgs {
         return AuditArgumentSupport.asInteger(valueAt(index));
     }
 
-    public Boolean asBoolean(int index) {
+    public Optional<Boolean> asBoolean(int index) {
         return AuditArgumentSupport.asBoolean(valueAt(index));
     }
 
@@ -55,6 +56,10 @@ public class AccountActionAuditArgs {
 
     public String displayBoolean(Boolean value) {
         return AuditArgumentSupport.displayBoolean(value);
+    }
+
+    public String displayBooleanAt(int index) {
+        return AuditArgumentSupport.displayBoolean(asBoolean(index).orElse(null));
     }
 
     public String displayText(String value) {

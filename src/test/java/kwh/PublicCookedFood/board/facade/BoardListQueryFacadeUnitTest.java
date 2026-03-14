@@ -98,7 +98,7 @@ class BoardListQueryFacadeUnitTest {
                 .thenReturn(new BoardListCriteriaResolver.Resolution(criteria, null));
         when(boardListQueryService.load(criteria)).thenReturn(boardPage);
         when(boardThumbnailExtractor.extract(boardPage.getContent()))
-                .thenReturn(new BoardThumbnailExtractor.ThumbnailData(Map.of(), Map.of(10L, false)));
+                .thenReturn(BoardThumbnailExtractor.ThumbnailData.of(Map.of(), Map.of(10L, false)));
         when(boardStatsSummaryResolver.resolve(boardPage.getContent()))
                 .thenReturn(Map.of(10L, new BoardStatsSummary(123L, 1L, 0L)));
         when(boardPolicyQueryService.getThumbnailDisplayMode()).thenReturn(BoardThumbnailDisplayMode.NONE);
@@ -149,7 +149,7 @@ class BoardListQueryFacadeUnitTest {
                 .thenReturn(new BoardListCriteriaResolver.Resolution(criteria, null));
         when(boardListQueryService.load(criteria)).thenReturn(boardPage);
         when(boardThumbnailExtractor.extract(boardPage.getContent()))
-                .thenReturn(new BoardThumbnailExtractor.ThumbnailData(Map.of(), Map.of(11L, false)));
+                .thenReturn(BoardThumbnailExtractor.ThumbnailData.of(Map.of(), Map.of(11L, false)));
         when(boardStatsSummaryResolver.resolve(boardPage.getContent()))
                 .thenReturn(Map.of(11L, new BoardStatsSummary(50L, 0L, 0L)));
         when(boardPolicyQueryService.getThumbnailDisplayMode()).thenReturn(BoardThumbnailDisplayMode.NONE);

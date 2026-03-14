@@ -35,7 +35,7 @@ public class BoardThumbnailExtractor {
             hasImageByBoardId.put(board.getId(), false);
         }
 
-        return new ThumbnailData(thumbnailUrlByBoardId, hasImageByBoardId);
+        return ThumbnailData.of(thumbnailUrlByBoardId, hasImageByBoardId);
     }
 
     private Optional<String> extractFirstImageUrl(String htmlContent) {
@@ -62,14 +62,19 @@ public class BoardThumbnailExtractor {
         private final Map<Long, String> thumbnailUrlByBoardId;
         private final Map<Long, Boolean> hasImageByBoardId;
 
-        public ThumbnailData(Map<Long, String> thumbnailUrlByBoardId,
-                             Map<Long, Boolean> hasImageByBoardId) {
+        private ThumbnailData(Map<Long, String> thumbnailUrlByBoardId,
+                              Map<Long, Boolean> hasImageByBoardId) {
             this.thumbnailUrlByBoardId = toImmutableMap(thumbnailUrlByBoardId);
             this.hasImageByBoardId = toImmutableMap(hasImageByBoardId);
         }
 
         public static ThumbnailData empty() {
             return EMPTY;
+        }
+
+        public static ThumbnailData of(Map<Long, String> thumbnailUrlByBoardId,
+                                       Map<Long, Boolean> hasImageByBoardId) {
+            return new ThumbnailData(thumbnailUrlByBoardId, hasImageByBoardId);
         }
 
         public Map<Long, String> thumbnailUrlByBoardId() {
