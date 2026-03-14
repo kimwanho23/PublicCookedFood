@@ -57,6 +57,9 @@ public class LoginAccountArgumentResolver implements HandlerMethodArgumentResolv
         if (requestScopedAccount != null) {
             return requestScopedAccount;
         }
+        if (isNotificationStreamRequest(webRequest)) {
+            return account;
+        }
         if (account == null || account.getId() == null) {
             clearAuthentication(webRequest);
             return null;
@@ -78,6 +81,14 @@ public class LoginAccountArgumentResolver implements HandlerMethodArgumentResolv
         }
         Object cachedAccount = request.getAttribute(SaveRequestFilter.CURRENT_ACCOUNT_REQUEST_ATTRIBUTE);
         return cachedAccount instanceof Account account ? account : null;
+    }
+
+    private boolean isNotificationStreamRequest(NativeWebRequest webRequest) {
+        if (webRequest == null) {
+            return false;
+        }
+        HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
+        return SaveRequestFilter.isNotificationStreamRequest(request);
     }
 
     private void clearAuthentication(NativeWebRequest webRequest) {

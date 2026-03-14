@@ -26,25 +26,25 @@
 
             <div class="board-feed" th:if="${scrappedBoards != null and !scrappedBoards.isEmpty()}">
                 <article class="board-item" th:each="board : ${scrappedBoards}">
-                    <a class="board-row" th:href="@{/boards/{id}(id=${board.id})}">
+                    <a class="board-row" th:href="@{/boards/{id}(id=${board.boardId})}">
                         <div class="board-row-body">
                             <div class="board-row-top">
-                                <span class="badge text-bg-light" th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</span>
+                                <span class="badge text-bg-light" th:text="${board.section != null and board.section.sectionName != null ? board.section.sectionName : '미분류'}">탭</span>
                                 <span class="board-date" th:text="${#temporals.format(board.regTime, 'yyyy.MM.dd HH:mm')}">작성일</span>
                             </div>
                             <h2 class="board-row-title">
                                 <span th:text="${board.title != null and board.title.length() > 70 ? board.title.substring(0, 70) + '...' : board.title}">게시글 제목</span>
                             </h2>
                             <div class="board-row-meta">
-                                <span class="board-meta-pill" th:text="|작성자 ${board.account != null ? board.account.name : '알 수 없음'}|">작성자</span>
-                                <span class="board-meta-pill" th:text="|조회 ${board.views != null ? board.views : 0}|">조회</span>
-                                <span class="board-meta-pill" th:text="|추천 ${board.likeCount != null ? board.likeCount : 0}|">추천</span>
-                                <span class="board-meta-pill" th:text="|댓글 ${board.commentCount != null ? board.commentCount : 0}|">댓글</span>
+                                <span class="board-meta-pill" th:text="|작성자 ${board.author != null and board.author.accountName != null ? board.author.accountName : '알 수 없음'}|">작성자</span>
+                                <span class="board-meta-pill" th:text="|조회 ${board.views}|">조회</span>
+                                <span class="board-meta-pill" th:text="|추천 ${board.likes}|">추천</span>
+                                <span class="board-meta-pill" th:text="|댓글 ${board.commentsCount}|">댓글</span>
                             </div>
                         </div>
                     </a>
                     <div class="d-flex justify-content-end mt-2">
-                        <form th:action="@{/boards/{id}/scraps/delete(id=${board.id})}" method="post">
+                        <form th:action="@{/boards/{id}/scraps/delete(id=${board.boardId})}" method="post">
                             <input type="hidden" name="_method" value="patch">
                             <input type="hidden" name="redirect" value="/boards/scraps">
                             <button type="submit" class="btn btn-sm btn-soft">스크랩 해제</button>

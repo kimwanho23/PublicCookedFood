@@ -1,7 +1,8 @@
 package kwh.PublicCookedFood.board.service;
 
-import kwh.PublicCookedFood.board.domain.Images;
-import kwh.PublicCookedFood.board.repository.ImagesRepository;
+import kwh.PublicCookedFood.storage.ImageUploadCommand;
+import kwh.PublicCookedFood.storage.Images;
+import kwh.PublicCookedFood.storage.ImagesRepository;
 import kwh.PublicCookedFood.storage.StorageCategory;
 import kwh.PublicCookedFood.storage.StorageException;
 import kwh.PublicCookedFood.storage.StorageService;
@@ -27,18 +28,12 @@ public class ImageTempUploadService {
 
     private final StorageService storageService;
     private final ImagesRepository imagesRepository;
-    private final ImageSchemaService imageSchemaService;
 
     @Transactional
-    public String uploadTempImage(MultipartFile file) {
-        return uploadTempImage(file, StorageCategory.IMAGE);
-    }
-
-    @Transactional
-    public String uploadTempImage(MultipartFile file, StorageCategory storageCategory) {
+    public String uploadTempImage(ImageUploadCommand command) {
+        MultipartFile file = command.file();
         validateImageFile(file);
-        imageSchemaService.ensureLegacyImagesSchemaCompatibleIfEnabled();
-        StorageCategory resolvedCategory = storageCategory == null ? StorageCategory.IMAGE : storageCategory;
+        StorageCategory resolvedCategory = command.storageCategory();
         StoredResource stored = storageService.store(file, resolvedCategory);
         try {
             Images savedImage = Images.createTemporary(
@@ -52,9 +47,6 @@ public class ImageTempUploadService {
             return stored.resourceUrl();
         } catch (DataIntegrityViolationException e) {
             storageService.delete(resolvedCategory, stored.savedFilename());
-            if (isPostIdNullConstraintViolation(e)) {
-                throw new StorageException("DB 스키마 오류: images.post_id가 NOT NULL 입니다. post_id를 NULL 허용으로 변경해야 합니다.", e);
-            }
             throw new StorageException("이미지 메타데이터 저장 중 제약조건 오류가 발생했습니다.", e);
         } catch (RuntimeException e) {
             storageService.delete(resolvedCategory, stored.savedFilename());
@@ -93,21 +85,4 @@ public class ImageTempUploadService {
         return value.substring(0, maxLength);
     }
 
-    private boolean isPostIdNullConstraintViolation(Throwable throwable) {
-        Throwable current = throwable;
-        while (current != null) {
-            String message = current.getMessage();
-            if (message != null) {
-                String normalized = message.toLowerCase(Locale.ROOT);
-                if (normalized.contains("post_id")
-                        && (normalized.contains("cannot be null")
-                        || normalized.contains("doesn't have a default value")
-                        || normalized.contains("does not have a default value"))) {
-                    return true;
-                }
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
 }

@@ -59,9 +59,9 @@ public class AccountBlockController {
     }
 
     private String resolveRedirect(String redirect, HttpServletRequest request) {
-        String safeRedirect = SafeRedirectSupport.normalizeRelativePath(redirect);
-        if (safeRedirect != null) {
-            return SafeRedirectSupport.toRedirect(safeRedirect);
+        java.util.Optional<String> safeRedirect = SafeRedirectSupport.normalizeRelativePath(redirect);
+        if (safeRedirect.isPresent()) {
+            return SafeRedirectSupport.toRedirect(safeRedirect.get());
         }
         return SafeRedirectSupport.resolveRefererRedirect(request, "/boards");
     }

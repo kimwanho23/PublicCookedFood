@@ -23,15 +23,17 @@ public class RecipeReviewAuditStrategy extends AbstractAccountActionAuditStrateg
             Long accountId = args.asLong(0);
             Long recipeId = args.asLong(1);
             Integer rating = args.asInteger(2);
-            log.info("action=recipe.review_upsert result=success accountId={} recipeId={} rating={}", accountId, recipeId, rating);
+            log.info("action=recipe.review_upsert result=success accountId={} recipeId={} rating={}",
+                    args.displayId(accountId), args.displayId(recipeId), args.displayNumber(rating));
             recorder.record(accountId, "RECIPE_REVIEW_UPSERT",
-                    "recipeId=" + args.safeId(recipeId) + ",rating=" + args.safeNumber(rating));
+                    "recipeId=" + args.displayId(recipeId) + ",rating=" + args.displayNumber(rating));
         });
         handlers.put(AccountActionAuditType.RECIPE_REVIEW_UPSERT_FAILED, args -> {
             Long accountId = args.asLong(0);
             Long recipeId = args.asLong(1);
             String reason = args.asString(2);
-            log.warn("action=recipe.review_upsert result=failed accountId={} recipeId={} reason={}", accountId, recipeId, reason);
+            log.warn("action=recipe.review_upsert result=failed accountId={} recipeId={} reason={}",
+                    args.displayId(accountId), args.displayId(recipeId), args.displayText(reason));
         });
 
         return handlers;

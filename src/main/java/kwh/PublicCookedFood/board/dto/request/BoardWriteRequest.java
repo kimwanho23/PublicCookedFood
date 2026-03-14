@@ -22,4 +22,22 @@ public class BoardWriteRequest {
 
     @NotNull(message = "게시판 탭은 필수입니다.")
     private Long sectionId;
+
+    public static BoardWriteRequest prepared(BoardWriteRequest source, Long fallbackSectionId) {
+        BoardWriteRequest prepared = new BoardWriteRequest();
+        if (source != null) {
+            prepared.setTitle(source.getTitle());
+            prepared.setContents(source.getContents());
+            prepared.setSectionId(source.getSectionId());
+        }
+        prepared.setSectionId(resolveSectionId(prepared.getSectionId(), fallbackSectionId));
+        return prepared;
+    }
+
+    private static Long resolveSectionId(Long sectionId, Long fallbackSectionId) {
+        if (sectionId != null) {
+            return sectionId;
+        }
+        return fallbackSectionId;
+    }
 }

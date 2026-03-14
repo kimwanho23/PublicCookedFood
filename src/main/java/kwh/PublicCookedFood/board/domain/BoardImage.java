@@ -2,6 +2,7 @@ package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.common.BaseTimeEntity;
+import kwh.PublicCookedFood.storage.Images;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;

@@ -64,11 +64,11 @@
                     </div>
                     <ul class="list-group list-group-flush" th:if="${popularBoards != null and !#lists.isEmpty(popularBoards)}">
                         <li class="list-group-item px-0" th:each="board : ${popularBoards}">
-                            <a th:href="@{/boards/{id}(id=${board.id})}" class="text-decoration-none">
+                            <a th:href="@{/boards/{id}(id=${board.boardId})}" class="text-decoration-none">
                                 <strong th:text="${board.title}">게시글 제목</strong>
                             </a>
                             <div class="small text-muted-soft mt-1"
-                                 th:text="|추천 ${board.likeCount != null ? board.likeCount : 0} · 댓글 ${board.commentCount != null ? board.commentCount : 0}|">
+                                 th:text="|추천 ${board.likes} · 댓글 ${board.commentsCount}|">
                                 추천 0 · 댓글 0
                             </div>
                         </li>

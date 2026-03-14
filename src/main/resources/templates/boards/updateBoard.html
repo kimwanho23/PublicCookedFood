@@ -19,6 +19,8 @@
                   th:attr="data-board-id=${boardDto.getId()},data-board-draft-storage-key=|boardDraft:edit:${boardDto.getId()}|"
                   data-board-restore-confirm-message="임시 저장된 수정 내용이 있습니다. 복원할까요?">
                 <input type="hidden" name="_method" value="patch">
+                <input type="hidden" th:field="*{id}">
+                <input type="hidden" th:field="*{version}">
 
                 <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
                     <p class="mb-1" th:each="err : ${#fields.globalErrors()}" th:text="${err}">전체 오류 메시지</p>

@@ -3,27 +3,27 @@ package kwh.PublicCookedFood.common.web;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.net.URI;
+import java.util.Optional;
 
 public final class SafeRedirectSupport {
 
     private SafeRedirectSupport() {
     }
 
-    public static String normalizeRelativePath(String redirect) {
+    public static Optional<String> normalizeRelativePath(String redirect) {
         if (redirect == null || redirect.isBlank()) {
-            return null;
+            return Optional.empty();
         }
         try {
             URI uri = URI.create(redirect.trim());
-            return normalizePathAndQuery(uri, false);
+            return Optional.ofNullable(normalizePathAndQuery(uri, false));
         } catch (IllegalArgumentException e) {
-            return null;
+            return Optional.empty();
         }
     }
 
     public static String toRedirectOrDefault(String redirect, String fallbackPath) {
-        String safePath = normalizeRelativePath(redirect);
-        return toRedirect(safePath == null ? fallbackPath : safePath);
+        return toRedirect(normalizeRelativePath(redirect).orElse(fallbackPath));
     }
 
     public static String resolveRefererRedirect(HttpServletRequest request, String fallbackPath) {

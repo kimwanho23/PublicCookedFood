@@ -2,12 +2,16 @@ package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardImage;
-import kwh.PublicCookedFood.board.domain.Images;
-import kwh.PublicCookedFood.board.domain.Images.ImageStatus;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardImageRepository;
-import kwh.PublicCookedFood.board.repository.ImagesRepository;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
+import kwh.PublicCookedFood.board.service.image.BoardImageSyncCommand;
+import kwh.PublicCookedFood.storage.ImageLifecycleService;
+import kwh.PublicCookedFood.storage.Images;
+import kwh.PublicCookedFood.storage.Images.ImageStatus;
+import kwh.PublicCookedFood.storage.ImagesRepository;
+import kwh.PublicCookedFood.storage.ImageUrls;
+import kwh.PublicCookedFood.storage.StaleTempImageCleanupCommand;
 import kwh.PublicCookedFood.storage.StorageCategory;
 import kwh.PublicCookedFood.storage.StorageService;
 import kwh.PublicCookedFood.userrecipe.repository.UserRecipeRepository;
@@ -30,7 +34,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class ImageReferenceService {
+public class ImageReferenceService implements ImageLifecycleService {
 
     private static final Set<ImageStatus> LINKABLE_IMAGE_STATUSES = Set.of(ImageStatus.TEMP, ImageStatus.ATTACHED);
 
@@ -40,14 +44,13 @@ public class ImageReferenceService {
     private final UserRecipeRepository userRecipeRepository;
     private final UserRecipeStepRepository userRecipeStepRepository;
     private final UserRecipeReviewRepository userRecipeReviewRepository;
-    private final ImageSchemaService imageSchemaService;
     private final StorageService storageService;
     private final ImageUrlSupport imageUrlSupport;
 
     @Transactional
-    public void syncBoardImages(Board board, String htmlContent) {
-        imageSchemaService.ensureBoardImageSchemaCompatibleIfEnabled();
-        Set<String> currentImageUrls = imageUrlSupport.extractLocalImageUrls(htmlContent);
+    public void syncBoardImages(BoardImageSyncCommand command) {
+        Board board = command.board();
+        Set<String> currentImageUrls = imageUrlSupport.extractLocalImageUrls(command.htmlContent());
         List<BoardImage> boardImages = boardImageRepository.findAllByBoardWithImage(board);
         Map<String, BoardImage> boardImageByUrl = boardImages.stream()
                 .filter(boardImage -> boardImage.getImage() != null && boardImage.getImage().getImgUrl() != null)
@@ -60,7 +63,6 @@ public class ImageReferenceService {
 
     @Transactional
     public void deleteBoardImages(Board board) {
-        imageSchemaService.ensureBoardImageSchemaCompatibleIfEnabled();
         List<BoardImage> boardImages = boardImageRepository.findAllByBoardWithImage(board);
         for (BoardImage boardImage : boardImages) {
             Images image = boardImage.getImage();
@@ -72,8 +74,9 @@ public class ImageReferenceService {
     }
 
     @Transactional
-    public int deleteStaleTempImages(LocalDateTime cutoff, int batchSize) {
-        imageSchemaService.ensureBoardImageSchemaCompatibleIfEnabled();
+    public int deleteStaleTempImages(StaleTempImageCleanupCommand command) {
+        LocalDateTime cutoff = command.cutoff();
+        int batchSize = command.batchSize();
         if (cutoff == null || batchSize <= 0) {
             return 0;
         }
@@ -97,24 +100,13 @@ public class ImageReferenceService {
     }
 
     @Transactional
-    public void attachProfileImageIfPresent(String imageUrl) {
-        attachImageIfPresent(imageUrl);
+    public void attachImagesIfPresent(ImageUrls imageUrls) {
+        normalizeLocalImageUrls(imageUrls.values()).forEach(this::attachImageIfPresent);
     }
 
     @Transactional
-    public void attachImagesIfPresent(Set<String> imageUrls) {
-        normalizeLocalImageUrls(imageUrls).forEach(this::attachImageIfPresent);
-    }
-
-    @Transactional
-    public void cleanupImageByUrlIfUnlinked(String imageUrl) {
-        cleanupNormalizedImageUrlIfUnlinked(normalizeImageUrl(imageUrl));
-    }
-
-    @Transactional
-    public void cleanupImagesByUrlIfUnlinked(Set<String> imageUrls) {
-        normalizeLocalImageUrls(imageUrls).forEach(imageUrl ->
-                cleanupNormalizedImageUrlIfUnlinked(Optional.of(imageUrl)));
+    public void cleanupImagesByUrlIfUnlinked(ImageUrls imageUrls) {
+        normalizeLocalImageUrls(imageUrls.values()).forEach(this::cleanupNormalizedImageUrlIfUnlinked);
     }
 
     private void attachNewBoardImages(Board board,
@@ -177,8 +169,11 @@ public class ImageReferenceService {
                 .ifPresent(Images::attach);
     }
 
-    private void cleanupNormalizedImageUrlIfUnlinked(Optional<String> imageUrl) {
-        imageUrl.flatMap(url -> imagesRepository.findByImgUrlAndStatusIn(url, LINKABLE_IMAGE_STATUSES))
+    private void cleanupNormalizedImageUrlIfUnlinked(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return;
+        }
+        imagesRepository.findByImgUrlAndStatusIn(imageUrl, LINKABLE_IMAGE_STATUSES)
                 .ifPresent(this::cleanupImageIfUnlinked);
     }
 

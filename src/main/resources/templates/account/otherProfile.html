@@ -89,19 +89,19 @@
                  th:if="${profileView == 'boards' and boardPage != null and boardPage.totalElements > 0}">
                 <a class="list-group-item list-group-item-action px-0 py-3"
                    th:each="board : ${boardPage.content}"
-                   th:href="@{/boards/{id}(id=${board.id})}">
+                   th:href="@{/boards/{id}(id=${board.boardId})}">
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <div>
                             <div class="fw-semibold" th:text="${board.title}">게시글 제목</div>
                             <div class="small text-muted-soft mt-1">
-                                <span th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</span>
+                                <span th:text="${board.section.sectionName != null ? board.section.sectionName : '미분류'}">탭</span>
                                 <span class="mx-1">|</span>
                                 <span th:text="${#temporals.format(board.regTime, 'yyyy-MM-dd HH:mm')}">작성일</span>
                             </div>
                         </div>
                         <div class="small text-muted-soft text-end">
-                            <div th:text="|조회 ${board.views != null ? board.views : 0}|">조회 0</div>
-                            <div th:text="|추천 ${board.likeCount != null ? board.likeCount : 0} · 댓글 ${board.commentCount != null ? board.commentCount : 0}|">추천 0 · 댓글 0</div>
+                            <div th:text="|조회 ${board.views}|">조회 0</div>
+                            <div th:text="|추천 ${board.likes} · 댓글 ${board.commentsCount}|">추천 0 · 댓글 0</div>
                         </div>
                     </div>
                 </a>
@@ -111,10 +111,10 @@
                  th:if="${profileView == 'comments' and commentPage != null and commentPage.totalElements > 0}">
                 <a class="list-group-item list-group-item-action px-0 py-3"
                    th:each="comment : ${commentPage.content}"
-                   th:href="${@commentNavigationService.buildCommentTargetPath(comment.board.id, comment.id, currentAccountId)}">
+                   th:href="${comment.targetPath}">
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <div class="w-100">
-                            <div class="fw-semibold" th:text="${comment.board.title}">게시글 제목</div>
+                            <div class="fw-semibold" th:text="${comment.boardTitle}">게시글 제목</div>
                             <div class="small text-muted-soft mt-1">
                                 <span th:text="${#temporals.format(comment.regTime, 'yyyy-MM-dd HH:mm')}">작성일</span>
                             </div>
@@ -127,24 +127,24 @@
             <div class="list-group list-group-flush"
                  th:if="${profileView == 'scraps' and scrapPage != null and scrapPage.totalElements > 0}">
                 <div class="list-group-item px-0 py-3" th:each="board : ${scrapPage.content}">
-                    <a class="text-decoration-none text-reset d-block" th:href="@{/boards/{id}(id=${board.id})}">
+                    <a class="text-decoration-none text-reset d-block" th:href="@{/boards/{id}(id=${board.boardId})}">
                         <div class="d-flex justify-content-between align-items-start gap-2">
                             <div>
                                 <div class="fw-semibold" th:text="${board.title}">게시글 제목</div>
                                 <div class="small text-muted-soft mt-1">
-                                    <span th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</span>
+                                    <span th:text="${board.section.sectionName != null ? board.section.sectionName : '미분류'}">탭</span>
                                     <span class="mx-1">|</span>
                                     <span th:text="${#temporals.format(board.regTime, 'yyyy-MM-dd HH:mm')}">작성일</span>
                                 </div>
                             </div>
                             <div class="small text-muted-soft text-end">
-                                <div th:text="|조회 ${board.views != null ? board.views : 0}|">조회 0</div>
-                                <div th:text="|추천 ${board.likeCount != null ? board.likeCount : 0} · 댓글 ${board.commentCount != null ? board.commentCount : 0}|">추천 0 · 댓글 0</div>
+                                <div th:text="|조회 ${board.views}|">조회 0</div>
+                                <div th:text="|추천 ${board.likes} · 댓글 ${board.commentsCount}|">추천 0 · 댓글 0</div>
                             </div>
                         </div>
                     </a>
                     <form th:if="${currentAccountId != null and currentAccountId == profileAccount.id}"
-                          th:action="@{/boards/{id}/scraps/delete(id=${board.id})}"
+                          th:action="@{/boards/{id}/scraps/delete(id=${board.boardId})}"
                           method="post"
                           class="mt-2">
                         <input type="hidden" name="_method" value="patch">

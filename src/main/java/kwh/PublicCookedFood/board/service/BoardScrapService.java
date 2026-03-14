@@ -3,11 +3,13 @@ package kwh.PublicCookedFood.board.service;
 import org.springframework.transaction.annotation.Transactional;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardScrap;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.error.BoardErrorCode;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.BoardScrapRepository;
+import kwh.PublicCookedFood.board.service.support.BoardVisibilityCriteria;
 import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.common.error.CommonErrorCode;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
 import kwh.PublicCookedFood.account.service.AccountBlockService;
@@ -19,9 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,17 +33,15 @@ public class BoardScrapService {
 
     @Transactional
     public void addScrap(Long boardId, Long accountId) {
-        if (boardId == null || accountId == null) {
-            throw new IllegalArgumentException("스크랩 요청 값이 올바르지 않습니다.");
-        }
+        validateBoardActor(boardId, accountId);
         if (boardScrapRepository.existsByBoardIdAndAccountId(boardId, accountId)) {
             return;
         }
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다."));
+                .orElseThrow(() -> new AppException(CommonErrorCode.RESOURCE_NOT_FOUND, "유효하지 않은 사용자입니다."));
         Board board = boardRepository.findByIdWithAccountAndState(boardId, SoftDeleteState.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 게시글입니다."));
+                .orElseThrow(() -> new AppException(CommonErrorCode.RESOURCE_NOT_FOUND, "유효하지 않은 게시글입니다."));
         if (board.getAccount() != null && accountBlockService.isEitherBlocked(accountId, board.getAccount().getId())) {
             throw new AppException(BoardErrorCode.BOARD_SCRAP_BLOCKED);
         }
@@ -61,9 +58,7 @@ public class BoardScrapService {
 
     @Transactional
     public void removeScrap(Long boardId, Long accountId) {
-        if (boardId == null || accountId == null) {
-            throw new IllegalArgumentException("스크랩 요청 값이 올바르지 않습니다.");
-        }
+        validateBoardActor(boardId, accountId);
         boardScrapRepository.deleteByBoardIdAndAccountId(boardId, accountId);
     }
 
@@ -88,12 +83,12 @@ public class BoardScrapService {
         if (accountId == null) {
             return List.of();
         }
-        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        BoardVisibilityCriteria visibility = BoardVisibilityCriteria.of(blockedAccountIds);
         return boardScrapRepository.findScrappedBoardsByAccountIdAndBoardState(
                 accountId,
                 SoftDeleteState.ACTIVE,
-                blockedAccountFilter.excludeBlocked(),
-                blockedAccountFilter.blockedAccountIds());
+                visibility.excludeRestricted(),
+                visibility.restrictedAccountIdsOrSentinel());
     }
 
     @Transactional(readOnly = true)
@@ -101,30 +96,22 @@ public class BoardScrapService {
         if (accountId == null) {
             return Page.empty(pageable);
         }
-        BlockedAccountFilter blockedAccountFilter = resolveBlockedAccountFilter(blockedAccountIds);
+        BoardVisibilityCriteria visibility = BoardVisibilityCriteria.of(blockedAccountIds);
         return boardScrapRepository.findScrappedBoardsPageByAccountIdAndBoardState(
                 accountId,
                 SoftDeleteState.ACTIVE,
-                blockedAccountFilter.excludeBlocked(),
-                blockedAccountFilter.blockedAccountIds(),
+                visibility.excludeRestricted(),
+                visibility.restrictedAccountIdsOrSentinel(),
                 pageable
         );
     }
 
-    private BlockedAccountFilter resolveBlockedAccountFilter(Collection<Long> blockedAccountIds) {
-        if (blockedAccountIds == null || blockedAccountIds.isEmpty()) {
-            return new BlockedAccountFilter(false, Set.of(-1L));
+    private void validateBoardActor(Long boardId, Long accountId) {
+        if (boardId == null || boardId <= 0) {
+            throw new IllegalArgumentException("유효하지 않은 게시글입니다.");
         }
-
-        Set<Long> normalized = blockedAccountIds.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        if (normalized.isEmpty()) {
-            return new BlockedAccountFilter(false, Set.of(-1L));
+        if (accountId == null || accountId <= 0) {
+            throw new IllegalArgumentException("유효하지 않은 사용자입니다.");
         }
-        return new BlockedAccountFilter(true, normalized);
-    }
-
-    private record BlockedAccountFilter(boolean excludeBlocked, Collection<Long> blockedAccountIds) {
     }
 }

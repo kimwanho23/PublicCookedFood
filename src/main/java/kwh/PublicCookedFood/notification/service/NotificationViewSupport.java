@@ -1,7 +1,8 @@
 package kwh.PublicCookedFood.notification.service;
 
+import kwh.PublicCookedFood.board.service.comment.CommentTargetPath;
 import kwh.PublicCookedFood.account.service.AccountBlockService;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.common.util.ImmutableCollections;
 import kwh.PublicCookedFood.notification.domain.Notification;
 import kwh.PublicCookedFood.notification.domain.NotificationType;
@@ -13,7 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +32,7 @@ public class NotificationViewSupport {
                                                                   boolean unreadOnly) {
         NotificationVisibilityCriteria criteria = resolveCriteria(receiverId, unreadOnly);
         Page<Notification> notifications = loadVisibleNotifications(criteria, pageable);
-        Map<Long, Map<Long, String>> commentTargetPaths =
+        CommentTargetPathIndex commentTargetPaths =
                 notificationTargetPathResolver.precomputePaths(notifications.getContent(), receiverId);
         return notifications.map(notification -> toResponse(notification, receiverId, commentTargetPaths));
     }
@@ -52,9 +52,9 @@ public class NotificationViewSupport {
 
     private NotificationResponse toResponse(Notification notification,
                                             long receiverId,
-                                            Map<Long, Map<Long, String>> commentTargetPaths) {
-        String targetPath = notificationTargetPathResolver.resolveTargetPath(notification, receiverId, commentTargetPaths);
-        return NotificationResponse.from(notification, targetPath);
+                                            CommentTargetPathIndex commentTargetPaths) {
+        CommentTargetPath targetPath = notificationTargetPathResolver.resolveTargetPath(notification, receiverId, commentTargetPaths);
+        return NotificationResponse.from(notification, targetPath.value());
     }
 
     private Page<Notification> loadVisibleNotifications(NotificationVisibilityCriteria criteria,

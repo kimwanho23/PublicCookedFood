@@ -21,7 +21,7 @@ public class ResetPasswordAuditStrategy extends AbstractAccountRecoveryAuditStra
 
         handlers.put(AccountRecoveryAuditType.RESET_PASSWORD_SUCCESS, args -> {
             Long accountId = args.asLong(0);
-            log.info("action=account.account_reset_password result=success accountId={}", accountId);
+            log.info("action=account.account_reset_password result=success accountId={}", args.displayId(accountId));
             recorder.record(accountId, "ACCOUNT_ACCOUNT_RESET_PASSWORD", null);
         });
         handlers.put(AccountRecoveryAuditType.RESET_PASSWORD_NOT_FOUND,

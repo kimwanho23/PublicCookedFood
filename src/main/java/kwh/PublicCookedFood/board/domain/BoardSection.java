@@ -49,15 +49,19 @@ public class BoardSection {
                 .build();
     }
 
-    public void update(String sectionName, Integer displayOrder, Boolean active) {
-        if (sectionName != null) {
-            this.sectionName = sectionName;
-        }
-        if (displayOrder != null) {
-            this.displayOrder = displayOrder;
-        }
-        if (active != null) {
-            this.active = active;
-        }
+    public void rename(String sectionName) {
+        this.sectionName = sectionName;
+    }
+
+    public void changeDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
     }
 }

@@ -1,7 +1,6 @@
 package kwh.PublicCookedFood.notification.service;
 
-import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.service.CommentNavigationService;
+import kwh.PublicCookedFood.board.service.comment.CommentTargetPath;
 import kwh.PublicCookedFood.notification.domain.BoardNotificationTarget;
 import kwh.PublicCookedFood.notification.domain.CommentNotificationTarget;
 import kwh.PublicCookedFood.notification.domain.Notification;
@@ -16,52 +15,49 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
+    @RequiredArgsConstructor
 public class NotificationTargetPathResolver {
 
-    private final CommentNavigationService commentNavigationService;
+    private final NotificationCommentTargetPathService notificationCommentTargetPathService;
 
-    public Map<Long, Map<Long, String>> precomputePaths(Collection<Notification> notifications, long receiverId) {
+    public CommentTargetPathIndex precomputePaths(Collection<Notification> notifications, long receiverId) {
         CommentTargetRequests requests = CommentTargetRequests.from(notifications);
         if (requests.isEmpty()) {
-            return Map.of();
+            return CommentTargetPathIndex.empty();
         }
 
-        LinkedHashMap<Long, Map<Long, String>> targetPathsByBoardId = new LinkedHashMap<>();
+        LinkedHashMap<CommentTargetKey, CommentTargetPath> targetPaths = new LinkedHashMap<>();
         for (CommentTargetRequest request : requests.values()) {
-            targetPathsByBoardId.put(
+            Map<Long, CommentTargetPath> resolvedPaths = notificationCommentTargetPathService.buildCommentTargetPaths(
                     request.boardId(),
-                    commentNavigationService.buildCommentTargetPaths(request.boardId(), request.commentIds(), receiverId)
+                    request.commentIds(),
+                    receiverId
             );
+            resolvedPaths.forEach((commentId, targetPath) ->
+                    targetPaths.put(CommentTargetKey.of(request.boardId(), commentId), targetPath));
         }
-        return Map.copyOf(targetPathsByBoardId);
+        return CommentTargetPathIndex.of(targetPaths);
     }
 
-    public String resolveTargetPath(Notification notification,
-                                    long receiverId,
-                                    Map<Long, Map<Long, String>> commentTargetPaths) {
-        Board board = notification.getBoard();
-        if (board.isHiddenByReport() && notification.isReportResult()) {
-            return "/boards";
+    public CommentTargetPath resolveTargetPath(Notification notification,
+                                               long receiverId,
+                                               CommentTargetPathIndex commentTargetPaths) {
+        if (notification.getBoard().isHiddenByReport() && notification.isReportResult()) {
+            return CommentTargetPath.of("/boards");
         }
 
         NotificationTarget target = notification.target();
         if (target instanceof BoardNotificationTarget boardTarget) {
-            return "/boards/" + boardTarget.boardId();
+            return CommentTargetPath.of("/boards/" + boardTarget.boardId());
         }
         CommentNotificationTarget commentTarget = (CommentNotificationTarget) target;
 
-        String precomputedPath = commentTargetPaths
-                .getOrDefault(commentTarget.boardId(), Map.of())
-                .get(commentTarget.commentId());
-        if (precomputedPath != null && !precomputedPath.isBlank()) {
-            return precomputedPath;
-        }
-        return commentNavigationService.buildCommentTargetPath(
-                commentTarget.boardId(),
-                commentTarget.commentId(),
-                receiverId
-        );
+        return commentTargetPaths.find(commentTarget.boardId(), commentTarget.commentId())
+                .orElseGet(() -> notificationCommentTargetPathService.buildCommentTargetPath(
+                        commentTarget.boardId(),
+                        commentTarget.commentId(),
+                        receiverId
+                ));
     }
 
     private record CommentTargetRequests(List<CommentTargetRequest> values) {

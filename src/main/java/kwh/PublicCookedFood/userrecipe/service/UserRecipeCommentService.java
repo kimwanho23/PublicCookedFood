@@ -3,11 +3,10 @@ package kwh.PublicCookedFood.userrecipe.service;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
 import kwh.PublicCookedFood.account.service.AccountBlockService;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.userrecipe.domain.UserRecipe;
 import kwh.PublicCookedFood.userrecipe.domain.UserRecipeComment;
-import kwh.PublicCookedFood.userrecipe.dto.request.UserRecipeCommentCreateRequest;
 import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeCommentResponse;
 import kwh.PublicCookedFood.userrecipe.error.UserRecipeErrorCode;
 import kwh.PublicCookedFood.userrecipe.repository.UserRecipeCommentRepository;
@@ -47,17 +46,17 @@ public class UserRecipeCommentService {
     }
 
     @Transactional
-    public UserRecipeCommentResponse createComment(UserRecipeCommentCreateRequest request) {
-        if (request == null || request.getAccountId() == null || request.getRecipeId() == null) {
+    public UserRecipeComment createComment(UserRecipeCommentCreateCommand command) {
+        if (command == null) {
             throw new IllegalArgumentException("댓글 요청 값이 올바르지 않습니다.");
         }
         UserRecipeComment parent = null;
-        if (request.getParentId() != null) {
-            parent = userRecipeCommentRepository.findById(request.getParentId())
+        if (command.parentId() != null) {
+            parent = userRecipeCommentRepository.findById(command.parentId())
                     .orElseThrow(() -> new IllegalArgumentException("부모 댓글 정보를 찾을 수 없습니다."));
             if (parent.getRecipe() == null
                     || parent.getRecipe().getId() == null
-                    || !parent.getRecipe().getId().equals(request.getRecipeId())) {
+                    || !parent.getRecipe().getId().equals(command.recipeId())) {
                 throw new IllegalArgumentException("부모 댓글 정보가 올바르지 않습니다.");
             }
             if (parent.getState() != SoftDeleteState.ACTIVE) {
@@ -65,9 +64,9 @@ public class UserRecipeCommentService {
             }
         }
 
-        Account account = accountRepository.findById(request.getAccountId())
+        Account account = accountRepository.findById(command.accountId())
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
-        UserRecipe recipe = userRecipeRepository.findByIdWithAccountAndState(request.getRecipeId(), SoftDeleteState.ACTIVE)
+        UserRecipe recipe = userRecipeRepository.findByIdWithAccountAndState(command.recipeId(), SoftDeleteState.ACTIVE)
                 .orElseThrow(() -> new AppException(UserRecipeErrorCode.USER_RECIPE_NOT_FOUND));
 
         if (recipe.getAccount() != null && accountBlockService.isEitherBlocked(account.getId(), recipe.getAccount().getId())) {
@@ -80,11 +79,11 @@ public class UserRecipeCommentService {
         UserRecipeComment comment = UserRecipeComment.builder()
                 .account(account)
                 .recipe(recipe)
-                .contents(request.getContents())
+                .contents(command.contents())
                 .parent(parent)
                 .rootParentId(parent == null ? null : parent.getEffectiveRootParentId())
                 .depth(parent == null ? 0 : parent.getDepth() + 1)
-                .state(request.getState() == null ? SoftDeleteState.ACTIVE : request.getState())
+                .state(SoftDeleteState.ACTIVE)
                 .replies(new ArrayList<>())
                 .build();
 
@@ -95,7 +94,7 @@ public class UserRecipeCommentService {
         } else {
             savedComment.initializeThreadMetadata(parent.getEffectiveRootParentId(), parent.getDepth() + 1, commentPath);
         }
-        return convertToDto(savedComment);
+        return savedComment;
     }
 
     @Transactional(readOnly = true)

@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.userrecipe.repository;
 
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.userrecipe.domain.UserRecipeComment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

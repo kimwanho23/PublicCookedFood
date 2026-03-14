@@ -5,7 +5,7 @@ import kwh.PublicCookedFood.food.service.RecipeService;
 import kwh.PublicCookedFood.account.audit.BookmarkAuditPublisher;
 import kwh.PublicCookedFood.account.domain.Bookmark;
 import kwh.PublicCookedFood.account.domain.Account;
-import kwh.PublicCookedFood.account.dto.request.BookmarkCreateRequest;
+import kwh.PublicCookedFood.account.service.BookmarkCreateCommand;
 import kwh.PublicCookedFood.account.service.BookmarkService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ public class BookmarkFacade {
     @Transactional
     public boolean addBookmark(Long accountId, Long recipeId) {
         return executeBookmarkChange(
-                () -> bookmarkService.save(BookmarkCreateRequest.of(accountId, recipeId)),
+                () -> bookmarkService.save(BookmarkCreateCommand.of(accountId, recipeId)),
                 () -> bookmarkAuditPublisher.bookmarkAdd(accountId, recipeId),
                 message -> bookmarkAuditPublisher.bookmarkAddFailed(accountId, recipeId, message),
                 "북마크 추가 처리에 실패했습니다."

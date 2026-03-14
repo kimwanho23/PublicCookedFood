@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.userrecipe.repository;
 
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.userrecipe.domain.UserRecipeStep;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

@@ -1,10 +1,12 @@
 package kwh.PublicCookedFood.metrics.popular;
 
 import kwh.PublicCookedFood.board.domain.BoardSection;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
-import kwh.PublicCookedFood.board.service.BoardPolicyService;
-import kwh.PublicCookedFood.board.service.BoardSectionService;
+import kwh.PublicCookedFood.board.repository.BoardPageQuery;
+import kwh.PublicCookedFood.board.repository.BoardSnapshotQuery;
+import kwh.PublicCookedFood.board.service.query.BoardPolicyQueryService;
+import kwh.PublicCookedFood.board.service.query.BoardSectionQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,8 +25,8 @@ import java.util.Set;
 public class BoardPopularSnapshotScheduler {
 
     private final BoardRepository boardRepository;
-    private final BoardPolicyService boardPolicyService;
-    private final BoardSectionService boardSectionService;
+    private final BoardPolicyQueryService boardPolicyQueryService;
+    private final BoardSectionQueryService boardSectionQueryService;
     private final BoardPopularSnapshotService boardPopularSnapshotService;
 
     @Value("${app.popular.board.snapshot.enabled:false}")
@@ -42,7 +44,7 @@ public class BoardPopularSnapshotScheduler {
             return;
         }
 
-        long threshold = boardPolicyService.getFeaturedLikeThreshold();
+        long threshold = boardPolicyQueryService.getFeaturedLikeThreshold();
         int normalizedTopN = Math.max(1, topN);
         int normalizedTtlMinutes = Math.max(1, ttlMinutes);
         LocalDateTime generatedAt = LocalDateTime.now();
@@ -50,7 +52,7 @@ public class BoardPopularSnapshotScheduler {
 
         Set<String> sectionKeys = new LinkedHashSet<>();
         sectionKeys.add("");
-        List<BoardSection> sections = boardSectionService.getActiveSections();
+        List<BoardSection> sections = boardSectionQueryService.getActiveSections();
         if (sections == null) {
             sections = List.of();
         }
@@ -66,12 +68,14 @@ public class BoardPopularSnapshotScheduler {
 
         int updatedSlots = 0;
         for (String sectionKey : sectionKeys) {
-            List<Long> boardIds = boardRepository.findTopBoardIdsForSnapshot(
+            List<Long> boardIds = boardRepository.findTopBoardIdsForSnapshot(new BoardSnapshotQuery(
                     SoftDeleteState.ACTIVE,
-                    threshold,
-                    sectionKey,
+                    BoardPageQuery.FeaturedThreshold.atLeast(threshold),
+                    sectionKey.isBlank()
+                            ? BoardPageQuery.SectionFilter.all()
+                            : BoardPageQuery.SectionFilter.selected(sectionKey),
                     PageRequest.of(0, normalizedTopN)
-            );
+            ));
             boardPopularSnapshotService.replaceFeaturedRanking(sectionKey, boardIds, generatedAt, expiresAt);
             updatedSlots++;
         }

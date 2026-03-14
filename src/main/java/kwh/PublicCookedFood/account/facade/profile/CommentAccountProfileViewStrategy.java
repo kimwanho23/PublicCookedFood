@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.account.facade.profile;
 
-import kwh.PublicCookedFood.board.service.CommentsService;
+import kwh.PublicCookedFood.board.service.comment.CommentQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -11,7 +11,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class CommentAccountProfileViewStrategy implements AccountProfileViewStrategy {
 
-    private final CommentsService commentsService;
+    private final CommentQueryService commentQueryService;
 
     @Override
     public AccountProfileViewType viewType() {
@@ -23,7 +23,7 @@ public class CommentAccountProfileViewStrategy implements AccountProfileViewStra
                                      Pageable pageable,
                                      Set<Long> blockedAccountIds) {
         return AccountProfileViewPages.comments(
-                commentsService.getAccountCommentPage(profileAccountId, pageable, blockedAccountIds)
+                commentQueryService.getAccountCommentPage(profileAccountId, pageable, blockedAccountIds)
         );
     }
 }

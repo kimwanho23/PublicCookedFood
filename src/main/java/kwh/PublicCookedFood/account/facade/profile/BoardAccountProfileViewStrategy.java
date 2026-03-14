@@ -1,6 +1,8 @@
 package kwh.PublicCookedFood.account.facade.profile;
 
-import kwh.PublicCookedFood.board.service.BoardService;
+import kwh.PublicCookedFood.board.service.query.BoardListCriteria;
+import kwh.PublicCookedFood.board.service.query.BoardListQueryService;
+import kwh.PublicCookedFood.board.service.support.BoardVisibilityCriteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -11,7 +13,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class BoardAccountProfileViewStrategy implements AccountProfileViewStrategy {
 
-    private final BoardService boardService;
+    private final BoardListQueryService boardListQueryService;
 
     @Override
     public AccountProfileViewType viewType() {
@@ -23,7 +25,11 @@ public class BoardAccountProfileViewStrategy implements AccountProfileViewStrate
                                      Pageable pageable,
                                      Set<Long> blockedAccountIds) {
         return AccountProfileViewPages.boards(
-                boardService.getBoardList(pageable, null, profileAccountId, blockedAccountIds)
+                boardListQueryService.load(BoardListCriteria.forAuthor(
+                        pageable,
+                        profileAccountId,
+                        BoardVisibilityCriteria.of(blockedAccountIds)
+                ))
         );
     }
 }

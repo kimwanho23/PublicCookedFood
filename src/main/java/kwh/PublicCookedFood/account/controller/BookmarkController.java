@@ -85,15 +85,15 @@ public class BookmarkController {
     private String resolveSuccessRedirect(Long recipeId,
                                           String redirect,
                                           RedirectAttributes redirectAttributes) {
-        String safeRedirectPath = SafeRedirectSupport.normalizeRelativePath(redirect);
-        if (safeRedirectPath == null) {
+        java.util.Optional<String> safeRedirectPath = SafeRedirectSupport.normalizeRelativePath(redirect);
+        if (safeRedirectPath.isEmpty()) {
             markSkipViewIncrease(redirectAttributes);
             return SafeRedirectSupport.toRedirect("/recipes/" + recipeId);
         }
-        if (isRecipeDetailPath(safeRedirectPath)) {
+        if (isRecipeDetailPath(safeRedirectPath.get())) {
             markSkipViewIncrease(redirectAttributes);
         }
-        return SafeRedirectSupport.toRedirect(safeRedirectPath);
+        return SafeRedirectSupport.toRedirect(safeRedirectPath.get());
     }
 
     private boolean isRecipeDetailPath(String path) {

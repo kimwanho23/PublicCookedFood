@@ -1,6 +1,8 @@
 package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.config.properties.ImageTempCleanupProperties;
+import kwh.PublicCookedFood.storage.ImageStorageService;
+import kwh.PublicCookedFood.storage.StaleTempImageCleanupCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,7 +15,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class TempImageCleanupScheduler {
 
-    private final ImageService imageService;
+    private final ImageStorageService imageStorageService;
     private final ImageTempCleanupProperties imageTempCleanupProperties;
 
     @Scheduled(cron = "${app.image.temp-cleanup.cron}")
@@ -37,7 +39,7 @@ public class TempImageCleanupScheduler {
         int batchCount = 0;
 
         while (batchCount < maxBatchesPerRun) {
-            int deleted = imageService.deleteStaleTempImages(cutoff, batchSize);
+            int deleted = imageStorageService.deleteStaleTempImages(new StaleTempImageCleanupCommand(cutoff, batchSize));
             totalDeleted += deleted;
             batchCount++;
 

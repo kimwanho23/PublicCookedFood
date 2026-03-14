@@ -23,24 +23,26 @@ public class BoardReportAuditStrategy extends AbstractAccountActionAuditStrategy
             Long accountId = args.asLong(0);
             Long boardId = args.asLong(1);
             String reason = args.asString(2);
-            log.info("action=board.report result=success accountId={} boardId={} reportReason={}", accountId, boardId, reason);
+            log.info("action=board.report result=success accountId={} boardId={} reportReason={}",
+                    args.displayId(accountId), args.displayId(boardId), args.displayText(reason));
             recorder.record(accountId, "BOARD_REPORT_CREATE",
-                    "boardId=" + args.safeId(boardId) + ",reason=" + args.safeText(reason));
+                    "boardId=" + args.displayId(boardId) + ",reason=" + args.displayText(reason));
         });
         handlers.put(AccountActionAuditType.BOARD_REPORT_CREATE_FAILED, args -> {
             Long accountId = args.asLong(0);
             Long boardId = args.asLong(1);
             String reason = args.asString(2);
-            log.warn("action=board.report result=failed accountId={} boardId={} reason={}", accountId, boardId, reason);
+            log.warn("action=board.report result=failed accountId={} boardId={} reason={}",
+                    args.displayId(accountId), args.displayId(boardId), args.displayText(reason));
         });
         handlers.put(AccountActionAuditType.BOARD_REPORT_STATUS_UPDATE, args -> {
             Long accountId = args.asLong(0);
             Long reportId = args.asLong(1);
             String status = args.asString(2);
             log.info("action=board.report_status_update result=success accountId={} reportId={} status={}",
-                    accountId, reportId, status);
+                    args.displayId(accountId), args.displayId(reportId), args.displayText(status));
             recorder.record(accountId, "BOARD_REPORT_STATUS_UPDATE",
-                    "reportId=" + args.safeId(reportId) + ",status=" + args.safeText(status));
+                    "reportId=" + args.displayId(reportId) + ",status=" + args.displayText(status));
         });
 
         return handlers;

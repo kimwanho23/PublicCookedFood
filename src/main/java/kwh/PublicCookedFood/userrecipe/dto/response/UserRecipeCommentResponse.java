@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.userrecipe.dto.response;
 
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

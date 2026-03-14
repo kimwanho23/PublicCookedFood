@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import kwh.PublicCookedFood.common.Paging;
-import kwh.PublicCookedFood.common.dto.request.RecipeSearchQuery;
+import kwh.PublicCookedFood.food.dto.request.RecipeSearchQuery;
 import kwh.PublicCookedFood.common.web.QueryParamCanonicalizer;
 import kwh.PublicCookedFood.food.facade.RecipeMainFacade;
 import lombok.RequiredArgsConstructor;

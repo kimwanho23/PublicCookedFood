@@ -1,6 +1,6 @@
 package kwh.PublicCookedFood.notification.repository;
 
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.notification.domain.Notification;
 import kwh.PublicCookedFood.notification.domain.NotificationType;
 import org.springframework.data.domain.Page;

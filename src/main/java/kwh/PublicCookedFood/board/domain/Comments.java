@@ -2,6 +2,8 @@ package kwh.PublicCookedFood.board.domain;
 
 import jakarta.persistence.*;
 import kwh.PublicCookedFood.common.BaseEntity;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteStateConverter;
 import kwh.PublicCookedFood.account.domain.Account;
 import lombok.Builder;
 import lombok.Getter;

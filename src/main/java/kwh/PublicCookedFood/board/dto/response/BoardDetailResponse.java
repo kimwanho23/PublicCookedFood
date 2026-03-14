@@ -1,7 +1,7 @@
 package kwh.PublicCookedFood.board.dto.response;
 
 import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,9 +32,7 @@ public class BoardDetailResponse {
 
     private Long views;
 
-    private Long likesCount;
-
-    private Long commentsCount;
+    private Long version;
 
     private SoftDeleteState state;
 
@@ -46,7 +44,7 @@ public class BoardDetailResponse {
     public BoardDetailResponse(Long id, String title, String contents, Long accountId, String accountName,
                                String accountProfileImageUrl,
                                Long sectionId, String sectionKey, String sectionName,
-                               Long views, Long likesCount, Long commentsCount, SoftDeleteState state,
+                               Long views, Long version, SoftDeleteState state,
                                LocalDateTime regTime, LocalDateTime updateTime) {
         this.id = id;
         this.title = title;
@@ -58,30 +56,43 @@ public class BoardDetailResponse {
         this.sectionKey = sectionKey;
         this.sectionName = sectionName;
         this.views = views;
-        this.likesCount = likesCount;
-        this.commentsCount = commentsCount;
+        this.version = version;
         this.state = state;
         this.regTime = regTime;
         this.updateTime = updateTime;
     }
 
     public static BoardDetailResponse from(Board board) {
+        BoardAuthorView author = BoardAuthorView.from(board.getAccount());
+        BoardSectionView section = BoardSectionView.from(board.getSection());
         return BoardDetailResponse.builder()
                 .id(board.getId())
                 .title(board.getTitle())
                 .contents(board.getContents())
-                .accountId(board.getAccount() == null ? null : board.getAccount().getId())
-                .accountName(board.getAccount() == null ? null : board.getAccount().getName())
-                .accountProfileImageUrl(board.getAccount() == null ? null : board.getAccount().getProfileImageUrl())
-                .sectionId(board.getSection() == null ? null : board.getSection().getId())
-                .sectionKey(board.getSection() == null ? null : board.getSection().getSectionKey())
-                .sectionName(board.getSection() == null ? null : board.getSection().getSectionName())
-                .views(board.getViews())
-                .likesCount(board.getLikeCount())
-                .commentsCount(board.getCommentCount())
+                .accountId(author.accountId())
+                .accountName(author.accountName())
+                .accountProfileImageUrl(author.accountProfileImageUrl())
+                .sectionId(section.sectionId())
+                .sectionKey(section.sectionKey())
+                .sectionName(section.sectionName())
+                .version(board.getVersion())
                 .state(board.getState())
                 .regTime(board.getRegTime())
                 .updateTime(board.getUpdateTime())
                 .build();
+    }
+
+    public BoardAuthorView author() {
+        if (accountId == null && accountName == null && accountProfileImageUrl == null) {
+            return BoardAuthorView.anonymous();
+        }
+        return new BoardAuthorView(accountId, accountName, accountProfileImageUrl);
+    }
+
+    public BoardSectionView section() {
+        if (sectionId == null && sectionKey == null && sectionName == null) {
+            return BoardSectionView.unassigned();
+        }
+        return new BoardSectionView(sectionId, sectionKey, sectionName);
     }
 }

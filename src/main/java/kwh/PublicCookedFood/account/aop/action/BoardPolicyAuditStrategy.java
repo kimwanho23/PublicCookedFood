@@ -24,10 +24,10 @@ public class BoardPolicyAuditStrategy extends AbstractAccountActionAuditStrategy
             Integer threshold = args.asInteger(1);
             String thumbnailDisplayMode = args.asString(2);
             log.info("action=board.policy_update result=success accountId={} featuredLikeThreshold={} thumbnailDisplayMode={}",
-                    accountId, threshold, thumbnailDisplayMode);
+                    args.displayId(accountId), args.displayNumber(threshold), args.displayText(thumbnailDisplayMode));
             recorder.record(accountId, "BOARD_POLICY_UPDATE",
-                    "featuredLikeThreshold=" + args.safeNumber(threshold)
-                            + ",thumbnailDisplayMode=" + args.safeText(thumbnailDisplayMode));
+                    "featuredLikeThreshold=" + args.displayNumber(threshold)
+                            + ",thumbnailDisplayMode=" + args.displayText(thumbnailDisplayMode));
         });
 
         return handlers;
