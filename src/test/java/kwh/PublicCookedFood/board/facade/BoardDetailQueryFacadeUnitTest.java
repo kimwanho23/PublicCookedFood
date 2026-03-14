@@ -1,16 +1,15 @@
 package kwh.PublicCookedFood.board.facade;
 
+import kwh.PublicCookedFood.board.application.query.view.CommentNodeView;
 import kwh.PublicCookedFood.board.error.BoardErrorCode;
 import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
-import kwh.PublicCookedFood.board.dto.response.CommentResponse;
 import kwh.PublicCookedFood.board.policy.BoardAuthorizationPolicy;
-import kwh.PublicCookedFood.board.service.BoardReportService;
+import kwh.PublicCookedFood.board.service.BoardCounterService;
+import kwh.PublicCookedFood.board.service.BoardCounters;
 import kwh.PublicCookedFood.board.service.BoardScrapService;
-import kwh.PublicCookedFood.board.service.BoardService;
-import kwh.PublicCookedFood.board.service.CommentsService;
-import kwh.PublicCookedFood.board.service.LikeService;
+import kwh.PublicCookedFood.board.service.comment.CommentQueryService;
+import kwh.PublicCookedFood.board.service.query.BoardDetailQueryService;
 import kwh.PublicCookedFood.common.error.AppException;
-import kwh.PublicCookedFood.metrics.view.ViewCounterService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,38 +34,35 @@ import static org.mockito.Mockito.when;
 class BoardDetailQueryFacadeUnitTest {
 
     @Mock
-    private BoardService boardService;
+    private BoardDetailQueryService boardDetailQueryService;
 
     @Mock
-    private CommentsService commentsService;
-
-    @Mock
-    private LikeService likeService;
+    private CommentQueryService commentQueryService;
 
     @Mock
     private BoardScrapService boardScrapService;
 
     @Mock
-    private BoardReportService boardReportService;
-
-    @Mock
     private BoardAuthorizationPolicy boardAuthorizationPolicy;
 
     @Mock
-    private ViewCounterService viewCounterService;
+    private BoardCounterService boardCounterService;
+
+    @Mock
+    private BoardInteractionStateResolver boardInteractionStateResolver;
 
     private BoardDetailQueryFacade boardDetailQueryFacade;
 
     @BeforeEach
     void setUp() {
         boardDetailQueryFacade = new BoardDetailQueryFacade(
-                boardService,
-                commentsService,
-                likeService,
-                boardScrapService,
-                boardReportService,
+                boardDetailQueryService,
+                commentQueryService,
                 boardAuthorizationPolicy,
-                viewCounterService
+                boardCounterService,
+                boardInteractionStateResolver,
+                new BoardDetailReadModelFactory(),
+                boardScrapService
         );
     }
 
@@ -74,68 +70,64 @@ class BoardDetailQueryFacadeUnitTest {
     void loadBoardDetail_increasesViewsWhenFlagIsTrue() {
         Long boardId = 7L;
         Pageable pageable = PageRequest.of(0, 20);
-        BoardDetailResponse beforeIncrease = detail(boardId, 100L);
-        Page<CommentResponse> emptyComments = Page.empty(pageable);
+        BoardDetailResponse beforeIncrease = detail(boardId);
+        Page<CommentNodeView> emptyComments = Page.empty(pageable);
 
-        when(boardService.getBoardDetail(boardId)).thenReturn(beforeIncrease);
-        when(boardAuthorizationPolicy.isViewRestricted(any(), eq(1L))).thenReturn(false);
-        when(viewCounterService.increaseBoardViewAndGet(boardId)).thenReturn(101L);
-        when(likeService.getLike(boardId)).thenReturn(0L);
+        when(boardDetailQueryService.getBoardDetail(boardId)).thenReturn(beforeIncrease);
+        when(boardAuthorizationPolicy.isViewRestricted(eq(BoardViewer.anonymous()), eq(1L))).thenReturn(false);
+        when(boardCounterService.getDetailCounters(boardId, BoardViewer.anonymous(), true)).thenReturn(new BoardCounters(101L, 0L, 0L));
         when(boardScrapService.getScrapCount(boardId)).thenReturn(0L);
-        when(commentsService.getCommentListWithReplies(eq(boardId), eq(pageable), isNull())).thenReturn(emptyComments);
-        when(commentsService.getCommentsCount(boardId, null)).thenReturn(0L);
+        when(boardInteractionStateResolver.resolve(boardId, BoardViewer.anonymous(), 1L))
+                .thenReturn(BoardInteractionState.anonymous());
+        when(commentQueryService.getCommentListWithReplies(eq(boardId), eq(pageable), eq(BoardViewer.anonymous()))).thenReturn(emptyComments);
 
         boardDetailQueryFacade.loadBoardDetail(boardId, null, pageable, true);
 
-        verify(viewCounterService, times(1)).increaseBoardViewAndGet(boardId);
-        verify(viewCounterService, never()).getBoardViewCount(anyLong());
-        verify(boardService, times(1)).getBoardDetail(boardId);
+        verify(boardCounterService, times(1)).getDetailCounters(boardId, BoardViewer.anonymous(), true);
+        verify(boardDetailQueryService, times(1)).getBoardDetail(boardId);
     }
 
     @Test
     void loadBoardDetail_skipsViewIncreaseWhenFlagIsFalse() {
         Long boardId = 8L;
         Pageable pageable = PageRequest.of(0, 20);
-        BoardDetailResponse board = detail(boardId, 100L);
-        Page<CommentResponse> emptyComments = Page.empty(pageable);
+        BoardDetailResponse board = detail(boardId);
+        Page<CommentNodeView> emptyComments = Page.empty(pageable);
 
-        when(boardService.getBoardDetail(boardId)).thenReturn(board);
-        when(boardAuthorizationPolicy.isViewRestricted(any(), eq(1L))).thenReturn(false);
-        when(viewCounterService.getBoardViewCount(boardId)).thenReturn(100L);
-        when(likeService.getLike(boardId)).thenReturn(0L);
+        when(boardDetailQueryService.getBoardDetail(boardId)).thenReturn(board);
+        when(boardAuthorizationPolicy.isViewRestricted(eq(BoardViewer.anonymous()), eq(1L))).thenReturn(false);
+        when(boardCounterService.getDetailCounters(boardId, BoardViewer.anonymous(), false)).thenReturn(new BoardCounters(100L, 0L, 0L));
         when(boardScrapService.getScrapCount(boardId)).thenReturn(0L);
-        when(commentsService.getCommentListWithReplies(eq(boardId), eq(pageable), isNull())).thenReturn(emptyComments);
-        when(commentsService.getCommentsCount(boardId, null)).thenReturn(0L);
+        when(boardInteractionStateResolver.resolve(boardId, BoardViewer.anonymous(), 1L))
+                .thenReturn(BoardInteractionState.anonymous());
+        when(commentQueryService.getCommentListWithReplies(eq(boardId), eq(pageable), eq(BoardViewer.anonymous()))).thenReturn(emptyComments);
 
         boardDetailQueryFacade.loadBoardDetail(boardId, null, pageable, false);
 
-        verify(viewCounterService, never()).increaseBoardViewAndGet(anyLong());
-        verify(viewCounterService, times(1)).getBoardViewCount(boardId);
-        verify(boardService, times(1)).getBoardDetail(boardId);
+        verify(boardCounterService, times(1)).getDetailCounters(boardId, BoardViewer.anonymous(), false);
+        verify(boardDetailQueryService, times(1)).getBoardDetail(boardId);
     }
 
     @Test
     void loadBoardDetail_throwsAppExceptionWhenViewIsBlocked() {
         Long boardId = 9L;
         Pageable pageable = PageRequest.of(0, 20);
-        BoardDetailResponse board = detail(boardId, 50L);
+        BoardDetailResponse board = detail(boardId);
 
-        when(boardService.getBoardDetail(boardId)).thenReturn(board);
-        when(boardAuthorizationPolicy.isViewRestricted(any(), eq(1L))).thenReturn(true);
+        when(boardDetailQueryService.getBoardDetail(boardId)).thenReturn(board);
+        when(boardAuthorizationPolicy.isViewRestricted(eq(BoardViewer.anonymous()), eq(1L))).thenReturn(true);
 
         assertThatThrownBy(() -> boardDetailQueryFacade.loadBoardDetail(boardId, null, pageable, true))
                 .isInstanceOfSatisfying(AppException.class, e ->
                         assertThat(e.getErrorCode()).isEqualTo(BoardErrorCode.BOARD_VIEW_BLOCKED));
 
-        verify(viewCounterService, never()).increaseBoardViewAndGet(anyLong());
-        verify(viewCounterService, never()).getBoardViewCount(anyLong());
+        verify(boardCounterService, never()).getDetailCounters(anyLong(), any(), eq(true));
     }
 
-    private BoardDetailResponse detail(Long boardId, Long views) {
+    private BoardDetailResponse detail(Long boardId) {
         return BoardDetailResponse.builder()
                 .id(boardId)
                 .accountId(1L)
-                .views(views)
                 .build();
     }
 }

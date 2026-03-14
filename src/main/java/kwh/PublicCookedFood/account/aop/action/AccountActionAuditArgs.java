@@ -1,7 +1,9 @@
 package kwh.PublicCookedFood.account.aop.action;
 
 import kwh.PublicCookedFood.account.audit.AccountActionAuditPayload;
+import kwh.PublicCookedFood.account.audit.AuditArgumentSupport;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class AccountActionAuditArgs {
@@ -9,7 +11,7 @@ public class AccountActionAuditArgs {
     private final AccountActionAuditPayload payload;
 
     public AccountActionAuditArgs(AccountActionAuditPayload payload) {
-        this.payload = payload == null ? AccountActionAuditPayload.empty() : payload;
+        this.payload = Objects.requireNonNullElse(payload, AccountActionAuditPayload.empty());
     }
 
     public AccountActionAuditArgs(Object[] values) {
@@ -21,79 +23,46 @@ public class AccountActionAuditArgs {
     }
 
     public Long asLong(int index) {
-        Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Long longValue) {
-            return longValue;
-        }
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return null;
+        return AuditArgumentSupport.asLong(valueAt(index));
     }
 
     public Integer asInteger(int index) {
-        Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Integer integerValue) {
-            return integerValue;
-        }
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        return null;
+        return AuditArgumentSupport.asInteger(valueAt(index));
     }
 
     public Optional<Boolean> asBoolean(int index) {
-        Object value = valueAt(index);
-        if (value instanceof Boolean booleanValue) {
-            return Optional.of(booleanValue);
-        }
-        return Optional.empty();
+        return AuditArgumentSupport.asBoolean(valueAt(index));
     }
 
     public String asString(int index) {
-        Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
-        return String.valueOf(value);
+        return AuditArgumentSupport.asString(valueAt(index));
     }
 
     public Throwable asThrowable(int index) {
-        Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Throwable throwable) {
-            return throwable;
-        }
-        return null;
+        return AuditArgumentSupport.asThrowable(valueAt(index));
     }
 
-    public String safeId(Long value) {
-        return value == null ? "-" : value.toString();
+    public <T> T asType(int index, Class<T> type) {
+        return AuditArgumentSupport.asType(valueAt(index), type);
     }
 
-    public String safeNumber(Integer value) {
-        return value == null ? "-" : value.toString();
+    public String displayId(Long value) {
+        return AuditArgumentSupport.displayId(value);
     }
 
-    public String safeBoolean(Optional<Boolean> value) {
-        if (value == null || value.isEmpty()) {
-            return "-";
-        }
-        return value.get().toString();
+    public String displayNumber(Integer value) {
+        return AuditArgumentSupport.displayNumber(value);
     }
 
-    public String safeText(String value) {
-        if (value == null || value.isBlank()) {
-            return "-";
-        }
-        return value;
+    public String displayBoolean(Boolean value) {
+        return AuditArgumentSupport.displayBoolean(value);
+    }
+
+    public String displayBooleanAt(int index) {
+        return AuditArgumentSupport.displayBoolean(asBoolean(index).orElse(null));
+    }
+
+    public String displayText(String value) {
+        return AuditArgumentSupport.displayText(value);
     }
 }

@@ -4,12 +4,10 @@ import jakarta.persistence.*;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
 import kwh.PublicCookedFood.board.domain.Likes;
-import kwh.PublicCookedFood.account.dto.request.AccountSaveDto;
 import kwh.PublicCookedFood.account.policy.AccountNicknamePolicy;
 import lombok.Builder;
 import lombok.Getter;
 import org.hibernate.annotations.BatchSize;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -162,24 +160,6 @@ public class Account {
 
     public String getRoleKey() {
         return this.authority.getKey();
-    }
-
-    public static Account createAccount(AccountSaveDto accountSaveDto,
-                                   PasswordEncoder passwordEncoder) {
-        return Account.builder()
-                .name(accountSaveDto.getName())
-                .email(accountSaveDto.getEmail())
-                .password(passwordEncoder.encode(accountSaveDto.getPassword()))
-                .phoneNumber(accountSaveDto.getPhoneNumber())
-                .birthDate(accountSaveDto.getBirthDate())
-                .gender(accountSaveDto.getGender())
-                .address(accountSaveDto.getAddress())
-                .addressDetail(accountSaveDto.getAddressDetail())
-                .profileImageUrl(accountSaveDto.getProfileImageUrl())
-                .notificationEnabled(true)
-                .authority(Role.USER)
-                .loginMethod("Current")
-                .build();
     }
 
     private static String normalizePhoneNumber(String phoneNumber) {

@@ -1,57 +1,92 @@
 package kwh.PublicCookedFood.board.facade;
 
 import kwh.PublicCookedFood.board.domain.BoardPolicy;
-import kwh.PublicCookedFood.board.domain.BoardThumbnailDisplayMode;
 import kwh.PublicCookedFood.board.dto.response.BoardPolicyResponse;
-import kwh.PublicCookedFood.board.service.BoardPolicyService;
+import kwh.PublicCookedFood.board.service.command.BoardPolicyCommandService;
+import kwh.PublicCookedFood.board.service.command.BoardPolicyUpdateCommand;
+import kwh.PublicCookedFood.board.service.query.BoardPolicyQueryService;
 import kwh.PublicCookedFood.account.audit.BoardAuditPublisher;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class BoardAdminPolicyFacade {
 
-    private final BoardPolicyService boardPolicyService;
+    public static final int MIN_FEATURED_THRESHOLD = 1;
+    public static final int MAX_FEATURED_THRESHOLD = 10000;
+
+    private final BoardPolicyQueryService boardPolicyQueryService;
+    private final BoardPolicyCommandService boardPolicyCommandService;
     private final BoardAuditPublisher boardAuditPublisher;
 
-    public BoardAdminFacade.PolicyViewData loadPolicyData() {
-        BoardPolicy policy = boardPolicyService.getPolicy();
-        return new BoardAdminFacade.PolicyViewData(
+    public PolicyViewData loadPolicyData() {
+        BoardPolicy policy = boardPolicyQueryService.getPolicy();
+        return new PolicyViewData(
                 BoardPolicyResponse.from(policy),
-                BoardAdminFacade.MIN_FEATURED_THRESHOLD,
-                BoardAdminFacade.MAX_FEATURED_THRESHOLD
+                MIN_FEATURED_THRESHOLD,
+                MAX_FEATURED_THRESHOLD
         );
     }
 
     @Transactional
-    public void updateBoardPolicy(Integer featuredLikeThreshold,
-                                  BoardThumbnailDisplayMode thumbnailDisplayMode,
-                                  Long actorAccountId) {
-        int normalizedThreshold = normalizeFeaturedThreshold(featuredLikeThreshold);
-        BoardThumbnailDisplayMode normalizedDisplayMode = thumbnailDisplayMode == null
-                ? boardPolicyService.getThumbnailDisplayMode()
-                : thumbnailDisplayMode;
+    public void updateBoardPolicy(BoardPolicyUpdateCommand command) {
+        int normalizedThreshold = resolveFeaturedThreshold(command);
+        kwh.PublicCookedFood.board.domain.BoardThumbnailDisplayMode normalizedDisplayMode = resolveThumbnailDisplayMode(command);
 
-        boardPolicyService.updateFeaturedLikeThreshold(normalizedThreshold);
-        boardPolicyService.updateThumbnailDisplayMode(normalizedDisplayMode);
-
-        if (actorAccountId != null) {
-            boardAuditPublisher.boardPolicyUpdate(actorAccountId, normalizedThreshold, normalizedDisplayMode.name());
-        }
+        boardPolicyCommandService.updateFeaturedLikeThreshold(normalizedThreshold);
+        boardPolicyCommandService.updateThumbnailDisplayMode(normalizedDisplayMode);
+        boardAuditPublisher.boardPolicyUpdate(command.actorAccountId(), normalizedThreshold, normalizedDisplayMode.name());
     }
 
-    public int normalizeFeaturedThreshold(Integer featuredLikeThreshold) {
-        if (featuredLikeThreshold == null) {
-            return boardPolicyService.getFeaturedLikeThreshold();
+    private int resolveFeaturedThreshold(BoardPolicyUpdateCommand command) {
+        return command.featuredLikeThreshold()
+                .map(this::normalizeFeaturedThreshold)
+                .orElseGet(boardPolicyQueryService::getFeaturedLikeThreshold);
+    }
+
+    private kwh.PublicCookedFood.board.domain.BoardThumbnailDisplayMode resolveThumbnailDisplayMode(BoardPolicyUpdateCommand command) {
+        return command.thumbnailDisplayMode()
+                .orElseGet(boardPolicyQueryService::getThumbnailDisplayMode);
+    }
+
+    private int normalizeFeaturedThreshold(int featuredLikeThreshold) {
+        if (featuredLikeThreshold < MIN_FEATURED_THRESHOLD) {
+            return MIN_FEATURED_THRESHOLD;
         }
-        if (featuredLikeThreshold < BoardAdminFacade.MIN_FEATURED_THRESHOLD) {
-            return BoardAdminFacade.MIN_FEATURED_THRESHOLD;
+        return Math.min(featuredLikeThreshold, MAX_FEATURED_THRESHOLD);
+    }
+
+    @Getter
+    public static final class PolicyViewData {
+
+        private final BoardPolicyResponse policy;
+        private final int minFeaturedThreshold;
+        private final int maxFeaturedThreshold;
+
+        public PolicyViewData(BoardPolicyResponse policy,
+                              int minFeaturedThreshold,
+                              int maxFeaturedThreshold) {
+            this.policy = Objects.requireNonNull(policy, "policy");
+            this.minFeaturedThreshold = minFeaturedThreshold;
+            this.maxFeaturedThreshold = maxFeaturedThreshold;
         }
-        if (featuredLikeThreshold > BoardAdminFacade.MAX_FEATURED_THRESHOLD) {
-            return BoardAdminFacade.MAX_FEATURED_THRESHOLD;
+
+        public BoardPolicyResponse policy() {
+            return policy;
         }
-        return featuredLikeThreshold;
+
+        public int minFeaturedThreshold() {
+            return minFeaturedThreshold;
+        }
+
+        public int maxFeaturedThreshold() {
+            return maxFeaturedThreshold;
+        }
+
     }
 }

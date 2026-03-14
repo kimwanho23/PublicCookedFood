@@ -107,7 +107,6 @@ app:
     cookie:
       name: ${SESSION_COOKIE_NAME:JSESSIONID}
   image:
-    schema-auto-migrate: ${IMAGE_SCHEMA_AUTO_MIGRATE:false}
     processing:
       enabled: ${IMAGE_PROCESSING_ENABLED:true}
       max-width: ${IMAGE_PROCESSING_MAX_WIDTH:1600}

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 @Component
@@ -22,10 +21,10 @@ public class NotificationAuditStrategy extends AbstractAccountActionAuditStrateg
 
         handlers.put(AccountActionAuditType.NOTIFICATION_SETTING_UPDATE, args -> {
             Long accountId = args.asLong(0);
-            Optional<Boolean> enabled = args.asBoolean(1);
-            log.info("action=notification.setting_update result=success accountId={} enabled={}", accountId,
-                    enabled.orElse(null));
-            recorder.record(accountId, "NOTIFICATION_SETTING_UPDATE", "enabled=" + args.safeBoolean(enabled));
+            String enabledDisplay = args.displayBooleanAt(1);
+            log.info("action=notification.setting_update result=success accountId={} enabled={}",
+                    args.displayId(accountId), enabledDisplay);
+            recorder.record(accountId, "NOTIFICATION_SETTING_UPDATE", "enabled=" + enabledDisplay);
         });
 
         return handlers;

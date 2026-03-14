@@ -1,9 +1,9 @@
 package kwh.PublicCookedFood.config;
 
 import jakarta.servlet.http.HttpServletRequest;
-import kwh.PublicCookedFood.board.contoller.AdminBoardPageController;
-import kwh.PublicCookedFood.board.contoller.BoardController;
-import kwh.PublicCookedFood.board.contoller.BoardDetailController;
+import kwh.PublicCookedFood.board.controller.AdminBoardPageController;
+import kwh.PublicCookedFood.board.controller.BoardController;
+import kwh.PublicCookedFood.board.controller.BoardDetailController;
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.common.error.CommonErrorCode;
 import kwh.PublicCookedFood.common.error.ErrorMessageResolver;

@@ -3,7 +3,6 @@ package kwh.PublicCookedFood.board.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,6 +14,9 @@ import lombok.Setter;
 public class BoardUpdateRequest {
 
     private Long id;
+
+    @NotNull(message = "수정 정보가 만료되었습니다. 새로고침 후 다시 시도해주세요.")
+    private Long version;
 
     @NotBlank(message = "제목은 필수입니다.")
     @Size(max = 200, message = "제목은 200자 이하로 입력해주세요.")
@@ -28,23 +30,24 @@ public class BoardUpdateRequest {
     private Long sectionId;
 
     @Builder
-    public BoardUpdateRequest(Long id, String title, String contents, Long sectionId) {
+    public BoardUpdateRequest(Long id, Long version, String title, String contents, Long sectionId) {
         this.id = id;
+        this.version = version;
         this.title = title;
         this.contents = contents;
         this.sectionId = sectionId;
     }
 
-    public static BoardUpdateRequest from(BoardDetailResponse boardDetail, Long fallbackSectionId) {
-        Long resolvedSectionId = boardDetail.getSectionId() != null
-                ? boardDetail.getSectionId()
-                : fallbackSectionId;
-
-        return BoardUpdateRequest.builder()
-                .id(boardDetail.getId())
-                .title(boardDetail.getTitle())
-                .contents(boardDetail.getContents())
-                .sectionId(resolvedSectionId)
-                .build();
+    public static BoardUpdateRequest prepared(Long boardId, BoardUpdateRequest source, Long fallbackSectionId) {
+        BoardUpdateRequest prepared = new BoardUpdateRequest();
+        prepared.setId(boardId);
+        if (source != null) {
+            prepared.setTitle(source.getTitle());
+            prepared.setContents(source.getContents());
+            prepared.setSectionId(source.getSectionId());
+            prepared.setVersion(source.getVersion());
+        }
+        prepared.setSectionId(prepared.getSectionId() != null ? prepared.getSectionId() : fallbackSectionId);
+        return prepared;
     }
 }

@@ -1,9 +1,19 @@
 package kwh.PublicCookedFood.account.facade;
 
 import jakarta.annotation.PostConstruct;
+import kwh.PublicCookedFood.account.application.query.view.AccountProfileCommentItemView;
+import kwh.PublicCookedFood.board.application.query.view.BoardCardView;
+import kwh.PublicCookedFood.board.application.query.BoardCardViewAssembler;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.Comments;
-import kwh.PublicCookedFood.board.service.ImageService;
+import kwh.PublicCookedFood.board.service.support.BoardStatsSummary;
+import kwh.PublicCookedFood.board.service.support.BoardStatsSummaryResolver;
+import kwh.PublicCookedFood.board.service.CommentNavigationService;
+import kwh.PublicCookedFood.board.service.comment.CommentTargetPath;
+import kwh.PublicCookedFood.board.service.comment.CommentTargetPathsQuery;
+import kwh.PublicCookedFood.board.facade.BoardViewer;
+import kwh.PublicCookedFood.storage.ImageLifecycleService;
+import kwh.PublicCookedFood.storage.ImageUrls;
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.common.error.CommonErrorCode;
 import kwh.PublicCookedFood.account.domain.Account;
@@ -17,12 +27,16 @@ import kwh.PublicCookedFood.account.service.AccountBlockService;
 import kwh.PublicCookedFood.account.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -37,7 +51,10 @@ public class AccountProfileFacade {
     private final AccountAuditPublisher accountAuditPublisher;
     private final AccountProfileAccessPolicy accountProfileAccessPolicy;
     private final List<AccountProfileViewStrategy> profileViewStrategies;
-    private final ImageService imageService;
+    private final ImageLifecycleService imageLifecycleService;
+    private final BoardStatsSummaryResolver boardStatsSummaryResolver;
+    private final BoardCardViewAssembler boardCardViewAssembler;
+    private final CommentNavigationService commentNavigationService;
 
     private Map<AccountProfileViewType, AccountProfileViewStrategy> profileViewStrategyMap = Map.of();
 
@@ -107,6 +124,7 @@ public class AccountProfileFacade {
         AccountProfileViewType profileViewType = AccountProfileViewType.from(view);
         AccountProfileViewPages viewPages = resolveProfileViewStrategy(profileViewType)
                 .load(accountId, pageable, blockedAccountIds);
+        Map<Long, BoardStatsSummary> boardStatsMap = resolveBoardStatsMap(viewPages);
 
         boolean myBlockedProfileAccount = accountProfileAccessPolicy.hasBlockedProfileAccount(loginAccount, accountId);
         Long currentAccountId = loginAccount == null ? null : loginAccount.getId();
@@ -116,9 +134,9 @@ public class AccountProfileFacade {
                 profileViewType.key(),
                 currentAccountId,
                 myBlockedProfileAccount,
-                viewPages.boardPage(),
-                viewPages.commentPage(),
-                viewPages.scrapPage()
+                toBoardCards(viewPages.boardPage(), boardStatsMap),
+                toCommentItems(viewPages.commentPage(), BoardViewer.from(loginAccount)),
+                toBoardCards(viewPages.scrapPage(), boardStatsMap)
         );
     }
 
@@ -143,10 +161,10 @@ public class AccountProfileFacade {
 
         try {
             Account savedAccount = accountService.save(existingAccount);
-            imageService.attachProfileImageIfPresent(savedAccount.getProfileImageUrl());
+            imageLifecycleService.attachImagesIfPresent(ImageUrls.single(savedAccount.getProfileImageUrl()));
             String currentProfileImageUrl = normalizeNullableText(savedAccount.getProfileImageUrl());
             if (!Objects.equals(previousProfileImageUrl, currentProfileImageUrl)) {
-                imageService.cleanupImageByUrlIfUnlinked(previousProfileImageUrl);
+                imageLifecycleService.cleanupImagesByUrlIfUnlinked(ImageUrls.single(previousProfileImageUrl));
             }
             accountAuditPublisher.accountProfileUpdate(savedAccount.getId());
             return ProfileUpdateResult.success(savedAccount);
@@ -171,13 +189,91 @@ public class AccountProfileFacade {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private Map<Long, BoardStatsSummary> resolveBoardStatsMap(AccountProfileViewPages viewPages) {
+        if (viewPages == null) {
+            return Map.of();
+        }
+        Set<Board> boards = new LinkedHashSet<>();
+        if (viewPages.boardPage() != null) {
+            boards.addAll(viewPages.boardPage().getContent());
+        }
+        if (viewPages.scrapPage() != null) {
+            boards.addAll(viewPages.scrapPage().getContent());
+        }
+        return boardStatsSummaryResolver.resolve(boards);
+    }
+
+    private Page<AccountProfileCommentItemView> toCommentItems(Page<Comments> commentPage,
+                                                               BoardViewer viewer) {
+        if (commentPage == null) {
+            return null;
+        }
+        List<Comments> comments = commentPage.getContent();
+        if (comments.isEmpty()) {
+            return Page.empty(commentPage.getPageable());
+        }
+        Map<Long, CommentTargetPath> targetPathsByCommentId = resolveCommentTargetPaths(comments, viewer);
+        List<AccountProfileCommentItemView> content = comments.stream()
+                .map(comment -> AccountProfileCommentItemView.from(comment, resolveCommentTargetPath(comment, targetPathsByCommentId)))
+                .toList();
+        return new PageImpl<>(content, commentPage.getPageable(), commentPage.getTotalElements());
+    }
+
+    private Page<BoardCardView> toBoardCards(Page<Board> boardPage,
+                                             Map<Long, BoardStatsSummary> boardStatsMap) {
+        if (boardPage == null) {
+            return null;
+        }
+        return boardCardViewAssembler.toPage(boardPage, boardStatsMap);
+    }
+
+    private Map<Long, CommentTargetPath> resolveCommentTargetPaths(Collection<Comments> comments,
+                                                                   BoardViewer viewer) {
+        Map<Long, Set<Long>> commentIdsByBoardId = new LinkedHashMap<>();
+        for (Comments comment : comments) {
+            if (comment == null || comment.getId() == null || comment.getBoard() == null || comment.getBoard().getId() == null) {
+                continue;
+            }
+            commentIdsByBoardId.computeIfAbsent(comment.getBoard().getId(), ignored -> new LinkedHashSet<>())
+                    .add(comment.getId());
+        }
+        if (commentIdsByBoardId.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, CommentTargetPath> targetPathsByCommentId = new LinkedHashMap<>();
+        for (Map.Entry<Long, Set<Long>> entry : commentIdsByBoardId.entrySet()) {
+            targetPathsByCommentId.putAll(
+                    commentNavigationService.buildCommentTargetPaths(
+                            CommentTargetPathsQuery.of(entry.getKey(), entry.getValue(), viewer)
+                    )
+            );
+        }
+        return Map.copyOf(targetPathsByCommentId);
+    }
+
+    private String resolveCommentTargetPath(Comments comment,
+                                            Map<Long, CommentTargetPath> targetPathsByCommentId) {
+        if (comment == null || comment.getId() == null) {
+            throw new IllegalArgumentException("comment id is required");
+        }
+        CommentTargetPath targetPath = targetPathsByCommentId.get(comment.getId());
+        if (targetPath != null) {
+            return targetPath.value();
+        }
+        Long boardId = comment.getBoard() == null ? null : comment.getBoard().getId();
+        if (boardId == null) {
+            return "/boards";
+        }
+        return "/boards/" + boardId + "#board-comments";
+    }
+
     public record OtherProfileViewData(Account profileAccount,
                                        String profileView,
                                        Long currentAccountId,
                                        boolean myBlockedProfileAccount,
-                                       Page<Board> boardPage,
-                                       Page<Comments> commentPage,
-                                       Page<Board> scrapPage) {
+                                       Page<BoardCardView> boardPage,
+                                       Page<AccountProfileCommentItemView> commentPage,
+                                       Page<BoardCardView> scrapPage) {
 
         public Page<?> activePage() {
             AccountProfileViewType viewType = AccountProfileViewType.from(profileView);

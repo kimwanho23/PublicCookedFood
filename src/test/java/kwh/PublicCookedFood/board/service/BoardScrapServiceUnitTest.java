@@ -1,11 +1,12 @@
 package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.error.BoardErrorCode;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.board.repository.BoardScrapRepository;
 import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.common.error.CommonErrorCode;
 import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
@@ -49,8 +50,10 @@ class BoardScrapServiceUnitTest {
         when(boardRepository.findByIdWithAccountAndState(10L, SoftDeleteState.ACTIVE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> boardScrapService.addScrap(10L, 1L))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("유효하지 않은 게시글");
+                .isInstanceOfSatisfying(AppException.class, e -> {
+                    assertThat(e.getErrorCode()).isEqualTo(CommonErrorCode.RESOURCE_NOT_FOUND);
+                    assertThat(e).hasMessageContaining("유효하지 않은 게시글");
+                });
 
         verify(boardScrapRepository, never()).saveAndFlush(org.mockito.ArgumentMatchers.any());
     }

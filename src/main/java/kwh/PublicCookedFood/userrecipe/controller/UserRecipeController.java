@@ -16,12 +16,16 @@ import kwh.PublicCookedFood.userrecipe.dto.request.UserRecipeStepRequest;
 import kwh.PublicCookedFood.userrecipe.dto.request.UserRecipeWriteRequest;
 import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeCommentResponse;
 import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeDetailResponse;
+import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeEditFormData;
 import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeListItemResponse;
 import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeReviewResponse;
 import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeReviewSummaryResponse;
+import kwh.PublicCookedFood.userrecipe.service.UserRecipeCommandService;
+import kwh.PublicCookedFood.userrecipe.service.UserRecipeCommentCreateCommand;
 import kwh.PublicCookedFood.userrecipe.service.UserRecipeCommentService;
+import kwh.PublicCookedFood.userrecipe.service.UserRecipeQueryService;
 import kwh.PublicCookedFood.userrecipe.service.UserRecipeReviewService;
-import kwh.PublicCookedFood.userrecipe.service.UserRecipeService;
+import kwh.PublicCookedFood.userrecipe.service.UserRecipeWriteCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -53,7 +57,8 @@ public class UserRecipeController {
     private static final String FORM_VIEW = "user-recipes/form";
     private static final String DETAIL_VIEW = "user-recipes/detail";
 
-    private final UserRecipeService userRecipeService;
+    private final UserRecipeCommandService userRecipeCommandService;
+    private final UserRecipeQueryService userRecipeQueryService;
     private final UserRecipeCommentService userRecipeCommentService;
     private final UserRecipeReviewService userRecipeReviewService;
     private final AccountBlockService accountBlockService;
@@ -71,7 +76,7 @@ public class UserRecipeController {
     @GetMapping
     public String index(@PageableDefault(page = 0, size = 12, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
                         Model model) {
-        Page<UserRecipeListItemResponse> recipePage = userRecipeService.getRecipeList(pageable);
+        Page<UserRecipeListItemResponse> recipePage = userRecipeQueryService.getRecipeList(pageable);
         Paging.addPagingAttributes(model, recipePage, pageable);
         model.addAttribute("recipePage", recipePage);
         return LIST_VIEW;
@@ -109,7 +114,7 @@ public class UserRecipeController {
         }
 
         try {
-            Long recipeId = userRecipeService.createRecipe(account.getId(), recipeForm);
+            Long recipeId = userRecipeCommandService.createRecipe(account.getId(), toWriteCommand(recipeForm));
             redirectAttributes.addFlashAttribute("recipeMessage", "사용자 레시피가 등록되었습니다.");
             return "redirect:/user-recipes/" + recipeId;
         } catch (IllegalArgumentException e) {
@@ -130,7 +135,7 @@ public class UserRecipeController {
         }
 
         try {
-            UserRecipeWriteRequest form = userRecipeService.getRecipeWriteRequest(id, account.getId());
+            UserRecipeWriteRequest form = toWriteRequest(userRecipeQueryService.getRecipeEditFormData(id, account.getId()));
             ensureMinimumRows(form);
             model.addAttribute("recipeForm", form);
             populateFormPageModel(model, true, id);
@@ -160,7 +165,7 @@ public class UserRecipeController {
         }
 
         try {
-            userRecipeService.updateRecipe(id, account.getId(), recipeForm);
+            userRecipeCommandService.updateRecipe(id, account.getId(), toWriteCommand(recipeForm));
             redirectAttributes.addFlashAttribute("recipeMessage", "사용자 레시피가 수정되었습니다.");
             return "redirect:/user-recipes/" + id;
         } catch (RuntimeException e) {
@@ -176,7 +181,7 @@ public class UserRecipeController {
                          @RequestParam(name = "commentPage", defaultValue = "0") int commentPage,
                          @RequestParam(name = "commentSize", defaultValue = "20") int commentSize,
                          Model model) {
-        UserRecipeDetailResponse recipe = userRecipeService.getRecipeDetail(id);
+        UserRecipeDetailResponse recipe = userRecipeQueryService.getRecipeDetail(id);
         Pageable commentPageable = resolveCommentPageable(commentPage, commentSize);
         Long viewerAccountId = account == null ? null : account.getId();
         Page<UserRecipeCommentResponse> comments =
@@ -217,7 +222,7 @@ public class UserRecipeController {
         }
 
         try {
-            userRecipeService.deleteRecipe(id, account.getId());
+            userRecipeCommandService.deleteRecipe(id, account.getId());
             redirectAttributes.addFlashAttribute("recipeMessage", "사용자 레시피가 삭제되었습니다.");
             return "redirect:/user-recipes";
         } catch (RuntimeException e) {
@@ -243,10 +248,8 @@ public class UserRecipeController {
             return commentPageRedirect(id, commentPage, commentSize);
         }
 
-        commentForm.setAccountId(account.getId());
-        commentForm.setRecipeId(id);
         try {
-            userRecipeCommentService.createComment(commentForm);
+            userRecipeCommentService.createComment(toCommentCreateCommand(account.getId(), id, commentForm));
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("commentError", e.getMessage());
         }
@@ -359,6 +362,73 @@ public class UserRecipeController {
             step.setStepNo(1);
             form.getSteps().add(step);
         }
+    }
+
+    private UserRecipeWriteRequest toWriteRequest(UserRecipeEditFormData formData) {
+        UserRecipeWriteRequest request = new UserRecipeWriteRequest();
+        request.setTitle(formData.title());
+        request.setSummary(formData.summary());
+        request.setThumbnailUrl(formData.thumbnailUrl());
+        request.setCookingTime(formData.cookingTime());
+        request.setServings(formData.servings());
+        request.setDifficulty(formData.difficulty());
+        request.setIngredients(formData.ingredients().stream()
+                .map(ingredient -> {
+                    UserRecipeIngredientRequest row = new UserRecipeIngredientRequest();
+                    row.setIngredientGroup(ingredient.ingredientGroup());
+                    row.setIngredientName(ingredient.ingredientName());
+                    row.setAmountText(ingredient.amountText());
+                    row.setSortOrder(ingredient.sortOrder());
+                    return row;
+                })
+                .toList());
+        request.setSteps(formData.steps().stream()
+                .map(step -> {
+                    UserRecipeStepRequest row = new UserRecipeStepRequest();
+                    row.setStepNo(step.stepNo());
+                    row.setContents(step.contents());
+                    row.setTip(step.tip());
+                    row.setImageUrl(step.imageUrl());
+                    return row;
+                })
+                .toList());
+        return request;
+    }
+
+    private UserRecipeWriteCommand toWriteCommand(UserRecipeWriteRequest form) {
+        return new UserRecipeWriteCommand(
+                form.getTitle(),
+                form.getSummary(),
+                form.getThumbnailUrl(),
+                form.getCookingTime(),
+                form.getServings(),
+                form.getDifficulty(),
+                form.getIngredients().stream()
+                        .map(ingredient -> new UserRecipeWriteCommand.IngredientItem(
+                                ingredient.getIngredientGroup(),
+                                ingredient.getIngredientName(),
+                                ingredient.getAmountText()
+                        ))
+                        .toList(),
+                form.getSteps().stream()
+                        .map(step -> new UserRecipeWriteCommand.StepItem(
+                                step.getContents(),
+                                step.getTip(),
+                                step.getImageUrl()
+                        ))
+                        .toList()
+        );
+    }
+
+    private UserRecipeCommentCreateCommand toCommentCreateCommand(Long accountId,
+                                                                  Long recipeId,
+                                                                  UserRecipeCommentCreateRequest commentForm) {
+        return UserRecipeCommentCreateCommand.of(
+                accountId,
+                recipeId,
+                commentForm.getContents(),
+                commentForm.getParentId()
+        );
     }
 
     private Pageable resolveCommentPageable(int commentPage, int commentSize) {

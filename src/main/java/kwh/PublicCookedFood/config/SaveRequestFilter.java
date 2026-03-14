@@ -24,12 +24,12 @@ import java.io.IOException;
 public class SaveRequestFilter extends OncePerRequestFilter {
 
     public static final String CURRENT_ACCOUNT_REQUEST_ATTRIBUTE = SaveRequestFilter.class.getName() + ".currentAccount";
+    public static final String NOTIFICATION_STREAM_URI = "/api/notifications/stream";
 
     private static final String HOME_PAGE_URI = "/recipes";
     private static final String LOGIN_PAGE_URI = "/u/login";
     private static final String SIGNUP_PAGE_URI = "/u/signup";
     private static final String ACCOUNT_RECOVER_URI_PATTERN = "/u/account/**";
-    private static final String NOTIFICATION_STREAM_URI = "/api/notifications/stream";
 
     private final AccountService accountService;
 
@@ -68,7 +68,14 @@ public class SaveRequestFilter extends OncePerRequestFilter {
         if (request == null) {
             return true;
         }
-        return !new AntPathRequestMatcher(NOTIFICATION_STREAM_URI).matches(request);
+        return !isNotificationStreamRequest(request);
+    }
+
+    public static boolean isNotificationStreamRequest(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+        return new AntPathRequestMatcher(NOTIFICATION_STREAM_URI).matches(request);
     }
 
     private Account resolveCurrentAccount(Authentication authentication) {

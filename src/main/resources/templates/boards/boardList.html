@@ -108,28 +108,28 @@
 
                 <div class="board-feed" th:if="${boardList.getTotalElements() > 0}">
                     <div class="board-item"
-                         th:classappend="${thumbnailDisplayMode == 'HOVER' and boardThumbnailMap[board.id] != null} ? ' board-item-hover' : ''"
-                         th:each="board, boardStat : ${boardList}"
-                         th:if="${board.state != null and board.state.active}">
+                         th:classappend="${thumbnailDisplayMode == 'HOVER' and board.thumbnailUrl != null} ? ' board-item-hover' : ''"
+                         th:each="board, boardStat : ${boardList}">
                         <a class="board-row"
-                           th:classappend="${thumbnailDisplayMode == 'LEFT' and boardThumbnailMap[board.id] != null} ? ' board-row-with-thumb' : (${thumbnailDisplayMode == 'HOVER' and boardThumbnailMap[board.id] != null} ? ' board-row-hover-mobile' : '')"
-                           th:href="@{/boards/{id}(id=${board.id})}">
+                           th:classappend="${thumbnailDisplayMode == 'LEFT' and board.thumbnailUrl != null} ? ' board-row-with-thumb' : (${thumbnailDisplayMode == 'HOVER' and board.thumbnailUrl != null} ? ' board-row-hover-mobile' : '')"
+                           th:href="@{/boards/{id}(id=${board.boardId})}">
                             <div class="board-row-thumb"
-                                 th:if="${(thumbnailDisplayMode == 'LEFT' or thumbnailDisplayMode == 'HOVER') and boardThumbnailMap[board.id] != null}">
-                                <img th:src="@{${boardThumbnailMap[board.id]}}" alt="게시글 썸네일">
+                                 th:if="${(thumbnailDisplayMode == 'LEFT' or thumbnailDisplayMode == 'HOVER') and board.thumbnailUrl != null}">
+                                <img th:src="@{${board.thumbnailUrl}}" alt="게시글 썸네일">
                             </div>
                             <div class="board-row-body">
                                 <div class="board-row-top">
                                     <span class="board-index" th:text="${boardList.getTotalElements() - (boardList.number * boardList.size) - boardStat.index}">1</span>
-                                    <span class="badge text-bg-light" th:text="${board.section != null ? board.section.sectionName : '미분류'}">탭</span>
-                                    <span class="badge text-bg-warning" th:if="${featuredLikeThreshold != null and board.likeCount != null and board.likeCount >= featuredLikeThreshold}">추천글</span>
+                                    <span class="badge text-bg-light" th:text="${board.section != null and board.section.sectionName != null ? board.section.sectionName : '미분류'}">탭</span>
+                                    <span class="badge text-bg-warning"
+                                          th:if="${board.featured}">추천글</span>
                                     <span class="board-date" th:text="${#temporals.format(board.regTime, 'yyyy.MM.dd') == #dates.format(#dates.createNow(),'yyyy.MM.dd') ? #temporals.format(board.regTime, 'HH:mm') : #temporals.format(board.regTime, 'yyyy.MM.dd')}">작성일</span>
                                 </div>
 
                                 <h3 class="board-row-title">
                                     <span class="board-title-prefix" th:if="${thumbnailDisplayMode != 'LEFT'}">
                                         <span class="board-title-icon board-title-icon-star"
-                                              th:if="${featuredLikeThreshold != null and board.likeCount != null and board.likeCount >= featuredLikeThreshold}"
+                                              th:if="${board.featured}"
                                               title="추천글"
                                               aria-label="추천글">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -137,7 +137,7 @@
                                             </svg>
                                         </span>
                                         <span class="board-title-icon board-title-icon-image"
-                                              th:if="${boardHasImageMap != null and boardHasImageMap[board.id]}"
+                                              th:if="${board.hasImage}"
                                               title="이미지 첨부"
                                               aria-label="이미지 첨부">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -147,30 +147,31 @@
                                             </svg>
                                         </span>
                                     </span>
-                                    <span th:text="${(board.title != null and board.title.length() > 58 ? board.title.substring(0, 58) + '...' : board.title) + ' [' + (board.commentCount != null ? board.commentCount : 0) + ']'}">제목</span>
+                                    <span th:text="${(board.title != null and board.title.length() > 58 ? board.title.substring(0, 58) + '...' : board.title) + ' [' + board.commentsCount + ']'}">제목</span>
                                 </h3>
 
                                 <div class="board-row-meta">
                                     <span class="board-meta-pill board-meta-author-link"
-                                          th:if="${board.account != null and board.account.id != null}"
+                                          th:if="${board.author != null and board.author.accountId != null}"
                                           role="link"
                                           tabindex="0"
-                                          th:attr="data-profile-url=@{/u/{accountId}(accountId=${board.account.id})},
-                                                   aria-label=${'작성자 ' + ((board.account.name != null and board.account.name.length() > 7) ? board.account.name.substring(0, 7) + '...' : (board.account.name != null ? board.account.name : '알 수 없음')) + ' 프로필로 이동'},
-                                                   title=${'작성자 ' + ((board.account.name != null and board.account.name.length() > 7) ? board.account.name.substring(0, 7) + '...' : (board.account.name != null ? board.account.name : '알 수 없음')) + ' 프로필로 이동'}"
-                                          th:text="|작성자 ${(board.account.name != null and board.account.name.length() > 7) ? board.account.name.substring(0, 7) + '...' : (board.account.name != null ? board.account.name : '알 수 없음')}|">작성자</span>
+                                          th:attr="data-profile-url=@{/u/{accountId}(accountId=${board.author.accountId})},
+                                                   aria-label=${'작성자 ' + ((board.author.accountName != null and board.author.accountName.length() > 7) ? board.author.accountName.substring(0, 7) + '...' : (board.author.accountName != null ? board.author.accountName : '알 수 없음')) + ' 프로필로 이동'},
+                                                   title=${'작성자 ' + ((board.author.accountName != null and board.author.accountName.length() > 7) ? board.author.accountName.substring(0, 7) + '...' : (board.author.accountName != null ? board.author.accountName : '알 수 없음')) + ' 프로필로 이동'}"
+                                          th:text="|작성자 ${(board.author.accountName != null and board.author.accountName.length() > 7) ? board.author.accountName.substring(0, 7) + '...' : (board.author.accountName != null ? board.author.accountName : '알 수 없음')}|">작성자</span>
                                     <span class="board-meta-pill"
-                                          th:if="${board.account == null or board.account.id == null}"
-                                          th:text="|작성자 ${board.account != null and board.account.name != null ? board.account.name : '알 수 없음'}|">작성자</span>
+                                          th:if="${board.author == null or board.author.accountId == null}"
+                                          th:text="|작성자 ${board.author != null and board.author.accountName != null ? board.author.accountName : '알 수 없음'}|">작성자</span>
                                     <span class="board-meta-pill"
-                                          th:text="|조회 ${boardViewMap != null and boardViewMap[board.id] != null ? boardViewMap[board.id] : (board.views != null ? board.views : 0)}|">조회</span>
-                                    <span class="board-meta-pill" th:text="|추천 ${board.likeCount != null ? board.likeCount : 0}|">추천</span>
+                                          th:text="|조회 ${board.views}|">조회</span>
+                                    <span class="board-meta-pill"
+                                          th:text="|추천 ${board.likes}|">추천</span>
                                 </div>
                             </div>
                         </a>
-                        <div class="board-hover-rail" th:if="${thumbnailDisplayMode == 'HOVER' and boardThumbnailMap[board.id] != null}">
+                        <div class="board-hover-rail" th:if="${thumbnailDisplayMode == 'HOVER' and board.thumbnailUrl != null}">
                             <div class="board-hover-card">
-                                <img class="board-hover-card-image" th:src="@{${boardThumbnailMap[board.id]}}" alt="게시글 썸네일 미리보기">
+                                <img class="board-hover-card-image" th:src="@{${board.thumbnailUrl}}" alt="게시글 썸네일 미리보기">
                             </div>
                         </div>
                     </div>

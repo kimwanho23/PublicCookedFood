@@ -1,6 +1,5 @@
 package kwh.PublicCookedFood.board.dto.request;
 
-import kwh.PublicCookedFood.board.dto.response.BoardDetailResponse;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,33 +7,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BoardUpdateRequestFactoryUnitTest {
 
     @Test
-    void from_usesExistingSectionIdWhenPresent() {
-        BoardDetailResponse detail = BoardDetailResponse.builder()
-                .id(1L)
-                .title("기존 제목")
-                .contents("기존 내용")
-                .sectionId(99L)
-                .build();
+    void prepared_copiesSourceAndAppliesFallbackSectionId() {
+        BoardUpdateRequest source = new BoardUpdateRequest();
+        source.setVersion(4L);
+        source.setTitle("수정 제목");
+        source.setContents("수정 내용");
 
-        BoardUpdateRequest request = BoardUpdateRequest.from(detail, 55L);
+        BoardUpdateRequest request = BoardUpdateRequest.prepared(42L, source, 55L);
 
-        assertThat(request.getId()).isEqualTo(1L);
-        assertThat(request.getTitle()).isEqualTo("기존 제목");
-        assertThat(request.getContents()).isEqualTo("기존 내용");
-        assertThat(request.getSectionId()).isEqualTo(99L);
+        assertThat(source.getId()).isNull();
+        assertThat(request.getId()).isEqualTo(42L);
+        assertThat(request.getVersion()).isEqualTo(4L);
+        assertThat(request.getTitle()).isEqualTo("수정 제목");
+        assertThat(request.getContents()).isEqualTo("수정 내용");
+        assertThat(request.getSectionId()).isEqualTo(55L);
     }
 
     @Test
-    void from_usesFallbackSectionIdWhenExistingIsNull() {
-        BoardDetailResponse detail = BoardDetailResponse.builder()
-                .id(1L)
-                .title("기존 제목")
-                .contents("기존 내용")
-                .sectionId(null)
-                .build();
+    void prepared_keepsPathIdAuthoritativeEvenWhenSourceIdIsPresent() {
+        BoardUpdateRequest source = new BoardUpdateRequest();
+        source.setId(99L);
+        source.setVersion(8L);
+        source.setSectionId(77L);
 
-        BoardUpdateRequest request = BoardUpdateRequest.from(detail, 55L);
+        BoardUpdateRequest request = BoardUpdateRequest.prepared(42L, source, 55L);
 
-        assertThat(request.getSectionId()).isEqualTo(55L);
+        assertThat(request.getId()).isEqualTo(42L);
+        assertThat(request.getVersion()).isEqualTo(8L);
+        assertThat(request.getSectionId()).isEqualTo(77L);
     }
 }

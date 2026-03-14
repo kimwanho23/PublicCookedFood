@@ -4,7 +4,7 @@ import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardSection;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,9 +34,7 @@ class BoardDetailResponseFactoryUnitTest {
                 .contents("contents")
                 .account(account)
                 .section(section)
-                .views(22L)
-                .likeCount(33L)
-                .commentCount(44L)
+                .version(2L)
                 .state(SoftDeleteState.ACTIVE)
                 .build();
 
@@ -51,9 +49,8 @@ class BoardDetailResponseFactoryUnitTest {
         assertThat(response.getSectionId()).isEqualTo(3L);
         assertThat(response.getSectionKey()).isEqualTo("free");
         assertThat(response.getSectionName()).isEqualTo("free board");
-        assertThat(response.getViews()).isEqualTo(22L);
-        assertThat(response.getLikesCount()).isEqualTo(33L);
-        assertThat(response.getCommentsCount()).isEqualTo(44L);
+        assertThat(response.getViews()).isNull();
+        assertThat(response.getVersion()).isEqualTo(2L);
         assertThat(response.getState()).isEqualTo(SoftDeleteState.ACTIVE);
     }
 }

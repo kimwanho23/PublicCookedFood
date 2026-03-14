@@ -3,7 +3,6 @@ package kwh.PublicCookedFood.account.service;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.domain.Bookmark;
 import kwh.PublicCookedFood.account.domain.Role;
-import kwh.PublicCookedFood.account.dto.request.BookmarkCreateRequest;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
 import kwh.PublicCookedFood.account.repository.BookmarkRepository;
 import kwh.PublicCookedFood.food.entity.Recipe_INFO;
@@ -64,10 +63,7 @@ class BookmarkServiceTest {
     void addBookmarkTest() {
         Account account = createAccount(2L, "bookmark-add@test.com");
         Recipe_INFO recipe = createRecipe(5L, "recipe-5");
-        BookmarkCreateRequest request = BookmarkCreateRequest.builder()
-                .recipeID(5L)
-                .accountId(2L)
-                .build();
+        BookmarkCreateCommand request = BookmarkCreateCommand.of(2L, 5L);
 
         when(accountRepository.findById(2L)).thenReturn(Optional.of(account));
         when(recipeInfoRepository.findByRecipeID(5L)).thenReturn(Optional.of(recipe));
@@ -88,10 +84,7 @@ class BookmarkServiceTest {
         Account account = createAccount(3L, "bookmark-existing@test.com");
         Recipe_INFO recipe = createRecipe(7L, "recipe-7");
         Bookmark existing = Bookmark.of(account, recipe);
-        BookmarkCreateRequest request = BookmarkCreateRequest.builder()
-                .recipeID(7L)
-                .accountId(3L)
-                .build();
+        BookmarkCreateCommand request = BookmarkCreateCommand.of(3L, 7L);
 
         when(accountRepository.findById(3L)).thenReturn(Optional.of(account));
         when(recipeInfoRepository.findByRecipeID(7L)).thenReturn(Optional.of(recipe));

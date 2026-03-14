@@ -3,9 +3,10 @@ package kwh.PublicCookedFood.userrecipe.service;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
 import kwh.PublicCookedFood.account.service.AccountBlockService;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
-import kwh.PublicCookedFood.board.service.ImageService;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.common.error.AppException;
+import kwh.PublicCookedFood.storage.ImageLifecycleService;
+import kwh.PublicCookedFood.storage.ImageUrls;
 import kwh.PublicCookedFood.userrecipe.domain.UserRecipe;
 import kwh.PublicCookedFood.userrecipe.domain.UserRecipeReview;
 import kwh.PublicCookedFood.userrecipe.dto.response.UserRecipeReviewResponse;
@@ -32,7 +33,7 @@ public class UserRecipeReviewService {
     private final UserRecipeRepository userRecipeRepository;
     private final AccountRepository accountRepository;
     private final AccountBlockService accountBlockService;
-    private final ImageService imageService;
+    private final ImageLifecycleService imageLifecycleService;
 
     @Transactional
     public void upsertReview(Long recipeId, Long accountId, Integer rating, String contents, String imageUrl) {
@@ -63,9 +64,9 @@ public class UserRecipeReviewService {
                                 .build())
                 );
 
-        imageService.attachImagesIfPresent(toImageUrlSet(normalizedImageUrl));
+        imageLifecycleService.attachImagesIfPresent(ImageUrls.single(normalizedImageUrl));
         if (previousImageUrl != null && !previousImageUrl.equals(normalizedImageUrl)) {
-            imageService.cleanupImagesByUrlIfUnlinked(toImageUrlSet(previousImageUrl));
+            imageLifecycleService.cleanupImagesByUrlIfUnlinked(ImageUrls.single(previousImageUrl));
         }
     }
 
@@ -83,7 +84,7 @@ public class UserRecipeReviewService {
         String imageUrl = review.getImageUrl();
         userRecipeReviewRepository.delete(review);
         userRecipeReviewRepository.flush();
-        imageService.cleanupImagesByUrlIfUnlinked(toImageUrlSet(imageUrl));
+        imageLifecycleService.cleanupImagesByUrlIfUnlinked(ImageUrls.single(imageUrl));
     }
 
     @Transactional(readOnly = true)
@@ -174,15 +175,4 @@ public class UserRecipeReviewService {
         }
     }
 
-    private Set<String> toImageUrlSet(String imageUrl) {
-        Set<String> imageUrls = new LinkedHashSet<>();
-        if (imageUrl == null) {
-            return imageUrls;
-        }
-        String trimmed = imageUrl.trim();
-        if (!trimmed.isEmpty()) {
-            imageUrls.add(trimmed);
-        }
-        return imageUrls;
-    }
 }

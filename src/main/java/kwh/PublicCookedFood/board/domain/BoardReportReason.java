@@ -1,5 +1,8 @@
 package kwh.PublicCookedFood.board.domain;
 
+import lombok.Getter;
+
+@Getter
 public enum BoardReportReason {
     SPAM("스팸/홍보"),
     ABUSE("욕설/혐오/괴롭힘"),
@@ -13,7 +16,4 @@ public enum BoardReportReason {
         this.label = label;
     }
 
-    public String getLabel() {
-        return label;
-    }
 }

@@ -1,13 +1,16 @@
 package kwh.PublicCookedFood.account.aop.recovery;
 
 import kwh.PublicCookedFood.account.audit.AccountRecoveryAuditPayload;
+import kwh.PublicCookedFood.account.audit.AuditArgumentSupport;
+
+import java.util.Objects;
 
 public class AccountRecoveryAuditArgs {
 
     private final AccountRecoveryAuditPayload payload;
 
     public AccountRecoveryAuditArgs(AccountRecoveryAuditPayload payload) {
-        this.payload = payload == null ? AccountRecoveryAuditPayload.empty() : payload;
+        this.payload = Objects.requireNonNullElse(payload, AccountRecoveryAuditPayload.empty());
     }
 
     public AccountRecoveryAuditArgs(Object[] values) {
@@ -19,35 +22,22 @@ public class AccountRecoveryAuditArgs {
     }
 
     public Long asLong(int index) {
-        Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Long longValue) {
-            return longValue;
-        }
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return null;
+        return AuditArgumentSupport.asLong(valueAt(index));
     }
 
     public String asString(int index) {
-        Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
-        return String.valueOf(value);
+        return AuditArgumentSupport.asString(valueAt(index));
     }
 
     public Throwable asThrowable(int index) {
-        Object value = valueAt(index);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Throwable throwable) {
-            return throwable;
-        }
-        return null;
+        return AuditArgumentSupport.asThrowable(valueAt(index));
+    }
+
+    public String displayId(Long value) {
+        return AuditArgumentSupport.displayId(value);
+    }
+
+    public String displayText(String value) {
+        return AuditArgumentSupport.displayText(value);
     }
 }

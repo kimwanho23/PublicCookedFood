@@ -7,7 +7,6 @@ import kwh.PublicCookedFood.metrics.reco.RecipeScoreEventPublisher;
 import kwh.PublicCookedFood.metrics.view.RecipeStatsMutationService;
 import kwh.PublicCookedFood.account.domain.Bookmark;
 import kwh.PublicCookedFood.account.domain.Account;
-import kwh.PublicCookedFood.account.dto.request.BookmarkCreateRequest;
 import kwh.PublicCookedFood.account.repository.BookmarkRepository;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,10 +39,10 @@ public class BookmarkService {
     }
 
     @Transactional
-    public Bookmark save(BookmarkCreateRequest bookmark) {
-        Account account = accountRepository.findById(bookmark.getAccountId())
+    public Bookmark save(BookmarkCreateCommand command) {
+        Account account = accountRepository.findById(command.accountId())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
-        Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(bookmark.getRecipeID())
+        Recipe_INFO recipe = recipeInfoRepository.findByRecipeID(command.recipeId())
                 .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
         try {
             return bookmarkRepository.findByAccountAndRecipeID(account, recipe)

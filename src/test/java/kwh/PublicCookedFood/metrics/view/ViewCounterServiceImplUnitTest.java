@@ -1,7 +1,11 @@
 package kwh.PublicCookedFood.metrics.view;
 
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.board.domain.Board;
+import kwh.PublicCookedFood.board.domain.BoardStats;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
+import kwh.PublicCookedFood.board.repository.BoardStatsRepository;
+import kwh.PublicCookedFood.board.service.BoardViewCounterServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -47,21 +51,19 @@ class ViewCounterServiceImplUnitTest {
     private SetOperations<String, String> setOperations;
 
     @InjectMocks
-    private ViewCounterServiceImpl viewCounterService;
+    private BoardViewCounterServiceImpl viewCounterService;
 
     @Test
     void increaseBoardViewAndGet_usesDbWhenRedisDisabled() {
         ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
-        when(boardRepository.updateViews(1L, SoftDeleteState.ACTIVE)).thenReturn(1);
-        when(boardRepository.findViewsByIdAndState(1L, SoftDeleteState.ACTIVE))
-                .thenReturn(Optional.of(11L), Optional.of(11L));
         when(boardRepository.existsByIdAndStateAndHiddenByReportFalse(1L, SoftDeleteState.ACTIVE)).thenReturn(true);
-        when(boardStatsRepository.updateTotalViews(1L, 11L)).thenReturn(1);
+        when(boardStatsRepository.addViews(1L, 1L)).thenReturn(1);
+        when(boardStatsRepository.findTotalViewsByBoardId(1L)).thenReturn(Optional.of(11L));
 
         long result = viewCounterService.increaseBoardViewAndGet(1L);
 
         assertThat(result).isEqualTo(11L);
-        verify(boardRepository).updateViews(1L, SoftDeleteState.ACTIVE);
+        verify(boardStatsRepository).addViews(1L, 1L);
         verify(redisTemplateProvider, never()).getIfAvailable();
     }
 
@@ -79,7 +81,6 @@ class ViewCounterServiceImplUnitTest {
         long result = viewCounterService.increaseBoardViewAndGet(2L);
 
         assertThat(result).isEqualTo(21L);
-        verify(boardRepository, never()).updateViews(2L, SoftDeleteState.ACTIVE);
         verify(valueOperations).setIfAbsent(ViewCounterRedisKeys.boardTotalKey(2L), "20");
         verify(setOperations).add(ViewCounterRedisKeys.BOARD_DIRTY_SET_KEY, "2");
     }
@@ -97,7 +98,6 @@ class ViewCounterServiceImplUnitTest {
         long result = viewCounterService.increaseBoardViewAndGet(4L);
 
         assertThat(result).isEqualTo(101L);
-        verify(boardRepository, never()).findViewsByIdAndState(4L, SoftDeleteState.ACTIVE);
         verify(valueOperations, never()).setIfAbsent(ViewCounterRedisKeys.boardTotalKey(4L), "100");
     }
 
@@ -105,17 +105,48 @@ class ViewCounterServiceImplUnitTest {
     void increaseBoardViewAndGet_fallsBackToDbOnRedisFailure() {
         ReflectionTestUtils.setField(viewCounterService, "redisEnabled", true);
         when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
-        when(boardRepository.updateViews(3L, SoftDeleteState.ACTIVE)).thenReturn(1);
-        when(boardRepository.findViewsByIdAndState(3L, SoftDeleteState.ACTIVE))
-                .thenReturn(Optional.of(31L), Optional.of(31L));
         when(boardRepository.existsByIdAndStateAndHiddenByReportFalse(3L, SoftDeleteState.ACTIVE)).thenReturn(true);
-        when(boardStatsRepository.updateTotalViews(3L, 31L)).thenReturn(1);
+        when(boardStatsRepository.addViews(3L, 1L)).thenReturn(1);
+        when(boardStatsRepository.findTotalViewsByBoardId(3L)).thenReturn(Optional.of(31L));
         when(redisTemplate.opsForValue()).thenThrow(new DataAccessResourceFailureException("redis down"));
 
         long result = viewCounterService.increaseBoardViewAndGet(3L);
 
         assertThat(result).isEqualTo(31L);
-        verify(boardRepository).updateViews(3L, SoftDeleteState.ACTIVE);
+        verify(boardStatsRepository).addViews(3L, 1L);
+    }
+
+    @Test
+    void increaseBoardViewAndGet_returnsCurrentStatsWhenStatsWriteFails() {
+        ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
+        when(boardRepository.existsByIdAndStateAndHiddenByReportFalse(14L, SoftDeleteState.ACTIVE)).thenReturn(true);
+        when(boardStatsRepository.addViews(14L, 1L))
+                .thenThrow(new DataAccessResourceFailureException("board_stats unavailable"));
+        when(boardStatsRepository.findTotalViewsByBoardId(14L)).thenReturn(Optional.of(41L));
+
+        long result = viewCounterService.increaseBoardViewAndGet(14L);
+
+        assertThat(result).isEqualTo(41L);
+    }
+
+    @Test
+    void increaseBoardViewAndGet_initializesStatsFromLockedBoardWhenMissing() {
+        ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
+        Board board = Board.builder()
+                .id(15L)
+                .state(SoftDeleteState.ACTIVE)
+                .hiddenByReport(false)
+                .build();
+        when(boardRepository.existsByIdAndStateAndHiddenByReportFalse(15L, SoftDeleteState.ACTIVE)).thenReturn(true);
+        when(boardStatsRepository.addViews(15L, 1L)).thenReturn(0, 0, 1);
+        when(boardRepository.findByIdAndStateAndHiddenByReportFalseForUpdate(15L, SoftDeleteState.ACTIVE))
+                .thenReturn(Optional.of(board));
+        when(boardStatsRepository.findTotalViewsByBoardId(15L)).thenReturn(Optional.of(1L));
+
+        long result = viewCounterService.increaseBoardViewAndGet(15L);
+
+        assertThat(result).isEqualTo(1L);
+        verify(boardStatsRepository).save(org.mockito.ArgumentMatchers.any(BoardStats.class));
     }
 
     @Test
@@ -133,69 +164,47 @@ class ViewCounterServiceImplUnitTest {
     }
 
     @Test
-    void getBoardViewCounts_usesStatsThenBoardFallback() {
+    void getBoardViewCount_returnsZeroWhenStatsRowIsMissing() {
+        ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
+        when(boardStatsRepository.findTotalViewsByBoardId(6L)).thenReturn(Optional.empty());
+
+        long result = viewCounterService.getBoardViewCount(6L);
+
+        assertThat(result).isZero();
+    }
+
+    @Test
+    void getBoardViewCounts_defaultsMissingStatsRowsToZero() {
         ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
         when(boardStatsRepository.findViewCountsByBoardIdIn(Set.of(1L, 2L)))
                 .thenReturn(List.of(statsRow(1L, 10L)));
-        when(boardRepository.findViewsByIdInAndState(Set.of(2L), SoftDeleteState.ACTIVE))
-                .thenReturn(List.of(boardRow(2L, 20L)));
 
         Map<Long, Long> result = viewCounterService.getBoardViewCounts(List.of(1L, 2L));
 
         assertThat(result).containsEntry(1L, 10L);
-        assertThat(result).containsEntry(2L, 20L);
+        assertThat(result).containsEntry(2L, 0L);
     }
 
     @Test
-    void getBoardViewCounts_fallsBackToBoardWhenStatsQueryFails() {
+    void getBoardViewCounts_propagatesWhenStatsQueryFails() {
         ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
         when(boardStatsRepository.findViewCountsByBoardIdIn(Set.of(7L)))
                 .thenThrow(new DataAccessResourceFailureException("board_stats missing"));
-        when(boardRepository.findViewsByIdInAndState(Set.of(7L), SoftDeleteState.ACTIVE))
-                .thenReturn(List.of(boardRow(7L, 70L)));
 
-        Map<Long, Long> result = viewCounterService.getBoardViewCounts(List.of(7L));
-
-        assertThat(result).containsEntry(7L, 70L);
+        assertThatThrownBy(() -> viewCounterService.getBoardViewCounts(List.of(7L)))
+                .isInstanceOf(DataAccessResourceFailureException.class)
+                .hasMessageContaining("board_stats missing");
     }
 
     @Test
-    void getBoardViewCount_fallsBackToBoardWhenStatsQueryFails() {
+    void getBoardViewCount_propagatesWhenStatsQueryFails() {
         ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
         when(boardStatsRepository.findTotalViewsByBoardId(8L))
                 .thenThrow(new DataAccessResourceFailureException("board_stats missing"));
-        when(boardRepository.findViewsByIdAndState(8L, SoftDeleteState.ACTIVE))
-                .thenReturn(Optional.of(81L));
 
-        long result = viewCounterService.getBoardViewCount(8L);
-
-        assertThat(result).isEqualTo(81L);
-    }
-
-    @Test
-    void getBoardViewCount_propagatesWhenBoardFallbackQueryFails() {
-        ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
-        when(boardStatsRepository.findTotalViewsByBoardId(12L))
-                .thenThrow(new DataAccessResourceFailureException("board_stats missing"));
-        when(boardRepository.findViewsByIdAndState(12L, SoftDeleteState.ACTIVE))
-                .thenThrow(new DataAccessResourceFailureException("board table unavailable"));
-
-        assertThatThrownBy(() -> viewCounterService.getBoardViewCount(12L))
+        assertThatThrownBy(() -> viewCounterService.getBoardViewCount(8L))
                 .isInstanceOf(DataAccessResourceFailureException.class)
-                .hasMessageContaining("board table unavailable");
-    }
-
-    @Test
-    void getBoardViewCounts_propagatesWhenBoardFallbackQueryFails() {
-        ReflectionTestUtils.setField(viewCounterService, "redisEnabled", false);
-        when(boardStatsRepository.findViewCountsByBoardIdIn(Set.of(13L)))
-                .thenThrow(new DataAccessResourceFailureException("board_stats missing"));
-        when(boardRepository.findViewsByIdInAndState(Set.of(13L), SoftDeleteState.ACTIVE))
-                .thenThrow(new DataAccessResourceFailureException("board table unavailable"));
-
-        assertThatThrownBy(() -> viewCounterService.getBoardViewCounts(List.of(13L)))
-                .isInstanceOf(DataAccessResourceFailureException.class)
-                .hasMessageContaining("board table unavailable");
+                .hasMessageContaining("board_stats missing");
     }
 
     private BoardStatsRepository.BoardViewCountProjection statsRow(Long boardId, Long totalViews) {
@@ -208,20 +217,6 @@ class ViewCounterServiceImplUnitTest {
             @Override
             public Long getTotalViews() {
                 return totalViews;
-            }
-        };
-    }
-
-    private BoardRepository.BoardViewCountProjection boardRow(Long boardId, Long views) {
-        return new BoardRepository.BoardViewCountProjection() {
-            @Override
-            public Long getBoardId() {
-                return boardId;
-            }
-
-            @Override
-            public Long getViews() {
-                return views;
             }
         };
     }

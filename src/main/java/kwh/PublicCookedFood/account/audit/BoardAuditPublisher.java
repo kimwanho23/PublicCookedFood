@@ -26,8 +26,8 @@ public class BoardAuditPublisher {
         dispatcher.publishAccountAction(AccountActionAuditType.BOARD_COMMENT_DELETE, accountId, boardId, commentId);
     }
 
-    public void boardCommentCreate(Long accountId, Long boardId, Long commentId, Long parentId) {
-        dispatcher.publishAccountAction(AccountActionAuditType.BOARD_COMMENT_CREATE, accountId, boardId, commentId, parentId);
+    public void boardCommentCreate(Long accountId, BoardCommentAuditPayload payload) {
+        dispatcher.publishAccountAction(AccountActionAuditType.BOARD_COMMENT_CREATE, accountId, payload);
     }
 
     public void boardCommentCreateFailed(Long accountId, Long boardId, String reason) {

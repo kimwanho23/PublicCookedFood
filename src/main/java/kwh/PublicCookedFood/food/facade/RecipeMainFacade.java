@@ -1,8 +1,12 @@
 package kwh.PublicCookedFood.food.facade;
 
+import kwh.PublicCookedFood.board.application.query.BoardCardViewAssembler;
+import kwh.PublicCookedFood.board.application.query.view.BoardCardView;
 import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.service.BoardService;
-import kwh.PublicCookedFood.common.dto.request.RecipeSearchQuery;
+import kwh.PublicCookedFood.board.service.query.BoardPopularityQueryService;
+import kwh.PublicCookedFood.board.service.support.BoardStatsSummary;
+import kwh.PublicCookedFood.board.service.support.BoardStatsSummaryResolver;
+import kwh.PublicCookedFood.food.dto.request.RecipeSearchQuery;
 import kwh.PublicCookedFood.food.dto.response.RecipeCategoryGroupResponse;
 import kwh.PublicCookedFood.food.dto.response.RecipeRankingResponse;
 import kwh.PublicCookedFood.food.dto.response.recipe_info.Recipe_INFO_ResponseDto;
@@ -18,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,21 +31,24 @@ public class RecipeMainFacade {
     private static final String QUERY_INVALID_MESSAGE = "검색 조건이 유효하지 않아 기본 목록을 표시합니다.";
 
     private final RecipeService recipeService;
-    private final BoardService boardService;
+    private final BoardPopularityQueryService boardPopularityQueryService;
     private final RecipeReviewService recipeReviewService;
     private final RecipeRecoSnapshotService recipeRecoSnapshotService;
+    private final BoardStatsSummaryResolver boardStatsSummaryResolver;
+    private final BoardCardViewAssembler boardCardViewAssembler;
 
     public HomeViewData loadHomeData() {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
         LocalDateTime monthAgo = LocalDateTime.now().minusDays(30);
-        List<Board> popularBoards = boardService.getPopularBoardsSince(weekAgo, 6);
+        List<Board> popularBoards = boardPopularityQueryService.getPopularBoardsSince(weekAgo, 6);
         List<RecipeRankingResponse> recipeRankings = recipeReviewService.getTopReviewRankings(monthAgo, 6);
         List<RecipeRecoSnapshotService.RecipeRecommendationItem> lunchRecommendations =
                 recipeRecoSnapshotService.loadRecommendations(RecipeRecoSnapshotService.SLOT_LUNCH, 6);
         List<RecipeRecoSnapshotService.RecipeRecommendationItem> dinnerRecommendations =
                 recipeRecoSnapshotService.loadRecommendations(RecipeRecoSnapshotService.SLOT_DINNER, 6);
+        Map<Long, BoardStatsSummary> boardStatsMap = boardStatsSummaryResolver.resolve(popularBoards);
         return new HomeViewData(
-                popularBoards,
+                boardCardViewAssembler.toList(popularBoards, boardStatsMap),
                 recipeRankings,
                 lunchRecommendations,
                 dinnerRecommendations
@@ -188,7 +196,7 @@ public class RecipeMainFacade {
                                            String keyword) {
     }
 
-    public record HomeViewData(List<Board> popularBoards,
+    public record HomeViewData(List<BoardCardView> popularBoards,
                                List<RecipeRankingResponse> recipeRankings,
                                List<RecipeRecoSnapshotService.RecipeRecommendationItem> lunchRecommendations,
                                List<RecipeRecoSnapshotService.RecipeRecommendationItem> dinnerRecommendations) {

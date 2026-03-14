@@ -2,7 +2,7 @@ package kwh.PublicCookedFood.board.repository;
 
 import kwh.PublicCookedFood.board.domain.Board;
 import kwh.PublicCookedFood.board.domain.BoardImage;
-import kwh.PublicCookedFood.board.domain.Images;
+import kwh.PublicCookedFood.storage.Images;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -21,7 +21,7 @@ public class FindEmailAuditStrategy extends AbstractAccountRecoveryAuditStrategy
 
         handlers.put(AccountRecoveryAuditType.FIND_EMAIL_SUCCESS, args -> {
             Long accountId = args.asLong(0);
-            log.info("action=account.account_recover_email result=success accountId={}", accountId);
+            log.info("action=account.account_recover_email result=success accountId={}", args.displayId(accountId));
             recorder.record(accountId, "ACCOUNT_ACCOUNT_FIND_EMAIL", null);
         });
         handlers.put(AccountRecoveryAuditType.FIND_EMAIL_NOT_FOUND,

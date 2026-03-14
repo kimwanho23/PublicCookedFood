@@ -28,22 +28,26 @@ public class AccountBlockAuditStrategy extends AbstractAccountActionAuditStrateg
         handlers.put(AccountActionAuditType.ACCOUNT_BLOCK_SKIPPED_DUPLICATE, args -> {
             Long blockerId = args.asLong(0);
             Long targetAccountId = args.asLong(1);
-            log.info("action=account.block result=skipped_duplicate blockerId={} blockedId={}", blockerId, targetAccountId);
+            log.info("action=account.block result=skipped_duplicate blockerId={} blockedId={}",
+                    args.displayId(blockerId), args.displayId(targetAccountId));
         });
         handlers.put(AccountActionAuditType.ACCOUNT_UNBLOCK_SKIPPED_NOT_FOUND, args -> {
             Long blockerId = args.asLong(0);
             Long targetAccountId = args.asLong(1);
-            log.info("action=account.unblock result=skipped_not_found blockerId={} blockedId={}", blockerId, targetAccountId);
+            log.info("action=account.unblock result=skipped_not_found blockerId={} blockedId={}",
+                    args.displayId(blockerId), args.displayId(targetAccountId));
         });
         handlers.put(AccountActionAuditType.ACCOUNT_BLOCK_FAILED_UNAUTHENTICATED, args -> {
             Long targetAccountId = args.asLong(0);
-            log.warn("action=account.block result=failed reason=unauthenticated targetAccountId={}", targetAccountId);
+            log.warn("action=account.block result=failed reason=unauthenticated targetAccountId={}",
+                    args.displayId(targetAccountId));
         });
         handlers.put(AccountActionAuditType.ACCOUNT_BLOCK_FAILED,
                 args -> logWarnWithOptionalThrowable("action=account.block result=failed blockerId={} blockedId={} reason={}", args));
         handlers.put(AccountActionAuditType.ACCOUNT_UNBLOCK_FAILED_UNAUTHENTICATED, args -> {
             Long targetAccountId = args.asLong(0);
-            log.warn("action=account.unblock result=failed reason=unauthenticated targetAccountId={}", targetAccountId);
+            log.warn("action=account.unblock result=failed reason=unauthenticated targetAccountId={}",
+                    args.displayId(targetAccountId));
         });
         handlers.put(AccountActionAuditType.ACCOUNT_UNBLOCK_FAILED,
                 args -> logWarnWithOptionalThrowable("action=account.unblock result=failed blockerId={} blockedId={} reason={}", args));
@@ -58,8 +62,8 @@ public class AccountBlockAuditStrategy extends AbstractAccountActionAuditStrateg
             String activityType) {
         Long blockerId = args.asLong(0);
         Long targetAccountId = args.asLong(1);
-        log.info(logMessage, blockerId, targetAccountId);
-        recorder.record(blockerId, activityType, "targetAccountId=" + args.safeId(targetAccountId));
+        log.info(logMessage, args.displayId(blockerId), args.displayId(targetAccountId));
+        recorder.record(blockerId, activityType, "targetAccountId=" + args.displayId(targetAccountId));
     }
 
     private static void logWarnWithOptionalThrowable(String message, AccountActionAuditArgs args) {
@@ -68,10 +72,14 @@ public class AccountBlockAuditStrategy extends AbstractAccountActionAuditStrateg
         String reason = args.asString(2);
         Throwable throwable = args.asThrowable(3);
         if (throwable == null) {
-            log.warn(message, blockerId, blockedId, reason);
+            log.warn(message, args.displayId(blockerId), args.displayId(blockedId), args.displayText(reason));
             return;
         }
-        log.warn(message, blockerId, blockedId, reason, throwable);
+        log.warn(message,
+                args.displayId(blockerId),
+                args.displayId(blockedId),
+                args.displayText(reason),
+                throwable);
     }
 }
 

@@ -9,7 +9,8 @@
 
 <main class="page-shell">
     <div class="container">
-        <section class="section-wrap overflow-hidden" th:object="${boardDto}">
+        <section class="section-wrap overflow-hidden"
+                 th:with="board=${view.board}, counters=${view.counters}, actions=${view.actions}, thread=${view.commentThread}, comments=${view.commentThread.comments}, boardId=${view.boardId}, reportReasons=${view.reportReasons}">
             <div class="p-4 pb-0">
                 <div th:if="${reportSuccess != null}" class="alert alert-success py-2 mb-3" th:text="${reportSuccess}">신고 접수 완료</div>
                 <div th:if="${reportError != null}" class="alert alert-danger py-2 mb-3" th:text="${reportError}">신고 실패</div>
@@ -18,87 +19,87 @@
             </div>
             <header class="p-4 border-bottom bg-white">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    <span class="badge text-bg-light" th:text="${boardDto.sectionName != null ? boardDto.sectionName : '미분류'}">탭</span>
-                    <span class="text-muted-soft small" th:text="${#temporals.format(boardDto.regTime, 'yyyy.MM.dd HH:mm')}">작성일</span>
+                    <span class="badge text-bg-light" th:text="${board.sectionName != null ? board.sectionName : '미분류'}">탭</span>
+                    <span class="text-muted-soft small" th:text="${#temporals.format(board.regTime, 'yyyy.MM.dd HH:mm')}">작성일</span>
                 </div>
-                <h1 class="h4 mb-3" th:text="${boardDto.title}">게시글 제목</h1>
+                <h1 class="h4 mb-3" th:text="${board.title}">게시글 제목</h1>
                 <div class="d-flex flex-wrap align-items-center gap-3 text-muted-soft small">
                     <span class="d-inline-flex align-items-center gap-1">
                         <img class="comment-author-avatar"
-                             th:if="${boardDto.accountProfileImageUrl != null and !#strings.isEmpty(boardDto.accountProfileImageUrl)}"
-                             th:src="${boardDto.accountProfileImageUrl}"
+                             th:if="${board.accountProfileImageUrl != null and !#strings.isEmpty(board.accountProfileImageUrl)}"
+                             th:src="${board.accountProfileImageUrl}"
                              onerror="this.onerror=null;this.src='/img/person-black.svg';"
                              alt="작성자 프로필">
                         <img class="comment-author-avatar"
-                             th:if="${boardDto.accountProfileImageUrl == null or #strings.isEmpty(boardDto.accountProfileImageUrl)}"
+                             th:if="${board.accountProfileImageUrl == null or #strings.isEmpty(board.accountProfileImageUrl)}"
                              th:src="@{/img/person-black.svg}"
                              alt="작성자 기본 프로필">
                         <a class="nickname-link"
-                           th:if="${boardDto.accountId != null and boardDto.accountName != null}"
-                           th:href="@{/u/{accountId}(accountId=${boardDto.accountId})}"
-                           th:title="|멘션 코드: @${boardDto.accountName}|"
-                           th:text="${boardDto.accountName}">작성자</a>
-                        <span th:if="${boardDto.accountId == null or boardDto.accountName == null}"
-                              th:text="${boardDto.accountName != null ? boardDto.accountName : '알 수 없음'}">작성자</span>
+                           th:if="${board.accountId != null and board.accountName != null}"
+                           th:href="@{/u/{accountId}(accountId=${board.accountId})}"
+                           th:title="|멘션 코드: @${board.accountName}|"
+                           th:text="${board.accountName}">작성자</a>
+                        <span th:if="${board.accountId == null or board.accountName == null}"
+                              th:text="${board.accountName != null ? board.accountName : '알 수 없음'}">작성자</span>
                     </span>
-                    <span th:text="|조회수 ${boardDto.views}|">조회수</span>
-                    <span th:text="|추천 ${likes}|">추천</span>
-                    <span th:text="|스크랩 ${scraps}|">스크랩</span>
+                    <span th:text="|조회수 ${board.views}|">조회수</span>
+                    <span th:text="|추천 ${counters.likes}|">추천</span>
+                    <span th:text="|스크랩 ${counters.scraps}|">스크랩</span>
                 </div>
             </header>
 
             <div class="board-detail-content p-4 border-bottom">
-                <div th:utext="${boardDto.contents}" style="white-space: pre-wrap;"></div>
+                <div th:utext="${board.contents}" style="white-space: pre-wrap;"></div>
             </div>
 
             <div class="p-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
                 <div class="d-flex gap-2 flex-wrap">
                     <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-soft"
                             data-bs-toggle="modal" data-bs-target="#loginModal">
-                        <span th:text="|추천 ${likes}|"></span>
+                        <span th:text="|추천 ${counters.likes}|"></span>
                     </button>
 
-                    <form id="likeForm" th:action="@{/boards/{id}/likes(id=${id})}" method="post" sec:authorize="isAuthenticated()">
+                    <form id="likeForm" th:action="@{/boards/{id}/likes(id=${boardId})}" method="post" sec:authorize="isAuthenticated()">
                         <input type="hidden" name="_method" value="put">
                         <input type="hidden" name="redirect"
-                               th:value="|/boards/${id}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
-                        <button type="submit" th:if="${myLike == null or !myLike}" class="btn btn-soft">
-                            <span th:text="|추천 ${likes}|"></span>
+                               th:value="|/boards/${boardId}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
+                        <button type="submit" th:if="${!actions.myLike}" class="btn btn-soft">
+                            <span th:text="|추천 ${counters.likes}|"></span>
                         </button>
                     </form>
 
-                    <button type="button" th:if="${myLike}" class="btn btn-soft" data-bs-toggle="modal" data-bs-target="#likeModal">
-                        <span th:text="|추천 ${likes}|"></span>
+                    <button type="button" th:if="${actions.myLike}" class="btn btn-soft" data-bs-toggle="modal" data-bs-target="#likeModal">
+                        <span th:text="|추천 ${counters.likes}|"></span>
                     </button>
 
                     <button type="button" sec:authorize="!isAuthenticated()" class="btn btn-soft"
                             data-bs-toggle="modal" data-bs-target="#loginModal">
-                        <span th:text="|스크랩 ${scraps}|"></span>
+                        <span th:text="|스크랩 ${counters.scraps}|"></span>
                     </button>
 
-                    <form th:if="${myScrap == null or !myScrap}" sec:authorize="isAuthenticated()"
-                          th:action="@{/boards/{id}/scraps(id=${id})}" method="post">
+                    <form th:if="${!actions.myScrap}" sec:authorize="isAuthenticated()"
+                          th:action="@{/boards/{id}/scraps(id=${boardId})}" method="post">
                         <input type="hidden" name="redirect"
-                               th:value="|/boards/${id}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
+                               th:value="|/boards/${boardId}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
                         <button type="submit" class="btn btn-soft">
-                            <span th:text="|스크랩 ${scraps}|"></span>
+                            <span th:text="|스크랩 ${counters.scraps}|"></span>
                         </button>
                     </form>
 
-                    <form th:if="${myScrap}" sec:authorize="isAuthenticated()"
-                          th:action="@{/boards/{id}/scraps/delete(id=${id})}" method="post">
+                    <form th:if="${actions.myScrap}" sec:authorize="isAuthenticated()"
+                          th:action="@{/boards/{id}/scraps/delete(id=${boardId})}" method="post">
                         <input type="hidden" name="_method" value="patch">
                         <input type="hidden" name="redirect"
-                               th:value="|/boards/${id}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
+                               th:value="|/boards/${boardId}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
                         <button type="submit" class="btn btn-soft">
-                            <span th:text="|스크랩 취소 ${scraps}|"></span>
+                            <span th:text="|스크랩 취소 ${counters.scraps}|"></span>
                         </button>
                     </form>
 
                     <button type="button"
                             id="shareBoardButton"
                             class="btn btn-soft"
-                            th:attr="data-share-url=@{/boards/{id}(id=${id})}"
+                            th:attr="data-share-url=@{/boards/{id}(id=${boardId})}"
                             aria-label="게시글 공유"
                             title="게시글 링크 공유">
                         공유
@@ -111,7 +112,7 @@
 
                     <button type="button"
                             sec:authorize="isAuthenticated()"
-                            th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and (myReport == null or !myReport)}"
+                            th:if="${actions.currentAccountId != null and actions.currentAccountId != board.accountId and !actions.myReport}"
                             class="btn btn-soft-danger btn-action-danger"
                             data-bs-toggle="modal"
                             data-bs-target="#reportModal">
@@ -120,68 +121,68 @@
 
                     <button type="button"
                             sec:authorize="isAuthenticated()"
-                            th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and myReport}"
+                            th:if="${actions.currentAccountId != null and actions.currentAccountId != board.accountId and actions.myReport}"
                             class="btn btn-soft-danger btn-action-danger"
                             disabled>
                         신고 완료
                     </button>
 
                     <form sec:authorize="isAuthenticated()"
-                          th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and !myBlockedAuthor}"
-                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${boardDto.accountId})}"
+                          th:if="${actions.currentAccountId != null and actions.currentAccountId != board.accountId and !actions.myBlockedAuthor}"
+                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${board.accountId})}"
                           method="post">
                         <input type="hidden" name="redirect"
-                               th:value="|/boards/${id}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
+                               th:value="|/boards/${boardId}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
                         <button type="submit" class="btn btn-soft-danger btn-action-danger">작성자 차단</button>
                     </form>
 
                     <form sec:authorize="isAuthenticated()"
-                          th:if="${currentAccountId != null and currentAccountId != boardDto.accountId and myBlockedAuthor}"
-                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${boardDto.accountId})}"
+                          th:if="${actions.currentAccountId != null and actions.currentAccountId != board.accountId and actions.myBlockedAuthor}"
+                          th:action="@{/u/blocks/{targetAccountId}(targetAccountId=${board.accountId})}"
                           method="post">
                         <input type="hidden" name="_method" value="patch">
                         <input type="hidden" name="redirect"
-                               th:value="|/boards/${id}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
+                               th:value="|/boards/${boardId}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
                         <button type="submit" class="btn btn-soft">차단 해제</button>
                     </form>
                 </div>
 
-                <div class="d-flex gap-2" th:if="${currentAccountId != null and currentAccountId == boardDto.accountId}" sec:authorize="isAuthenticated()">
-                    <a class="btn btn-outline-secondary" th:href="@{/boards/{id}/edit(id=${id})}">수정</a>
+                <div class="d-flex gap-2" th:if="${actions.currentAccountId != null and actions.currentAccountId == board.accountId}" sec:authorize="isAuthenticated()">
+                    <a class="btn btn-outline-secondary" th:href="@{/boards/{id}/edit(id=${boardId})}">수정</a>
                     <button type="button" class="btn btn-soft-danger btn-action-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">삭제</button>
                 </div>
             </div>
 
             <section id="board-comments" class="p-4 border-bottom">
-                <h2 class="h6 mb-3" th:text="|댓글 ${commentsCount}개|">댓글</h2>
-                <div th:if="${commentsCount == 0}" class="text-muted-soft">첫 댓글을 남겨보세요.</div>
+                <h2 class="h6 mb-3" th:text="|댓글 ${counters.commentsCount}개|">댓글</h2>
+                <div th:if="${counters.commentsCount == 0}" class="text-muted-soft">첫 댓글을 남겨보세요.</div>
                 <div class="gap-3" th:each="comment : ${comments}">
-                    <div th:replace="~{fragments/commentFragment :: commentFragment(${comment})}"></div>
+                    <div th:replace="~{fragments/commentFragment :: commentFragment(${comment}, ${thread})}"></div>
                 </div>
                 <nav th:if="${comments != null and comments.totalPages > 1}" class="mt-4" aria-label="댓글 페이지 이동">
                     <ul class="pagination justify-content-center mb-0">
                         <li class="page-item" th:classappend="${comments.first} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{|/boards/${id}?commentPage=${comments.number - 1}&commentSize=${comments.size}#board-comments|}">이전</a>
+                               th:href="@{|/boards/${boardId}?commentPage=${comments.number - 1}&commentSize=${comments.size}#board-comments|}">이전</a>
                         </li>
                         <li class="page-item"
                             th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
                             th:classappend="${pageNum == comments.number} ? ' active'">
                             <a class="page-link"
                                th:text="${pageNum + 1}"
-                               th:href="@{|/boards/${id}?commentPage=${pageNum}&commentSize=${comments.size}#board-comments|}">1</a>
+                               th:href="@{|/boards/${boardId}?commentPage=${pageNum}&commentSize=${comments.size}#board-comments|}">1</a>
                         </li>
                         <li class="page-item" th:classappend="${comments.last} ? ' disabled'">
                             <a class="page-link"
-                               th:href="@{|/boards/${id}?commentPage=${comments.number + 1}&commentSize=${comments.size}#board-comments|}">다음</a>
+                               th:href="@{|/boards/${boardId}?commentPage=${comments.number + 1}&commentSize=${comments.size}#board-comments|}">다음</a>
                         </li>
                     </ul>
                 </nav>
             </section>
 
-            <section class="p-4" sec:authorize="isAuthenticated()" th:if="${boardInteractionBlocked == null or !boardInteractionBlocked}">
+            <section class="p-4" sec:authorize="isAuthenticated()" th:if="${!actions.boardInteractionBlocked}">
                 <h3 class="h6 mb-3">댓글 작성</h3>
-                <form th:action="@{/boards/{id}/comments(id=${boardDto.getId()})}" method="post">
+                <form th:action="@{/boards/{id}/comments(id=${boardId})}" method="post">
                     <input type="hidden" name="commentPage" th:value="${comments != null ? comments.number : 0}">
                     <input type="hidden" name="commentSize" th:value="${comments != null ? comments.size : 50}">
                     <label for="commentContents" class="visually-hidden">댓글 내용</label>
@@ -201,20 +202,20 @@
                 </form>
             </section>
 
-            <section class="p-4 text-muted-soft" sec:authorize="isAuthenticated()" th:if="${boardInteractionBlocked != null and boardInteractionBlocked}">
+            <section class="p-4 text-muted-soft" sec:authorize="isAuthenticated()" th:if="${actions.boardInteractionBlocked}">
                 차단 관계인 사용자와는 댓글을 주고받을 수 없습니다.
             </section>
         </section>
 
-        <div th:replace="~{fragments/deleteFragment :: deleteModal(@{/boards/{id}/delete(id=${boardDto.id})})}"></div>
+        <div th:replace="~{fragments/deleteFragment :: deleteModal(@{/boards/{id}/delete(id=${view.boardId})})}"></div>
         <div th:replace="~{fragments/loginFragment :: loginModal}"></div>
         <div th:replace="~{fragments/likeFragment :: likeModal}"></div>
         <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true" sec:authorize="isAuthenticated()">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <form th:action="@{/boards/{id}/reports(id=${id})}" method="post">
+                    <form th:action="@{/boards/{id}/reports(id=${view.boardId})}" method="post">
                         <input type="hidden" name="redirect"
-                               th:value="|/boards/${id}?commentPage=${comments != null ? comments.number : 0}&commentSize=${comments != null ? comments.size : 50}#board-comments|">
+                               th:value="|/boards/${view.boardId}?commentPage=${view.comments != null ? view.comments.number : 0}&commentSize=${view.comments != null ? view.comments.size : 50}#board-comments|">
                         <div class="modal-header">
                             <h2 class="modal-title fs-5" id="reportModalLabel">게시글 신고</h2>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
@@ -223,7 +224,7 @@
                             <label for="reportReason" class="form-label">신고 사유</label>
                             <select id="reportReason" name="reason" class="form-select" required>
                                 <option value="" selected disabled>사유를 선택하세요</option>
-                                <option th:each="reason : ${reportReasons}"
+                                <option th:each="reason : ${view.reportReasons}"
                                         th:value="${reason.name()}"
                                         th:text="${reason.label}">
                                     신고 사유

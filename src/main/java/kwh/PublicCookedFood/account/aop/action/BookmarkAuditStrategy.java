@@ -22,26 +22,30 @@ public class BookmarkAuditStrategy extends AbstractAccountActionAuditStrategy {
         handlers.put(AccountActionAuditType.BOOKMARK_ADD, args -> {
             Long accountId = args.asLong(0);
             Long recipeId = args.asLong(1);
-            log.info("action=bookmark.add result=success accountId={} recipeId={}", accountId, recipeId);
-            recorder.record(accountId, "BOOKMARK_ADD", "recipeId=" + args.safeId(recipeId));
+            log.info("action=bookmark.add result=success accountId={} recipeId={}",
+                    args.displayId(accountId), args.displayId(recipeId));
+            recorder.record(accountId, "BOOKMARK_ADD", "recipeId=" + args.displayId(recipeId));
         });
         handlers.put(AccountActionAuditType.BOOKMARK_REMOVE, args -> {
             Long accountId = args.asLong(0);
             Long recipeId = args.asLong(1);
-            log.info("action=bookmark.remove result=success accountId={} recipeId={}", accountId, recipeId);
-            recorder.record(accountId, "BOOKMARK_REMOVE", "recipeId=" + args.safeId(recipeId));
+            log.info("action=bookmark.remove result=success accountId={} recipeId={}",
+                    args.displayId(accountId), args.displayId(recipeId));
+            recorder.record(accountId, "BOOKMARK_REMOVE", "recipeId=" + args.displayId(recipeId));
         });
         handlers.put(AccountActionAuditType.BOOKMARK_ADD_FAILED, args -> {
             Long accountId = args.asLong(0);
             Long recipeId = args.asLong(1);
             String reason = args.asString(2);
-            log.warn("action=bookmark.add result=failed accountId={} recipeId={} reason={}", accountId, recipeId, reason);
+            log.warn("action=bookmark.add result=failed accountId={} recipeId={} reason={}",
+                    args.displayId(accountId), args.displayId(recipeId), args.displayText(reason));
         });
         handlers.put(AccountActionAuditType.BOOKMARK_REMOVE_FAILED, args -> {
             Long accountId = args.asLong(0);
             Long recipeId = args.asLong(1);
             String reason = args.asString(2);
-            log.warn("action=bookmark.remove result=failed accountId={} recipeId={} reason={}", accountId, recipeId, reason);
+            log.warn("action=bookmark.remove result=failed accountId={} recipeId={} reason={}",
+                    args.displayId(accountId), args.displayId(recipeId), args.displayText(reason));
         });
 
         return handlers;

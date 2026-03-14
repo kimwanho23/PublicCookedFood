@@ -22,18 +22,21 @@ public class ResetPasswordCodeAuditStrategy extends AbstractAccountRecoveryAudit
             String email = args.asString(0);
             Throwable throwable = args.asThrowable(1);
             if (throwable == null) {
-                log.warn("action=account.account_reset_password_code result=mail_unavailable email={}", email);
+                log.warn("action=account.account_reset_password_code result=mail_unavailable email={}",
+                        args.displayText(email));
                 return;
             }
-            log.warn("action=account.account_reset_password_code result=mail_unavailable email={}", email, throwable);
+            log.warn("action=account.account_reset_password_code result=mail_unavailable email={}",
+                    args.displayText(email), throwable);
         });
         handlers.put(AccountRecoveryAuditType.RESET_PASSWORD_CODE_ISSUED, args -> {
             String email = args.asString(0);
-            log.info("action=account.account_reset_password_code result=issued email={}", email);
+            log.info("action=account.account_reset_password_code result=issued email={}", args.displayText(email));
         });
         handlers.put(AccountRecoveryAuditType.RESET_PASSWORD_CODE_NOT_FOUND_OR_SKIPPED, args -> {
             String email = args.asString(0);
-            log.info("action=account.account_reset_password_code result=not_found_or_skipped email={}", email);
+            log.info("action=account.account_reset_password_code result=not_found_or_skipped email={}",
+                    args.displayText(email));
         });
 
         return handlers;

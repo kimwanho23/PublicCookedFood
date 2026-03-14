@@ -1,11 +1,12 @@
 package kwh.PublicCookedFood.board.service;
 
 import kwh.PublicCookedFood.board.domain.Board;
-import kwh.PublicCookedFood.board.domain.SoftDeleteState;
+import kwh.PublicCookedFood.common.persistence.SoftDeleteState;
 import kwh.PublicCookedFood.board.repository.BoardRepository;
 import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.domain.Account;
 import kwh.PublicCookedFood.account.repository.AccountRepository;
+import kwh.PublicCookedFood.board.repository.BoardStatsRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BoardViewCountConcurrencyIntegrationTest {
 
     @Autowired
-    private BoardService boardService;
+    private BoardCounterService boardCounterService;
 
     @Autowired
     private BoardRepository boardRepository;
@@ -34,8 +35,12 @@ class BoardViewCountConcurrencyIntegrationTest {
     @Autowired
     private AccountRepository accountRepository;
 
+    @Autowired
+    private BoardStatsRepository boardStatsRepository;
+
     @AfterEach
     void cleanUp() {
+        boardStatsRepository.deleteAll();
         boardRepository.deleteAll();
         accountRepository.deleteAll();
     }
@@ -53,7 +58,7 @@ class BoardViewCountConcurrencyIntegrationTest {
         for (int i = 0; i < requestCount; i++) {
             futures.add(executor.submit(() -> {
                 start.await();
-                boardService.updateViews(boardId);
+                boardCounterService.increaseViewsAndGet(boardId);
                 return null;
             }));
         }
@@ -67,10 +72,9 @@ class BoardViewCountConcurrencyIntegrationTest {
         executor.shutdown();
         assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
-        Long actualViews = boardRepository.findById(boardId)
-                .orElseThrow()
-                .getViews();
+        long actualViews = boardCounterService.getViews(boardId);
         assertThat(actualViews).isEqualTo((long) requestCount);
+        assertThat(boardStatsRepository.findTotalViewsByBoardId(boardId)).contains((long) requestCount);
     }
 
     @Test
@@ -79,12 +83,10 @@ class BoardViewCountConcurrencyIntegrationTest {
         board.updateHiddenByReport(true);
         boardRepository.saveAndFlush(board);
 
-        boardService.updateViews(board.getId());
+        boardCounterService.increaseViewsAndGet(board.getId());
 
-        Long actualViews = boardRepository.findById(board.getId())
-                .orElseThrow()
-                .getViews();
-        assertThat(actualViews).isZero();
+        assertThat(boardCounterService.getViews(board.getId())).isZero();
+        assertThat(boardStatsRepository.findTotalViewsByBoardId(board.getId())).isEmpty();
     }
 
     private Board createBoardWithZeroViews() {
@@ -99,9 +101,6 @@ class BoardViewCountConcurrencyIntegrationTest {
                 .title("view count test")
                 .contents("content")
                 .account(account)
-                .views(0L)
-                .likeCount(0L)
-                .commentCount(0L)
                 .state(SoftDeleteState.ACTIVE)
                 .hiddenByReport(false)
                 .build();

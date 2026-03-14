@@ -1,10 +1,12 @@
 package kwh.PublicCookedFood.account.facade;
 
 import jakarta.servlet.http.HttpServletRequest;
-import kwh.PublicCookedFood.board.service.ImageService;
+import kwh.PublicCookedFood.storage.ImageLifecycleService;
+import kwh.PublicCookedFood.storage.ImageUrls;
 import kwh.PublicCookedFood.common.error.AppException;
 import kwh.PublicCookedFood.account.audit.AccountAuditPublisher;
 import kwh.PublicCookedFood.account.domain.Account;
+import kwh.PublicCookedFood.account.domain.Role;
 import kwh.PublicCookedFood.account.dto.CustomAccountDetails;
 import kwh.PublicCookedFood.account.dto.request.AccountSaveDto;
 import kwh.PublicCookedFood.account.service.AccountService;
@@ -27,7 +29,7 @@ public class AccountAuthFacade {
     private final AccountService accountService;
     private final AccountAuditPublisher accountAuditPublisher;
     private final PasswordEncoder passwordEncoder;
-    private final ImageService imageService;
+    private final ImageLifecycleService imageLifecycleService;
 
     public void rememberPreviousPage(HttpServletRequest request, String currentPath) {
         if (request == null) {
@@ -42,9 +44,22 @@ public class AccountAuthFacade {
     @Transactional
     public SignupResult signup(AccountSaveDto accountSaveDto) {
         try {
-            Account account = Account.createAccount(accountSaveDto, passwordEncoder);
+            Account account = Account.builder()
+                    .name(accountSaveDto.getName())
+                    .email(accountSaveDto.getEmail())
+                    .password(passwordEncoder.encode(accountSaveDto.getPassword()))
+                    .phoneNumber(accountSaveDto.getPhoneNumber())
+                    .birthDate(accountSaveDto.getBirthDate())
+                    .gender(accountSaveDto.getGender())
+                    .address(accountSaveDto.getAddress())
+                    .addressDetail(accountSaveDto.getAddressDetail())
+                    .profileImageUrl(accountSaveDto.getProfileImageUrl())
+                    .notificationEnabled(true)
+                    .authority(Role.USER)
+                    .loginMethod("Current")
+                    .build();
             Account savedAccount = accountService.save(account);
-            imageService.attachProfileImageIfPresent(savedAccount.getProfileImageUrl());
+            imageLifecycleService.attachImagesIfPresent(ImageUrls.single(savedAccount.getProfileImageUrl()));
             accountAuditPublisher.accountSignup(savedAccount.getId(), savedAccount.getEmail());
             return SignupResult.succeeded();
         } catch (AppException e) {
