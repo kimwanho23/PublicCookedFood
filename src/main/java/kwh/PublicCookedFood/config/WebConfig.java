@@ -54,7 +54,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     private Resource resolveFileResource(Path basePath, String resourcePath) throws IOException {
-        Path resolvedPath = StoragePathUtils.resolvePathUnderDirectory(basePath, resourcePath);
+        Path resolvedPath = StoragePathUtils.resolveRelativePathUnderDirectory(basePath, resourcePath);
         if (resolvedPath == null || !Files.isRegularFile(resolvedPath)) {
             return null;
         }

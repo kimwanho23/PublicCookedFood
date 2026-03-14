@@ -46,6 +46,35 @@
         });
     }
 
+    function resolveAsyncRequestMethod(formData, form, submitter) {
+        const overriddenMethod = formData.get('_method');
+        if (typeof overriddenMethod === 'string' && overriddenMethod.trim() !== '') {
+            return overriddenMethod.trim().toUpperCase();
+        }
+        const fallbackMethod = submitter && submitter.getAttribute('formmethod')
+            ? submitter.getAttribute('formmethod')
+            : (form.method || 'post');
+        return fallbackMethod.toUpperCase();
+    }
+
+    function buildAsyncFormRequest(form, submitter) {
+        const formData = submitter ? new FormData(form, submitter) : new FormData(form);
+        const requestMethod = resolveAsyncRequestMethod(formData, form, submitter);
+        const params = new URLSearchParams();
+        formData.forEach((value, key) => {
+            if (key === '_method') {
+                return;
+            }
+            if (typeof value === 'string') {
+                params.append(key, value);
+            }
+        });
+        return {
+            requestMethod: requestMethod,
+            requestBody: requestMethod === 'GET' ? null : params
+        };
+    }
+
     function updateImagePreview(fieldRoot) {
         if (!fieldRoot) {
             return;
@@ -294,20 +323,19 @@
                 }
 
                 const submitButtons = Array.from(form.querySelectorAll('button[type="submit"]'));
-                const requestUrl = submitter && submitter.formAction ? submitter.formAction : form.action;
-                const requestMethod = submitter && submitter.getAttribute('formmethod')
-                    ? submitter.getAttribute('formmethod')
-                    : (form.method || 'post');
-                const requestBody = submitter ? new FormData(form, submitter) : new FormData(form);
+                const requestUrl = submitter && submitter.hasAttribute('formaction')
+                    ? submitter.formAction
+                    : form.action;
+                const asyncRequest = buildAsyncFormRequest(form, submitter);
                 form.dataset.submitting = 'true';
                 submitButtons.forEach((button) => {
                     button.disabled = true;
                 });
 
                 window.fetch(requestUrl, {
-                    method: requestMethod.toUpperCase(),
+                    method: asyncRequest.requestMethod,
                     headers: buildUploadHeaders(),
-                    body: requestBody,
+                    body: asyncRequest.requestBody,
                     credentials: 'same-origin',
                     redirect: 'follow'
                 }).then(async (response) => {

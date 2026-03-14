@@ -8,12 +8,10 @@ import kwh.PublicCookedFood.board.service.query.BoardDetailQueryService;
 import kwh.PublicCookedFood.storage.ImageDownloadQuery;
 import kwh.PublicCookedFood.storage.ImageDownloadResource;
 import kwh.PublicCookedFood.storage.ImageStorageService;
-import kwh.PublicCookedFood.storage.ImageUploadCommand;
 import org.springframework.core.io.PathResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.stereotype.Service;
 
@@ -38,10 +36,6 @@ public class BoardImageFacade {
     private final BoardDetailQueryService boardDetailQueryService;
     private final ImageStorageService imageStorageService;
     private final BoardImageService boardImageService;
-
-    public String uploadTempImage(MultipartFile file) {
-        return imageStorageService.uploadTempImage(ImageUploadCommand.of(file));
-    }
 
     public Optional<ImageDownloadViewData> prepareOriginalImageDownload(String imageUrl, boolean download) {
         Optional<ImageDownloadResource> downloadResourceOptional =

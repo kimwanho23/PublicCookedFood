@@ -35,6 +35,23 @@ public final class StoragePathUtils {
         return resolved.startsWith(baseDirectory) ? resolved : null;
     }
 
+    public static Path resolveRelativePathUnderDirectory(Path baseDirectory, String relativePath) {
+        if (baseDirectory == null || relativePath == null || relativePath.isBlank()) {
+            return null;
+        }
+
+        String normalizedRelativePath = relativePath.trim();
+        if (normalizedRelativePath.startsWith("/")
+                || normalizedRelativePath.startsWith("\\")
+                || normalizedRelativePath.contains("\\")
+                || normalizedRelativePath.contains("\0")) {
+            return null;
+        }
+
+        Path resolved = baseDirectory.resolve(normalizedRelativePath).normalize();
+        return resolved.startsWith(baseDirectory) ? resolved : null;
+    }
+
     public static String extractBaseFilename(String filename) {
         if (filename == null || filename.isBlank()) {
             return "";
