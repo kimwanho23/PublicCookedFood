@@ -40,41 +40,6 @@ PublicCookedFood는 공공데이터포털 레시피를 바탕으로 만든 요�
 | 알림 | 새 소식이 생기면 실시간 알림으로 확인할 수 있습니다. |
 | 관리자 기능 | 게시판 탭 관리, 신고 처리, 게시판 정책 관리 기능을 제공합니다. |
 
-## 화면 예시
-
-<table>
-  <tr>
-    <td align="center">
-      <strong>공공 레시피 목록</strong><br />
-      <img src="https://github.com/user-attachments/assets/dca17d9d-6b66-4d96-b488-78de2e9e73b5" alt="공공 레시피 목록" width="420" />
-    </td>
-    <td align="center">
-      <strong>레시피 상세</strong><br />
-      <img src="https://github.com/user-attachments/assets/279a125a-1306-4086-8a0e-2eec4343a1a8" alt="레시피 상세" width="420" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <strong>자유 게시판 목록</strong><br />
-      <img src="https://github.com/user-attachments/assets/514e761e-aa86-4e18-b5b3-15a04cd618a3" alt="자유 게시판 목록" width="420" />
-    </td>
-    <td align="center">
-      <strong>게시글 상세</strong><br />
-      <img src="https://github.com/user-attachments/assets/208ca850-157c-4b84-9d0a-03ce15580fc9" alt="게시글 상세" width="420" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <strong>게시글 작성</strong><br />
-      <img src="https://github.com/user-attachments/assets/bcf8ef94-2fe2-4f35-bb49-15076678bcbc" alt="게시글 작성" width="420" />
-    </td>
-    <td align="center">
-      <strong>검색 화면</strong><br />
-      <img src="https://github.com/user-attachments/assets/0274195b-f750-43a6-a3e5-06c125e8782e" alt="검색 화면" width="420" />
-    </td>
-  </tr>
-</table>
-
 ## 기술 스택
 
 | 구분 | 사용 기술 |
